@@ -3,13 +3,13 @@ module github.com/rmarken/reptr
 go 1.21.0
 
 require (
+	github.com/google/uuid v1.3.1
 	github.com/rs/zerolog v1.31.0
 	go.mongodb.org/mongo-driver v1.12.1
 )
 
 require (
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/uuid v1.3.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

@@ -2,13 +2,14 @@ package card
 
 import (
 	"context"
+	"github.com/rmarken/reptr/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type (
 	DataAccess interface {
-		InsertCards(ctx context.Context, card []Card) error
+		InsertCards(ctx context.Context, card []models.Card) error
 	}
 	DAO struct {
 		collection *mongo.Collection
@@ -25,7 +26,7 @@ func NewDataAccess(db *mongo.Database, log zerolog.Logger) *DAO {
 	}
 }
 
-func (d *DAO) InsertCards(ctx context.Context, cards []Card) error {
+func (d *DAO) InsertCards(ctx context.Context, cards []models.Card) error {
 	logger := d.log.With().Str("method", "insertCard").Logger()
 	logger.Info().Msgf("Inserting cards %v", cards)
 
