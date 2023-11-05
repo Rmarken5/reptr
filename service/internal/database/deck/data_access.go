@@ -6,6 +6,7 @@ import (
 	"github.com/rmarken/reptr/internal/database/pipeline"
 	"github.com/rmarken/reptr/internal/models"
 	"github.com/rs/zerolog"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
@@ -57,10 +58,28 @@ func (d *DAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, l
 	logger := d.log.With().Str("method", "GetWithCards").Logger()
 	logger.Info().Msgf("Getting WithCards %v - %v, limit: %d offset %d", from, to, limit, offset)
 
-	cur, err := d.collection.Find(ctx, pipeline.Paginate(from, to, limit, offset))
+	lookupCards :=
+		bson.D{{"$lookup",
+			bson.D{
+				{"from", "cards"},
+				{"localField", "_id"},
+				{"foreignField", "deck_id"},
+				{"as", "cards"},
+			},
+		},
+		}
+
+	filter := append(
+		pipeline.Paginate(from, to, limit, offset),
+		lookupCards,
+	)
+	logger.Debug().Msgf("%+v", filter)
+
+	cur, err := d.collection.Aggregate(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
+
 	withCards := make([]models.WithCards, 0)
 	err = cur.All(ctx, &withCards)
 	if err != nil {

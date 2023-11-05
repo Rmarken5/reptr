@@ -12,7 +12,7 @@ type (
 	}
 
 	WithCards struct {
-		Deck
+		Deck  `bson:",inline"`
 		Cards []Card
 	}
 )

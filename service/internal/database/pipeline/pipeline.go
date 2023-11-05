@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -12,8 +13,8 @@ const (
 	Desc           = -1
 )
 
-func Paginate(from time.Time, to *time.Time, lim, os int) bson.A {
-	return bson.A{
+func Paginate(from time.Time, to *time.Time, lim, os int) mongo.Pipeline {
+	return mongo.Pipeline{
 		match(from, to),
 		sortBy(Asc),
 		offset(os),
