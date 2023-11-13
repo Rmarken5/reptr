@@ -51,11 +51,17 @@ func (d *DAO) InsertCards(ctx context.Context, cards []models.Card) error {
 func (d *DAO) UpdateCard(ctx context.Context, card models.Card) error {
 	logger := d.log.With().Str("method", "updateCards").Logger()
 
-	_, err := d.collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: card.ID}}, card)
+	filter := bson.D{{"_id", card.ID}}
+
+	u, err := d.collection.UpdateOne(ctx, filter, bson.M{
+		"$set": card,
+	})
 	if err != nil {
 		logger.Error().Err(err).Msgf("Updating card %v", card)
 		return err
 	}
+
+	logger.Info().Msgf("Update: %+v", u)
 
 	return nil
 }

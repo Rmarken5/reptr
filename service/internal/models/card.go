@@ -6,11 +6,12 @@ type (
 	Type int
 	Card struct {
 		ID        string    `bson:"_id"`
-		Front     string    `bson:"front"`
+		Front     string    `bson:"front,omitempty"`
 		Back      string    `bson:"back,omitempty"`
-		Kind      Type      `bson:"type"`
-		DeckID    string    `bson:"deck_id"`
-		CreatedAt time.Time `bson:"created_at"`
+		Kind      Type      `bson:"type,omitempty"`
+		DeckID    string    `bson:"deck_id,omitempty"`
+		CreatedAt time.Time `bson:"created_at,omitempty"`
+		UpdatedAt time.Time `bson:"update_at,omitempty"`
 	}
 )
 

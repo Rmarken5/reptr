@@ -17,6 +17,10 @@ type (
 	DeckDataAccess interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
 		GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
+		AddUserToUpvote(ctx context.Context, deckID, userID string) error
+		RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error
+		AddUserToDownvote(ctx context.Context, deckID, userID string) error
+		RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error
 	}
 
 	DAO struct {
@@ -88,4 +92,94 @@ func (d *DAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, l
 		return nil, err
 	}
 	return withCards, nil
+}
+
+func (d *DAO) AddUserToUpvote(ctx context.Context, deckID, userID string) error {
+	logger := d.log.With().Str("method", "AddUserToUpvote").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: deckID}}
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"user_upvote", userID},
+		}},
+		{"$pull", bson.D{
+			{"user_downvote", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *DAO) RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error {
+	logger := d.log.With().Str("method", "AddUserToUpvote").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: deckID}}
+	update := bson.D{
+		{"$pull", bson.D{
+			{"user_upvote", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *DAO) AddUserToDownvote(ctx context.Context, deckID, userID string) error {
+	logger := d.log.With().Str("method", "AddUserToDownvote").Logger()
+	logger.Info().Msgf("adding downvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: deckID}}
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"user_downvote", userID},
+		}},
+		{"$pull", bson.D{
+			{"user_upvote", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *DAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error {
+	logger := d.log.With().Str("method", "RemoveUserFromDownvote").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: deckID}}
+	update := bson.D{
+		{"$pull", bson.D{
+			{"user_upvote", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -59,6 +59,8 @@ func (m *menu) start() {
 			m.createDeck()
 		case 2:
 			m.createCard()
+		case 3:
+			m.updateCard()
 		case 4:
 			m.getDecks()
 		case 9:
@@ -171,6 +173,51 @@ func (m *menu) createCard() {
 		Back:      back,
 		Kind:      models.Type(tToI - 1),
 		CreatedAt: time.Now(),
+	})
+	if err != nil {
+		os.Stdout.WriteString(err.Error())
+	}
+	_, err = os.Stdout.WriteString("\nCard Created.\n")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (m *menu) updateCard() {
+	reader := bufio.NewReader(os.Stdin)
+	_, err := os.Stdout.WriteString("ID of the card you want to update: ")
+
+	cardID, err := reader.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	cardID = strings.Trim(cardID, "\n")
+
+	_, err = os.Stdout.WriteString("\nFront of Card (enter to skip): ")
+	if err != nil {
+		panic(err)
+	}
+	front, err := reader.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	front = strings.Trim(front, "\n")
+
+	_, err = os.Stdout.WriteString("\nBack of Card (enter to skip): ")
+	if err != nil {
+		panic(err)
+	}
+	back, err := reader.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	back = strings.Trim(back, "\n")
+
+	err = m.logic.UpdateCard(context.TODO(), models.Card{
+		ID:        cardID,
+		Front:     front,
+		Back:      back,
+		UpdatedAt: time.Now(),
 	})
 	if err != nil {
 		os.Stdout.WriteString(err.Error())
