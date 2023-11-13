@@ -16,6 +16,10 @@ type (
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
+		UpvoteDeck(ctx context.Context, deckID, userID string) error
+		RemoveUpvoteDeck(ctx context.Context, deckID, userID string) error
+		DownvoteDeck(ctx context.Context, deckID, userID string) error
+		RemoveDownvoteDeck(ctx context.Context, deckID, userID string) error
 	}
 
 	Logic struct {
@@ -91,6 +95,54 @@ func (l *Logic) UpdateCard(ctx context.Context, card models.Card) error {
 	err := l.repo.UpdateCard(ctx, card)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while updating card")
+		return err
+	}
+	return nil
+}
+
+func (l *Logic) UpvoteDeck(ctx context.Context, deckID, userID string) error {
+	logger := l.logger.With().Str("module", "UpvoteDeck").Logger()
+	logger.Info().Msgf("Upvote deck %s for %s", deckID, userID)
+
+	err := l.repo.AddUserToUpvote(ctx, deckID, userID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while upvoting deck")
+		return err
+	}
+	return nil
+}
+
+func (l *Logic) RemoveUpvoteDeck(ctx context.Context, deckID, userID string) error {
+	logger := l.logger.With().Str("module", "RemoveUpvoteDeck").Logger()
+	logger.Info().Msgf("remove upvote: deck %s for %s", deckID, userID)
+
+	err := l.repo.RemoveUserFromUpvote(ctx, deckID, userID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while removing upvote")
+		return err
+	}
+	return nil
+}
+
+func (l *Logic) DownvoteDeck(ctx context.Context, deckID, userID string) error {
+	logger := l.logger.With().Str("module", "DownvoteDeck").Logger()
+	logger.Info().Msgf("downvote deck: %s for %s", deckID, userID)
+
+	err := l.repo.AddUserToDownvote(ctx, deckID, userID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while adding downvote")
+		return err
+	}
+	return nil
+}
+
+func (l *Logic) RemoveDownvoteDeck(ctx context.Context, deckID, userID string) error {
+	logger := l.logger.With().Str("module", "RemoveDownvoteDeck").Logger()
+	logger.Info().Msgf("remove downvote deck: %s for %s", deckID, userID)
+
+	err := l.repo.RemoveUserFromDownvote(ctx, deckID, userID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while removing downvote")
 		return err
 	}
 	return nil
