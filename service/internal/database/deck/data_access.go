@@ -11,8 +11,10 @@ import (
 	"time"
 )
 
+var _ DeckDataAccess = &DAO{}
+
 type (
-	DataAccess interface {
+	DeckDataAccess interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
 		GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
 	}

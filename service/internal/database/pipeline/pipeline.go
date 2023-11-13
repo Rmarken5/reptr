@@ -14,12 +14,16 @@ const (
 )
 
 func Paginate(from time.Time, to *time.Time, lim, os int) mongo.Pipeline {
-	return mongo.Pipeline{
+	pl := mongo.Pipeline{
 		match(from, to),
 		sortBy(Asc),
-		offset(os),
-		limit(lim),
 	}
+	if lim > 0 {
+		pl = append(pl, limit(lim))
+	}
+	pl = append(pl, offset(os))
+
+	return pl
 }
 
 func match(from time.Time, to *time.Time) bson.D {

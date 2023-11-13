@@ -4,12 +4,16 @@ import (
 	"context"
 	"github.com/rmarken/reptr/internal/models"
 	"github.com/rs/zerolog"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var _ CardDataAccess = &DAO{}
+
 type (
-	DataAccess interface {
+	CardDataAccess interface {
 		InsertCards(ctx context.Context, card []models.Card) error
+		UpdateCard(ctx context.Context, card models.Card) error
 	}
 	DAO struct {
 		collection *mongo.Collection
@@ -38,6 +42,18 @@ func (d *DAO) InsertCards(ctx context.Context, cards []models.Card) error {
 	_, err := d.collection.InsertMany(ctx, c)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Inserting cards %v", cards)
+		return err
+	}
+
+	return nil
+}
+
+func (d *DAO) UpdateCard(ctx context.Context, card models.Card) error {
+	logger := d.log.With().Str("method", "updateCards").Logger()
+
+	_, err := d.collection.UpdateOne(ctx, bson.D{{Key: "_id", Value: card.ID}}, card)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Updating card %v", card)
 		return err
 	}
 
