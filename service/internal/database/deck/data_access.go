@@ -13,6 +13,11 @@ import (
 
 var _ DeckDataAccess = &DAO{}
 
+var (
+	ErrInsert    = errors.New("error inserting")
+	ErrAggregate = errors.New("error using aggregation")
+)
+
 type (
 	DeckDataAccess interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
@@ -45,7 +50,7 @@ func (d *DAO) InsertDeck(ctx context.Context, deck models.Deck) (string, error) 
 	res, err := d.collection.InsertOne(ctx, deck)
 	if err != nil {
 		logger.Error().Err(err).Msgf("inserting deck %v", deck)
-		return "", err
+		return "", errors.Join(err, ErrInsert)
 	}
 
 	logger.Debug().Msgf("response: %+v", res.InsertedID)
@@ -83,7 +88,7 @@ func (d *DAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, l
 
 	cur, err := d.collection.Aggregate(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, ErrAggregate)
 	}
 
 	withCards := make([]models.WithCards, 0)
