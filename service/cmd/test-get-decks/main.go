@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/rmarken/reptr/internal/database/deck"
+	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -30,7 +30,7 @@ func main() {
 
 	db := client.Database("deck")
 
-	deckDataAccess := deck.NewDataAccess(db, log)
+	deckDataAccess := database.NewDeckDataAccess(db, log)
 	from := time.Date(2023, 11, 4, 0, 0, 0, 0, time.Local)
 	to := time.Date(2023, 11, 5, 0, 0, 0, 0, time.Local)
 	decks, err := deckDataAccess.GetWithCards(ctx, from, &to, 10, 0)

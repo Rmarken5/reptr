@@ -2,9 +2,8 @@ package logic
 
 import (
 	"context"
-	"errors"
-	"github.com/rmarken/reptr/internal/database"
-	"github.com/rmarken/reptr/internal/models"
+	"github.com/rmarken/reptr/service/internal/database"
+	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
@@ -60,7 +59,7 @@ func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, lim
 	logger.Info().Msgf("GetDecks between %s - %s with limit %d: starting at: %d ", from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
 
 	if to.Before(from) {
-		return nil, errors.New("to cannot be before from")
+		return nil, ErrInvalidToBeforeFrom
 	}
 
 	cards, err := l.repo.GetWithCards(ctx, from, to, limit, offset)

@@ -1,27 +1,27 @@
 package database
 
 import (
-	"github.com/rmarken/reptr/internal/database/card"
-	"github.com/rmarken/reptr/internal/database/deck"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+//go:generate mockgen -destination ./mocks/repo_mock.go -package database . Repository
+
 type (
 	Repository interface {
-		card.CardDataAccess
-		deck.DeckDataAccess
+		CardDataAccess
+		DeckDataAccess
 	}
 	DAO struct {
-		card.CardDataAccess
-		deck.DeckDataAccess
+		CardDataAccess
+		DeckDataAccess
 	}
 )
 
 func NewRepository(logger zerolog.Logger, db *mongo.Database) *DAO {
 	l := logger.With().Str("module", "Repository").Logger()
 	return &DAO{
-		card.NewDataAccess(db, l),
-		deck.NewDataAccess(db, l),
+		NewCardDataAccess(db, l),
+		NewDeckDataAccess(db, l),
 	}
 }

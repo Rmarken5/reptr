@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/rmarken/reptr/internal/database/card"
-	"github.com/rmarken/reptr/internal/database/deck"
-	"github.com/rmarken/reptr/internal/models"
+	"github.com/rmarken/reptr/service/internal/database"
+	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -33,8 +32,8 @@ func main() {
 
 	db := client.Database("deck")
 
-	deckDataAccess := deck.NewDataAccess(db, log)
-	cardDataAccess := card.NewDataAccess(db, log)
+	deckDataAccess := database.NewDeckDataAccess(db, log)
+	cardDataAccess := database.NewCardDataAccess(db, log)
 	deckID, err := deckDataAccess.InsertDeck(ctx, models.Deck{
 		ID:        uuid.NewString(),
 		Name:      uuid.NewString(),

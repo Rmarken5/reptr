@@ -1,10 +1,11 @@
-package deck
+package database
 
 import (
 	"context"
 	"errors"
-	"github.com/rmarken/reptr/internal/database/pipeline"
-	"github.com/rmarken/reptr/internal/models"
+	"fmt"
+	"github.com/rmarken/reptr/service/internal/database/pipeline"
+	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,11 +13,6 @@ import (
 )
 
 var _ DeckDataAccess = &DAO{}
-
-var (
-	ErrInsert    = errors.New("error inserting")
-	ErrAggregate = errors.New("error using aggregation")
-)
 
 type (
 	DeckDataAccess interface {
@@ -28,22 +24,22 @@ type (
 		RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error
 	}
 
-	DAO struct {
+	DeckDAO struct {
 		collection *mongo.Collection
 		log        zerolog.Logger
 	}
 )
 
-func NewDataAccess(db *mongo.Database, log zerolog.Logger) *DAO {
+func NewDeckDataAccess(db *mongo.Database, log zerolog.Logger) *DeckDAO {
 	logger := log.With().Str("module", "DAO").Logger()
 	collection := db.Collection("decks")
-	return &DAO{
+	return &DeckDAO{
 		collection: collection,
 		log:        logger,
 	}
 }
 
-func (d *DAO) InsertDeck(ctx context.Context, deck models.Deck) (string, error) {
+func (d *DeckDAO) InsertDeck(ctx context.Context, deck models.Deck) (string, error) {
 	logger := d.log.With().Str("method", "insertDeck").Logger()
 	logger.Info().Msgf("inserting deck %v", deck)
 
@@ -58,14 +54,14 @@ func (d *DAO) InsertDeck(ctx context.Context, deck models.Deck) (string, error) 
 	prim, ok := res.InsertedID.(string)
 	if !ok {
 		logger.Error().Msgf("cannot return object id from inserted deck")
-		return "", errors.New("cannot return object id from inserted deck")
+		return "", errors.Join(fmt.Errorf("error inserting deck: %w", err), ErrInsert)
 	}
 
 	logger.Debug().Msgf("%s", prim)
 	return prim, nil
 }
 
-func (d *DAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error) {
+func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error) {
 	logger := d.log.With().Str("method", "GetWithCards").Logger()
 	logger.Info().Msgf("Getting WithCards %v - %v, limit: %d offset %d", from, to, limit, offset)
 
@@ -96,10 +92,13 @@ func (d *DAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, l
 	if err != nil {
 		return nil, err
 	}
+	if len(withCards) == 0 {
+		return nil, ErrNoResults
+	}
 	return withCards, nil
 }
 
-func (d *DAO) AddUserToUpvote(ctx context.Context, deckID, userID string) error {
+func (d *DeckDAO) AddUserToUpvote(ctx context.Context, deckID, userID string) error {
 	logger := d.log.With().Str("method", "AddUserToUpvote").Logger()
 	logger.Info().Msgf("adding upvote for user: %s", userID)
 
@@ -117,13 +116,13 @@ func (d *DAO) AddUserToUpvote(ctx context.Context, deckID, userID string) error 
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return errors.Join(fmt.Errorf("error adding user to upvote: %w", err), ErrUpdate)
 	}
 
 	return nil
 }
 
-func (d *DAO) RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error {
+func (d *DeckDAO) RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error {
 	logger := d.log.With().Str("method", "AddUserToUpvote").Logger()
 	logger.Info().Msgf("adding upvote for user: %s", userID)
 
@@ -138,13 +137,13 @@ func (d *DAO) RemoveUserFromUpvote(ctx context.Context, deckID, userID string) e
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return errors.Join(fmt.Errorf("error removing user from upvote: %w", err), ErrUpdate)
 	}
 
 	return nil
 }
 
-func (d *DAO) AddUserToDownvote(ctx context.Context, deckID, userID string) error {
+func (d *DeckDAO) AddUserToDownvote(ctx context.Context, deckID, userID string) error {
 	logger := d.log.With().Str("method", "AddUserToDownvote").Logger()
 	logger.Info().Msgf("adding downvote for user: %s", userID)
 
@@ -162,13 +161,13 @@ func (d *DAO) AddUserToDownvote(ctx context.Context, deckID, userID string) erro
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return errors.Join(fmt.Errorf("error adding user to downvote: %w", err), ErrUpdate)
 	}
 
 	return nil
 }
 
-func (d *DAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error {
+func (d *DeckDAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error {
 	logger := d.log.With().Str("method", "RemoveUserFromDownvote").Logger()
 	logger.Info().Msgf("adding upvote for user: %s", userID)
 
@@ -183,7 +182,7 @@ func (d *DAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID string)
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return errors.Join(fmt.Errorf("error removing user from downvote: %w", err), ErrUpdate)
 	}
 
 	return nil

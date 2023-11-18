@@ -43,7 +43,7 @@ func match(from time.Time, to *time.Time) bson.D {
 }
 
 func sortBy(sortBy SortOrder) bson.D {
-	return bson.D{{"$sort", bson.D{{"created_at", sortBy}}}}
+	return bson.D{{"$sort", bson.D{{"created_at", int(sortBy)}}}}
 }
 
 func limit(l int) bson.D {

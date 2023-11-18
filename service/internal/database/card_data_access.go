@@ -1,8 +1,10 @@
-package card
+package database
 
 import (
 	"context"
-	"github.com/rmarken/reptr/internal/models"
+	"errors"
+	"fmt"
+	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,22 +17,22 @@ type (
 		InsertCards(ctx context.Context, card []models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 	}
-	DAO struct {
+	CardDAO struct {
 		collection *mongo.Collection
 		log        zerolog.Logger
 	}
 )
 
-func NewDataAccess(db *mongo.Database, log zerolog.Logger) *DAO {
+func NewCardDataAccess(db *mongo.Database, log zerolog.Logger) *CardDAO {
 	logger := log.With().Str("module", "CardDAO").Logger()
 	collection := db.Collection("cards")
-	return &DAO{
+	return &CardDAO{
 		collection: collection,
 		log:        logger,
 	}
 }
 
-func (d *DAO) InsertCards(ctx context.Context, cards []models.Card) error {
+func (d *CardDAO) InsertCards(ctx context.Context, cards []models.Card) error {
 	logger := d.log.With().Str("method", "insertCard").Logger()
 	logger.Info().Msgf("Inserting cards %v", cards)
 
@@ -42,13 +44,13 @@ func (d *DAO) InsertCards(ctx context.Context, cards []models.Card) error {
 	_, err := d.collection.InsertMany(ctx, c)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Inserting cards %v", cards)
-		return err
+		return errors.Join(fmt.Errorf("error inserting cards: %w", err), ErrInsert)
 	}
 
 	return nil
 }
 
-func (d *DAO) UpdateCard(ctx context.Context, card models.Card) error {
+func (d *CardDAO) UpdateCard(ctx context.Context, card models.Card) error {
 	logger := d.log.With().Str("method", "updateCards").Logger()
 
 	filter := bson.D{{"_id", card.ID}}
@@ -58,10 +60,10 @@ func (d *DAO) UpdateCard(ctx context.Context, card models.Card) error {
 	})
 	if err != nil {
 		logger.Error().Err(err).Msgf("Updating card %v", card)
-		return err
+		return errors.Join(fmt.Errorf("error updating card: %w", err), ErrUpdate)
 	}
 
-	logger.Info().Msgf("Update: %+v", u)
+	logger.Info().Msgf("Updated: %+v", u)
 
 	return nil
 }
