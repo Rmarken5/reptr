@@ -21,4 +21,6 @@ jobs:
         run: go test -v ./...
 
       - name: Update coverage report
-        uses: ncruces/go-coverage-report@v0
+        uses: ncruces/go-coverage-report@v0.2.9
+        with:
+          report: true
