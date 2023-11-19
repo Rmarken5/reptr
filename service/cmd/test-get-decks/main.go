@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"github.com/rmarken/reptr/service/internal/database"
-	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -33,28 +31,13 @@ func main() {
 	db := client.Database("deck")
 
 	deckDataAccess := database.NewDeckDataAccess(db, log)
-	cardDataAccess := database.NewCardDataAccess(db, log)
-	deckID, err := deckDataAccess.InsertDeck(ctx, models.Deck{
-		ID:        uuid.NewString(),
-		Name:      uuid.NewString(),
-		CreatedAt: time.Now(),
-	})
+	from := time.Date(2023, 11, 4, 0, 0, 0, 0, time.Local)
+	to := time.Date(2023, 11, 5, 0, 0, 0, 0, time.Local)
+	decks, err := deckDataAccess.GetWithCards(ctx, from, &to, 10, 0)
 	if err != nil {
-		log.Error().Err(err).Msg("Inserting deck")
+		log.Panic().Err(err).Msg("While getting decks")
 	}
 
-	err = cardDataAccess.InsertCards(ctx, []models.Card{
-		{
-			ID:        uuid.NewString(),
-			Front:     "The host of Jeopardy",
-			Back:      "Who is Alex Trebek",
-			Kind:      models.BasicCard,
-			DeckID:    deckID,
-			CreatedAt: time.Now(),
-		},
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("Inserting deck")
-	}
+	log.Info().Msgf("Decks: %+v:", decks)
 
 }

@@ -1,7 +1,6 @@
-package deck
+package models
 
 import (
-	"github.com/rmarken/reptr/internal/database/card"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type (
 	}
 
 	WithCards struct {
-		Deck
-		Cards []card.Card
+		Deck  `bson:",inline"`
+		Cards []Card
 	}
 )
