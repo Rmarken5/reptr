@@ -69,10 +69,10 @@ func (mr *MockRepositoryMockRecorder) AddUserToUpvote(arg0, arg1, arg2 any) *gom
 }
 
 // GetWithCards mocks base method.
-func (m *MockRepository) GetWithCards(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.WithCards, error) {
+func (m *MockRepository) GetWithCards(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.DeckWithCards, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithCards", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].([]models.WithCards)
+	ret0, _ := ret[0].([]models.DeckWithCards)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

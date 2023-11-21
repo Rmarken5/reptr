@@ -11,7 +11,7 @@ type (
 		CreatedAt time.Time `bson:"created_at"`
 	}
 
-	WithCards struct {
+	DeckWithCards struct {
 		Deck  `bson:",inline"`
 		Cards []Card
 	}

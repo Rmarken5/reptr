@@ -12,7 +12,7 @@ import (
 type (
 	Controller interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
-		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
+		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 		UpvoteDeck(ctx context.Context, deckID, userID string) error
@@ -48,9 +48,9 @@ func (l *Logic) InsertDeck(ctx context.Context, deck models.Deck) (string, error
 	return id, nil
 }
 
-// GetDecks will attempt to get [[]models.WithCards] given a time period.
+// GetDecks will attempt to get [[]models.DeckWithCards] given a time period.
 // From time is required. If to is not provided, it defaults to the EOD of from.
-func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error) {
+func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error) {
 	logger := l.logger.With().Str("module", "getDecks").Logger()
 	if to == nil {
 		endOfDayFrom := time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, 0, from.Location())
