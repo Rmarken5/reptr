@@ -221,7 +221,6 @@ func TestDAO_AddUserToUpvote(t *testing.T) {
 			},
 			wantErr: ErrUpdate,
 		},
-		// Add more test cases to cover other scenarios...
 	}
 
 	for name, tc := range testCases {

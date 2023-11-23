@@ -10,6 +10,7 @@ type (
 		Name      string    `bson:"name"`
 		GroupIDs  []string  `bson:"group_ids"`
 		CreatedAt time.Time `bson:"created_at"`
+		UpdatedAt time.Time `bson:"updated_at"`
 	}
 
 	DeckWithCards struct {
