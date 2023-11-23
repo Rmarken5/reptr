@@ -6,9 +6,9 @@ type (
 	Group struct {
 		ID        string
 		Name      string
-		DeckIDs   []string
 		CreatedAt time.Time
 		UpdatedAt time.Time
+		DeletedAt *time.Time
 	}
 
 	GroupWithDecks struct {

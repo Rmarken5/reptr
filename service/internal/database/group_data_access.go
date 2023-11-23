@@ -20,7 +20,6 @@ type (
 		UpdateGroup(ctx context.Context, group models.Group) error
 		GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		DeleteGroup(ctx context.Context, groupID string) error
-		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error)
 	}
 	GroupDAO struct {
@@ -77,9 +76,9 @@ func (g *GroupDAO) GetGroupsWithDecks(ctx context.Context, from time.Time, to *t
 		bson.D{{"$lookup",
 			bson.D{
 				{"from", "decks"},
-				{"localField", ""},
-				{"foreignField", "deck_id"},
-				{"as", "cards"},
+				{"localField", "_id"},
+				{"foreignField", "group_ids"},
+				{"as", "decks"},
 			},
 		},
 		}
@@ -90,33 +89,75 @@ func (g *GroupDAO) GetGroupsWithDecks(ctx context.Context, from time.Time, to *t
 	)
 	logger.Debug().Msgf("%+v", filter)
 
-	cur, err := d.collection.Aggregate(ctx, filter)
+	cur, err := g.collection.Aggregate(ctx, filter)
 	if err != nil {
 		return nil, errors.Join(err, ErrAggregate)
 	}
 
-	withCards := make([]models.DeckWithCards, 0)
-	err = cur.All(ctx, &withCards)
+	withDecks := make([]models.GroupWithDecks, 0)
+	err = cur.All(ctx, &withDecks)
 	if err != nil {
 		return nil, err
 	}
-	if len(withCards) == 0 {
+	if len(withDecks) == 0 {
 		return nil, ErrNoResults
 	}
-	return withCards, nil
+	return withDecks, nil
 }
 
 func (g *GroupDAO) DeleteGroup(ctx context.Context, groupID string) error {
-	//TODO implement me
-	panic("implement me")
-}
+	logger := g.log.With().Str("method", "deleteGroup").Logger()
 
-func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) error {
-	//TODO implement me
-	panic("implement me")
+	filter := bson.D{{"_id", groupID}}
+
+	u, err := g.collection.UpdateOne(ctx, filter, bson.M{
+		"$set": bson.D{
+			{"deleted_at", time.Now().String()},
+		},
+	})
+	if err != nil {
+		logger.Error().Err(err).Msgf("deleting group %s", groupID)
+		return errors.Join(fmt.Errorf("error deleting group: %w", err), ErrDelete)
+	}
+
+	logger.Info().Msgf("Updated: %+v", u)
+
+	return nil
 }
 
 func (g *GroupDAO) GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error) {
-	//TODO implement me
-	panic("implement me")
+	logger := g.log.With().Str("method", "deleteGroup").Logger()
+	match := bson.D{{"$match", bson.D{{"name", "test"}}}}
+	lookupDecks := bson.D{
+		{"$lookup",
+			bson.D{
+				{"from", "decks"},
+				{"localField", "_id"},
+				{"foreignField", "group_ids"},
+				{"as", "decks"},
+			},
+		},
+	}
+
+	filter := bson.A{
+		match,
+		lookupDecks,
+	}
+	logger.Debug().Msgf("%+v", filter)
+
+	cur, err := g.collection.Aggregate(ctx, filter)
+	if err != nil {
+		logger.Error().Err(err).Msgf("getting group by name %s", groupName)
+		return models.GroupWithDecks{}, errors.Join(fmt.Errorf("error deleting group: %w", err), ErrAggregate)
+	}
+
+	withDecks := make([]models.GroupWithDecks, 0)
+	err = cur.All(ctx, &withDecks)
+	if err != nil {
+		return models.GroupWithDecks{}, err
+	}
+	if len(withDecks) == 0 {
+		return models.GroupWithDecks{}, ErrNoResults
+	}
+	return withDecks[0], nil
 }
