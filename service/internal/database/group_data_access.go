@@ -16,11 +16,13 @@ var _ GroupDataAccess = &GroupDAO{}
 
 type (
 	GroupDataAccess interface {
-		InsertGroup(ctx context.Context, group models.Group) error
+		InsertGroup(ctx context.Context, group models.Group) (string, error)
 		UpdateGroup(ctx context.Context, group models.Group) error
 		GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		DeleteGroup(ctx context.Context, groupID string) error
 		GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error)
+
+		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 	}
 	GroupDAO struct {
 		collection *mongo.Collection
@@ -37,17 +39,25 @@ func NewGroupDataAccess(db *mongo.Database, log zerolog.Logger) *GroupDAO {
 	}
 }
 
-func (g *GroupDAO) InsertGroup(ctx context.Context, group models.Group) error {
+func (g *GroupDAO) InsertGroup(ctx context.Context, group models.Group) (string, error) {
 	logger := g.log.With().Str("method", "insertGroup").Logger()
 	logger.Info().Msgf("Inserting group %v", group)
 
-	_, err := g.collection.InsertOne(ctx, group)
+	res, err := g.collection.InsertOne(ctx, group)
 	if err != nil {
 		logger.Error().Err(err).Msgf("Inserting group %v", group)
-		return errors.Join(fmt.Errorf("error inserting group: %w", err), ErrInsert)
+		return "", errors.Join(err, ErrInsert)
 	}
 
-	return nil
+	prim, ok := res.InsertedID.(string)
+	if !ok {
+		logger.Error().Msgf("cannot return object id from inserted group")
+		return "", errors.Join(fmt.Errorf("error inserting group: %w", err), ErrInsert)
+	}
+
+	logger.Debug().Msgf("%s", prim)
+
+	return prim, nil
 }
 
 func (g *GroupDAO) UpdateGroup(ctx context.Context, group models.Group) error {
@@ -121,6 +131,27 @@ func (g *GroupDAO) DeleteGroup(ctx context.Context, groupID string) error {
 	}
 
 	logger.Info().Msgf("Updated: %+v", u)
+
+	return nil
+}
+
+func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) error {
+	logger := g.log.With().Str("method", "AddDeckToGroup").Logger()
+	logger.Info().Msgf("adding group to deck: %s", groupID)
+
+	filter := bson.D{{Key: "_id", Value: groupID}}
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"deck_ids", deckID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := g.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Join(fmt.Errorf("adding group to deck: %w", err), ErrUpdate)
+	}
 
 	return nil
 }

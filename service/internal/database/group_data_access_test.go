@@ -48,15 +48,18 @@ func TestInsertGroup(t *testing.T) {
 		name := name
 		tc := tc
 		db.Run(name, func(mt *mtest.T) {
-			dao := NewGroupDataAccess(mt.DB, logger)
+
+			dao := GroupDAO{
+				collection: mt.Coll,
+				log:        logger,
+			}
 
 			if tc.mockDatabase != nil {
 				tc.mockDatabase(mt)
 			}
+			_, gotErr := dao.InsertGroup(context.Background(), tc.group)
 
-			gotErr := dao.InsertGroup(context.Background(), tc.group)
-
-			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
 		})
 	}
 }
@@ -114,7 +117,7 @@ func TestUpdateGroup(t *testing.T) {
 
 			gotErr := dao.UpdateGroup(context.Background(), tc.group)
 
-			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
 		})
 	}
 }
@@ -233,10 +236,10 @@ func TestGetGroupsWithDecks(t *testing.T) {
 
 			gotWithDecks, gotErr := dao.GetGroupsWithDecks(context.Background(), tc.from, tc.to, tc.limit, tc.offset)
 
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Len(t, gotWithDecks, len(tc.wantWithDecks))
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
+			assert.Len(mt, gotWithDecks, len(tc.wantWithDecks))
 			for i, wd := range gotWithDecks {
-				assert.Equal(t, tc.wantWithDecks[i], wd)
+				assert.Equal(mt, tc.wantWithDecks[i], wd)
 			}
 		})
 	}
@@ -288,7 +291,7 @@ func TestDeleteGroup(t *testing.T) {
 
 			gotErr := dao.DeleteGroup(context.Background(), tc.groupID)
 
-			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
 		})
 	}
 }
@@ -371,8 +374,8 @@ func TestGetGroupByName(t *testing.T) {
 
 			gotGroup, gotErr := dao.GetGroupByName(context.Background(), tc.groupName)
 
-			assert.ErrorIs(t, gotErr, tc.wantErr)
-			assert.Equal(t, tc.wantGroup, gotGroup)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
+			assert.Equal(mt, tc.wantGroup, gotGroup)
 		})
 	}
 }
@@ -421,14 +424,13 @@ func TestAddDeckToGroup(t *testing.T) {
 			},
 			wantErr: ErrUpdate,
 		},
-		// Add more test cases as needed...
 	}
 
 	for name, tc := range testCases {
 		name := name
 		tc := tc
 		db.Run(name, func(mt *mtest.T) {
-			dao := DeckDAO{collection: mt.Coll, log: logger}
+			dao := GroupDAO{collection: mt.Coll, log: logger}
 
 			if tc.mockDatabase != nil {
 				tc.mockDatabase(mt)
@@ -436,7 +438,7 @@ func TestAddDeckToGroup(t *testing.T) {
 
 			gotErr := dao.AddDeckToGroup(context.Background(), tc.groupID, tc.deckID)
 
-			assert.ErrorIs(t, gotErr, tc.wantErr)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
 		})
 	}
 }

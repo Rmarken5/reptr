@@ -22,7 +22,6 @@ type (
 		RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error
 		AddUserToDownvote(ctx context.Context, deckID, userID string) error
 		RemoveUserFromDownvote(ctx context.Context, deckID, userID string) error
-		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 	}
 
 	DeckDAO struct {
@@ -184,27 +183,6 @@ func (d *DeckDAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID str
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error removing user from downvote: %w", err), ErrUpdate)
-	}
-
-	return nil
-}
-
-func (d *DeckDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) error {
-	logger := d.log.With().Str("method", "AddDeckToGroup").Logger()
-	logger.Info().Msgf("adding group to deck: %s", groupID)
-
-	filter := bson.D{{Key: "_id", Value: deckID}}
-	update := bson.D{
-		{"$addToSet", bson.D{
-			{"deck_ids", groupID},
-		}},
-	}
-
-	logger.Debug().Msgf("%+v", filter)
-
-	_, err := d.collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return errors.Join(fmt.Errorf("adding group to deck: %w", err), ErrUpdate)
 	}
 
 	return nil

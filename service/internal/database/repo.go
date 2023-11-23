@@ -11,10 +11,12 @@ type (
 	Repository interface {
 		CardDataAccess
 		DeckDataAccess
+		GroupDataAccess
 	}
 	DAO struct {
 		CardDataAccess
 		DeckDataAccess
+		GroupDataAccess
 	}
 )
 
@@ -23,5 +25,6 @@ func NewRepository(logger zerolog.Logger, db *mongo.Database) *DAO {
 	return &DAO{
 		NewCardDataAccess(db, l),
 		NewDeckDataAccess(db, l),
+		NewGroupDataAccess(db, l),
 	}
 }
