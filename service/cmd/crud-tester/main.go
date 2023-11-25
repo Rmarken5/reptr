@@ -244,3 +244,19 @@ func (m *menu) getDecks() {
 	os.Stdout.WriteString(sb.String())
 
 }
+
+func (m *menu) getGroups() {
+	decks, err := m.logic.GetGroups(context.TODO(), time.Now().Truncate(time.Hour), nil, 0, 0)
+
+	if err != nil {
+		os.Stdout.WriteString(err.Error())
+		return
+	}
+	sb := strings.Builder{}
+
+	for _, deck := range decks {
+		sb.WriteString(fmt.Sprintf("%+v\n", deck))
+	}
+
+	os.Stdout.WriteString(sb.String())
+}
