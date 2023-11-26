@@ -12,6 +12,10 @@ import (
 	"os"
 )
 
+const (
+	osPort = "PORT"
+)
+
 func main() {
 	ctx := context.Background()
 	log := zerolog.New(os.Stdout).With().Str("program", "reptr server").Logger()
@@ -30,10 +34,18 @@ func main() {
 
 	s := &http.Server{
 		Handler: r,
-		Addr:    net.JoinHostPort("0.0.0.0", "8081"),
+		Addr:    net.JoinHostPort("0.0.0.0", mustGetPort(log)),
 	}
 
 	// And we serve HTTP until the world ends.
 	log.Fatal().Err(s.ListenAndServe())
 
+}
+
+func mustGetPort(logger zerolog.Logger) string {
+	port := os.Getenv(osPort)
+	if port == "" {
+		logger.Panic().Msgf("unable to get port")
+	}
+	return port
 }

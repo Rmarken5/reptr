@@ -1,3 +1,13 @@
+.Phony:
+docker-build-service:
+	docker build -f ./dockerfiles/service.dockerfile . -t gcr.io/small-biz-template/markenshop/reptr:latest
+
+.Phony:
+docker-run-service:
+	docker run -d --rm -p 8081:8080 -e PORT=8080 \
+                                 -e MONGO_URI="mongodb://host.docker.internal:27017/?directConnection=true&serverSelectionTimeoutMS=2000" \
+                                 -e DB_NAME="deck" \
+                                 gcr.io/small-biz-template/markenshop/reptr:latest
 docker-build-mongo:
 	docker build -f ./dockerfiles/mongo.dockerfile -t reprt-mongo:latest .
 
