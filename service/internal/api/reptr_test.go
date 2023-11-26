@@ -24,7 +24,7 @@ func TestNew(t *testing.T) {
 }
 func TestGetGroups(t *testing.T) {
 	var (
-		now                 = time.Now().In(time.Local)
+		now                 = time.Now().In(time.UTC)
 		nowMinusHour        = now.Add(-1 * time.Hour)
 		groupName           = uuid.NewString()
 		groupID             = uuid.NewString()
