@@ -4,9 +4,9 @@ info:
   description: Reptr API Documentation
   version: 1.0.0
 servers:
-  - url: http://example.com/api/v1
+  - url: http://localhost:8081/
 paths:
-  /groups:
+  /api/v1/groups:
     get:
       operationId: 'getGroups'
       summary: Get Groups
@@ -45,9 +45,11 @@ paths:
             type: integer
             format: int
       responses:
-        '200':
+        200:
           $ref: '#/components/responses/GetGroups'
-        '500':
+        400:
+          $ref: '#/components/responses/UserError'
+        500:
           $ref: '#/components/responses/InternalServerError'
 components:
   responses:
@@ -61,6 +63,12 @@ components:
               $ref: '#/components/schemas/GroupWithDecks'
     NotFound:
       description: Response for if/when a resource is not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+    UserError:
+      description: Response for if/when a bad request is made by the user
       content:
         application/json:
           schema:
@@ -101,7 +109,7 @@ components:
         updated_at:
           type: string
           format: date-time
-      required: [id, name, created_at, updated_at]
+      required: [ id, name, created_at, updated_at ]
     DeckWithCards:
       allOf:
         - $ref: '#/components/schemas/Deck'
@@ -121,7 +129,7 @@ components:
         created_at:
           type: string
           format: date-time
-        update_at:
+        updated_at:
           type: string
           format: date-time
       required: [ id, name, created_at, updated_at ]

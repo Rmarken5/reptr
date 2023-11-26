@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
@@ -9,6 +10,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination ./mocks/controller_mock.go -package logic . Controller
 var _ Controller = &Logic{}
 
 type (
@@ -185,13 +187,13 @@ func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, li
 	logger.Info().Msgf("GetGroups between %s - %s with limit %d: starting at: %d ", from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
 
 	if to.Before(from) {
-		return nil, ErrInvalidToBeforeFrom
+		return []models.GroupWithDecks(nil), ErrInvalidToBeforeFrom
 	}
 
 	groupsWithDecks, err := l.repo.GetGroupsWithDecks(ctx, from, to, limit, offset)
-	if err != nil {
+	if err != nil && !errors.Is(err, database.ErrNoResults) {
 		logger.Error().Err(err).Msg("while getting groupsWithDecks")
-		return nil, err
+		return []models.GroupWithDecks(nil), err
 	}
 
 	return groupsWithDecks, nil

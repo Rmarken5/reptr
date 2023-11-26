@@ -19,7 +19,7 @@ type ReprtClient struct {
 }
 
 func New(logger zerolog.Logger, controller logic.Controller) *ReprtClient {
-	logger = logger.With().Str("module", "api").Logger()
+	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:     logger,
 		controller: controller,
@@ -42,15 +42,16 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 		json.NewEncoder(w).Encode(errObj)
 	}
 	g := make(api.GetGroups, len(groups))
-	for _, group := range groups {
-		g = append(g, api.GroupWithDecks{
+	for i, group := range groups {
+		g[i] = api.GroupWithDecks{
 			CreatedAt: group.CreatedAt,
 			Id:        group.ID,
 			Name:      group.Name,
 			Decks:     decksFromDecks(group.Decks),
-			UpdateAt:  &group.UpdatedAt,
-		})
+			UpdatedAt: group.UpdatedAt,
+		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(g)
 }
 
@@ -65,12 +66,13 @@ func toStatus(err error) int {
 
 func decksFromDecks(fromService []models.Deck) []api.Deck {
 	apiDecks := make([]api.Deck, len(fromService))
-	for _, deck := range fromService {
-		apiDecks = append(apiDecks, api.Deck{
+	for i, deck := range fromService {
+		apiDecks[i] = api.Deck{
 			CreatedAt: deck.CreatedAt,
 			Id:        deck.ID,
 			Name:      deck.Name,
 			UpdatedAt: deck.UpdatedAt,
-		})
+		}
 	}
+	return apiDecks
 }

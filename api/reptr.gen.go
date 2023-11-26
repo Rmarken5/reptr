@@ -44,19 +44,19 @@ type ErrorObject struct {
 
 // Group defines model for Group.
 type Group struct {
-	CreatedAt time.Time  `json:"created_at"`
-	Id        string     `json:"id"`
-	Name      string     `json:"name"`
-	UpdateAt  *time.Time `json:"update_at,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GroupWithDecks defines model for GroupWithDecks.
 type GroupWithDecks struct {
-	CreatedAt time.Time  `json:"created_at"`
-	Decks     []Deck     `json:"decks"`
-	Id        string     `json:"id"`
-	Name      string     `json:"name"`
-	UpdateAt  *time.Time `json:"update_at,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	Decks     []Deck    `json:"decks"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetGroups defines model for GetGroups.
@@ -64,6 +64,9 @@ type GetGroups = []GroupWithDecks
 
 // InternalServerError defines model for InternalServerError.
 type InternalServerError = ErrorObject
+
+// UserError defines model for UserError.
+type UserError = ErrorObject
 
 // GetGroupsParams defines parameters for GetGroups.
 type GetGroupsParams struct {
@@ -178,7 +181,7 @@ func NewGetGroupsRequest(server string, params *GetGroupsParams) (*http.Request,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/groups")
+	operationPath := fmt.Sprintf("/api/v1/groups")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -305,6 +308,7 @@ type GetGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *GetGroups
+	JSON400      *UserError
 	JSON500      *InternalServerError
 }
 
@@ -354,6 +358,13 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest InternalServerError
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -369,7 +380,7 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Get Groups
-	// (GET /groups)
+	// (GET /api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
 }
 
@@ -568,7 +579,7 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
-	r.HandleFunc(options.BaseURL+"/groups", wrapper.GetGroups).Methods("GET")
+	r.HandleFunc(options.BaseURL+"/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
 	return r
 }
@@ -576,20 +587,21 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"qt+4IPWz6tlVmWbAvwEAAP//2sT9HwsLAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
