@@ -100,14 +100,9 @@ func TestDAO_UpdateCard(t *testing.T) {
 	defer db.Close()
 
 	testCases := map[string]struct {
-		// Inputs
-		card models.Card
-
-		// Mocks or setup for MongoDB
+		card         models.Card
 		mockDatabase func(mongo *mtest.T)
-
-		// Expected Results
-		wantErr error
+		wantErr      error
 	}{
 		"should update card successfully": {
 			card: models.Card{

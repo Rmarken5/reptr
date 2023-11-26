@@ -75,7 +75,7 @@ func TestDAO_InsertDeck(t *testing.T) {
 func TestDAO_GetWithCards(t *testing.T) {
 	var (
 		db            = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-		haveWithCards = []models.WithCards{
+		haveWithCards = []models.DeckWithCards{
 			{
 				Deck: models.Deck{
 					ID:        "1", // Populate with appropriate ID
@@ -108,10 +108,10 @@ func TestDAO_GetWithCards(t *testing.T) {
 		mockDatabase func(mongo *mtest.T)
 
 		// Expected Results
-		wantWithCards []models.WithCards
+		wantWithCards []models.DeckWithCards
 		wantErr       error
 	}{
-		"should get WithCards successfully": {
+		"should get DeckWithCards successfully": {
 			from:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 			to:     nil,
 			limit:  10,
@@ -161,7 +161,7 @@ func TestDAO_GetWithCards(t *testing.T) {
 					mtest.FirstBatch,
 				))
 			},
-			wantWithCards: []models.WithCards{},
+			wantWithCards: []models.DeckWithCards{},
 			wantErr:       ErrNoResults,
 		},
 	}
@@ -221,7 +221,6 @@ func TestDAO_AddUserToUpvote(t *testing.T) {
 			},
 			wantErr: ErrUpdate,
 		},
-		// Add more test cases to cover other scenarios...
 	}
 
 	for name, tc := range testCases {

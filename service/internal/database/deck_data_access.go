@@ -17,7 +17,7 @@ var _ DeckDataAccess = &DAO{}
 type (
 	DeckDataAccess interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
-		GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
+		GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		AddUserToUpvote(ctx context.Context, deckID, userID string) error
 		RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error
 		AddUserToDownvote(ctx context.Context, deckID, userID string) error
@@ -61,9 +61,9 @@ func (d *DeckDAO) InsertDeck(ctx context.Context, deck models.Deck) (string, err
 	return prim, nil
 }
 
-func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error) {
+func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error) {
 	logger := d.log.With().Str("method", "GetWithCards").Logger()
-	logger.Info().Msgf("Getting WithCards %v - %v, limit: %d offset %d", from, to, limit, offset)
+	logger.Info().Msgf("Getting DeckWithCards %v - %v, limit: %d offset %d", from, to, limit, offset)
 
 	lookupCards :=
 		bson.D{{"$lookup",
@@ -87,7 +87,7 @@ func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Tim
 		return nil, errors.Join(err, ErrAggregate)
 	}
 
-	withCards := make([]models.WithCards, 0)
+	withCards := make([]models.DeckWithCards, 0)
 	err = cur.All(ctx, &withCards)
 	if err != nil {
 		return nil, err

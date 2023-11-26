@@ -40,6 +40,20 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
+// AddDeckToGroup mocks base method.
+func (m *MockRepository) AddDeckToGroup(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddDeckToGroup", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddDeckToGroup indicates an expected call of AddDeckToGroup.
+func (mr *MockRepositoryMockRecorder) AddDeckToGroup(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDeckToGroup", reflect.TypeOf((*MockRepository)(nil).AddDeckToGroup), arg0, arg1, arg2)
+}
+
 // AddUserToDownvote mocks base method.
 func (m *MockRepository) AddUserToDownvote(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -68,11 +82,55 @@ func (mr *MockRepositoryMockRecorder) AddUserToUpvote(arg0, arg1, arg2 any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToUpvote", reflect.TypeOf((*MockRepository)(nil).AddUserToUpvote), arg0, arg1, arg2)
 }
 
+// DeleteGroup mocks base method.
+func (m *MockRepository) DeleteGroup(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroup", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroup indicates an expected call of DeleteGroup.
+func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockRepository)(nil).DeleteGroup), arg0, arg1)
+}
+
+// GetGroupByName mocks base method.
+func (m *MockRepository) GetGroupByName(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupByName", arg0, arg1)
+	ret0, _ := ret[0].(models.GroupWithDecks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupByName indicates an expected call of GetGroupByName.
+func (mr *MockRepositoryMockRecorder) GetGroupByName(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupByName", reflect.TypeOf((*MockRepository)(nil).GetGroupByName), arg0, arg1)
+}
+
+// GetGroupsWithDecks mocks base method.
+func (m *MockRepository) GetGroupsWithDecks(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.GroupWithDecks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupsWithDecks", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].([]models.GroupWithDecks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupsWithDecks indicates an expected call of GetGroupsWithDecks.
+func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
+}
+
 // GetWithCards mocks base method.
-func (m *MockRepository) GetWithCards(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.WithCards, error) {
+func (m *MockRepository) GetWithCards(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.DeckWithCards, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithCards", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].([]models.WithCards)
+	ret0, _ := ret[0].([]models.DeckWithCards)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -110,6 +168,21 @@ func (m *MockRepository) InsertDeck(arg0 context.Context, arg1 models.Deck) (str
 func (mr *MockRepositoryMockRecorder) InsertDeck(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertDeck", reflect.TypeOf((*MockRepository)(nil).InsertDeck), arg0, arg1)
+}
+
+// InsertGroup mocks base method.
+func (m *MockRepository) InsertGroup(arg0 context.Context, arg1 models.Group) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertGroup", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InsertGroup indicates an expected call of InsertGroup.
+func (mr *MockRepositoryMockRecorder) InsertGroup(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertGroup", reflect.TypeOf((*MockRepository)(nil).InsertGroup), arg0, arg1)
 }
 
 // RemoveUserFromDownvote mocks base method.
@@ -152,4 +225,18 @@ func (m *MockRepository) UpdateCard(arg0 context.Context, arg1 models.Card) erro
 func (mr *MockRepositoryMockRecorder) UpdateCard(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCard", reflect.TypeOf((*MockRepository)(nil).UpdateCard), arg0, arg1)
+}
+
+// UpdateGroup mocks base method.
+func (m *MockRepository) UpdateGroup(arg0 context.Context, arg1 models.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateGroup", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateGroup indicates an expected call of UpdateGroup.
+func (mr *MockRepositoryMockRecorder) UpdateGroup(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockRepository)(nil).UpdateGroup), arg0, arg1)
 }

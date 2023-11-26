@@ -50,7 +50,7 @@ func TestLogic_InsertDeck(t *testing.T) {
 			}
 			logic := Logic{repo: mockRepo, logger: zerolog.Nop()}
 
-			gotDeckID, gotErr := logic.InsertDeck(ctx, models.Deck{})
+			gotDeckID, gotErr := logic.CreateDeck(ctx, models.Deck{})
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 			assert.Equal(t, tc.wantDeckID, gotDeckID)
 		})
@@ -70,24 +70,24 @@ func TestLogic_GetDecks(t *testing.T) {
 	)
 
 	testCases := map[string]struct {
-		wantDecks              []models.WithCards
+		wantDecks              []models.DeckWithCards
 		wantErr                error
 		toTime                 *time.Time
 		mockRepositoryResponse func(mockRepo *database.MockRepository)
 	}{
 		"should return decks within the specified time range": {
-			wantDecks: []models.WithCards{
-				// Define your expected WithCards here
+			wantDecks: []models.DeckWithCards{
+				// Define your expected DeckWithCards here
 			},
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().GetWithCards(gomock.Any(), from, gomock.Any(), limit, offset).Return([]models.WithCards{}, nil)
+				mockRepo.EXPECT().GetWithCards(gomock.Any(), from, gomock.Any(), limit, offset).Return([]models.DeckWithCards{}, nil)
 			},
 			toTime: &to,
 		},
 		"should return cards using default to time": {
-			wantDecks: []models.WithCards{},
+			wantDecks: []models.DeckWithCards{},
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().GetWithCards(gomock.Any(), from, &defaultTo, limit, offset).Return([]models.WithCards{}, nil)
+				mockRepo.EXPECT().GetWithCards(gomock.Any(), from, &defaultTo, limit, offset).Return([]models.DeckWithCards{}, nil)
 			},
 			toTime: nil,
 		},

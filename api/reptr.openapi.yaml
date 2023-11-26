@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: Reptr API
+  description: Reptr API Documentation
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/
+paths:
+  /api/v1/groups:
+    get:
+      operationId: 'getGroups'
+      summary: Get Groups
+      description: Retrieves paginated list of groups between a given date range
+      parameters:
+        - name: from
+          description: date to start lookup from
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          description: date to end lookup
+          allowEmptyValue: false
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          description: number of items to return from query
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: integer
+            format: int
+        - name: offset
+          description: number to start results from
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: integer
+            format: int
+      responses:
+        200:
+          $ref: '#/components/responses/GetGroups'
+        400:
+          $ref: '#/components/responses/UserError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+components:
+  responses:
+    GetGroups:
+      description: Successful response object for GetGroups
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/GroupWithDecks'
+    NotFound:
+      description: Response for if/when a resource is not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+    UserError:
+      description: Response for if/when a bad request is made by the user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorObject'
+    InternalServerError:
+      description: Response for if/when there's an unexpected error on the server
+      content:
+        application/json:
+          schema:
+            type: object
+            $ref: '#/components/schemas/ErrorObject'
+  schemas:
+    Card:
+      type: 'object'
+      properties:
+        id:
+          type: string
+        front:
+          type: string
+        back:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Deck:
+      type: 'object'
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [ id, name, created_at, updated_at ]
+    DeckWithCards:
+      allOf:
+        - $ref: '#/components/schemas/Deck'
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [ id, name, created_at, updated_at ]
+    GroupWithDecks:
+      allOf:
+        - $ref: '#/components/schemas/Group'
+        - type: object
+          required:
+            - decks
+          properties:
+            decks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Deck'
+    ErrorObject:
+      type: object
+      required: [ statusCode, error, message ]
+      properties:
+        statusCode:
+          type: integer
+          description: The HTTP status code for the error (e.g., 500).
+          example: 500
+        error:
+          type: string
+          description: A brief error message indicating an internal server error.
+          example: Internal Server Error
+        message:
+          type: string
+          description: A detailed message describing the reason for the internal server error.
+          example: An unexpected error occurred on the server while processing the request.
+
+

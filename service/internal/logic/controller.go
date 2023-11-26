@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
@@ -9,10 +10,16 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination ./mocks/controller_mock.go -package logic . Controller
+var _ Controller = &Logic{}
+
 type (
 	Controller interface {
-		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
-		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error)
+		CreateGroup(ctx context.Context, group models.Group) (string, error)
+		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
+		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
+		CreateDeck(ctx context.Context, deck models.Deck) (string, error)
+		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 		UpvoteDeck(ctx context.Context, deckID, userID string) error
@@ -35,9 +42,9 @@ func New(logger zerolog.Logger, db *mongo.Database) *Logic {
 	}
 }
 
-// InsertDeck attempts to insert [models.Deck] into mongo. If repo returns an error, the error is logged and returned.
-func (l *Logic) InsertDeck(ctx context.Context, deck models.Deck) (string, error) {
-	logger := l.logger.With().Str("module", "InsertDeck").Logger()
+// CreateDeck attempts to insert [models.Deck] into mongo. If repo returns an error, the error is logged and returned.
+func (l *Logic) CreateDeck(ctx context.Context, deck models.Deck) (string, error) {
+	logger := l.logger.With().Str("module", "CreateDeck").Logger()
 	logger.Info().Msgf("insertDeck: %+v", deck)
 
 	id, err := l.repo.InsertDeck(ctx, deck)
@@ -48,9 +55,9 @@ func (l *Logic) InsertDeck(ctx context.Context, deck models.Deck) (string, error
 	return id, nil
 }
 
-// GetDecks will attempt to get [[]models.WithCards] given a time period.
+// GetDecks will attempt to get [[]models.DeckWithCards] given a time period.
 // From time is required. If to is not provided, it defaults to the EOD of from.
-func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.WithCards, error) {
+func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error) {
 	logger := l.logger.With().Str("module", "getDecks").Logger()
 	if to == nil {
 		endOfDayFrom := time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, 0, from.Location())
@@ -145,4 +152,49 @@ func (l *Logic) RemoveDownvoteDeck(ctx context.Context, deckID, userID string) e
 		return err
 	}
 	return nil
+}
+
+func (l *Logic) CreateGroup(ctx context.Context, group models.Group) (string, error) {
+	logger := l.logger.With().Str("module", "CreateGroup").Logger()
+	logger.Info().Msgf("CreateGroup: %+v", group)
+	gpID, err := l.repo.InsertGroup(ctx, group)
+	if err != nil {
+		l.logger.Error().Err(err).Msg("while inserting group")
+		return "", err
+	}
+	return gpID, nil
+}
+
+func (l *Logic) AddDeckToGroup(ctx context.Context, groupID, deckID string) error {
+	logger := l.logger.With().Str("module", "AddDeckToGroup").Logger()
+	logger.Info().Msgf("Adding deck: %s to group: %s", deckID, groupID)
+
+	err := l.repo.AddDeckToGroup(ctx, groupID, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while adding deck: %s to group: %s", deckID, groupID)
+		return err
+	}
+
+	return nil
+}
+
+func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error) {
+	logger := l.logger.With().Str("module", "GetGroups").Logger()
+	if to == nil {
+		endOfDayFrom := time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, 0, from.Location())
+		to = &endOfDayFrom
+	}
+	logger.Info().Msgf("GetGroups between %s - %s with limit %d: starting at: %d ", from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
+
+	if to.Before(from) {
+		return []models.GroupWithDecks(nil), ErrInvalidToBeforeFrom
+	}
+
+	groupsWithDecks, err := l.repo.GetGroupsWithDecks(ctx, from, to, limit, offset)
+	if err != nil && !errors.Is(err, database.ErrNoResults) {
+		logger.Error().Err(err).Msg("while getting groupsWithDecks")
+		return []models.GroupWithDecks(nil), err
+	}
+
+	return groupsWithDecks, nil
 }

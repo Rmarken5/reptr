@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var _ CardDataAccess = &DAO{}
+var _ CardDataAccess = &CardDAO{}
 
 type (
 	CardDataAccess interface {
