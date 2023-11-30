@@ -69,7 +69,7 @@ func (mr *MockControllerMockRecorder) AddDeckToGroup(arg0, arg1, arg2 any) *gomo
 }
 
 // CreateDeck mocks base method.
-func (m *MockController) CreateDeck(arg0 context.Context, arg1 models.Deck) (string, error) {
+func (m *MockController) CreateDeck(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateDeck", arg0, arg1)
 	ret0, _ := ret[0].(string)

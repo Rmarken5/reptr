@@ -28,7 +28,7 @@ func New(logger zerolog.Logger, controller logic.Controller) *ReprtClient {
 
 func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params api.GetGroupsParams) {
 	log := rc.logger.With().Str("method", "GetGroups").Logger()
-
+	w.Header().Set("Content-Type", "application/json")
 	groups, err := rc.controller.GetGroups(r.Context(), params.From, params.To, params.Limit, params.Offset)
 	if err != nil {
 		log.Error().Err(err).Msgf("while getting groups with: %+v", params)
@@ -52,7 +52,6 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 			UpdatedAt: group.UpdatedAt,
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(g)
 }
 
@@ -72,10 +71,12 @@ func decksFromDecks(fromService []models.Deck) []api.Deck {
 func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "AddGroup").Logger()
 
+	w.Header().Set("Content-Type", "application/json")
+
 	var groupName api.GroupName
 	err := json.NewDecoder(r.Body).Decode(&groupName)
 	if err != nil {
-		log.Error().Err(err).Msg("while trying to read request")
+		log.Error().Err(err).Msg("while trying to read request body")
 		status := toStatus(err)
 		w.WriteHeader(status)
 		errObj := api.ErrorObject{
@@ -101,13 +102,83 @@ func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(errObj)
 		return
 	}
-	json.NewEncoder(w).Encode(group)
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(group))
+}
+
+func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
+	log := rc.logger.With().Str("method", "AddDeck").Logger()
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var deckName api.DeckName
+	err := json.NewDecoder(r.Body).Decode(&deckName)
+	if err != nil {
+		log.Error().Err(err).Msg("while trying to read request body")
+		status := toStatus(err)
+		w.WriteHeader(status)
+		errObj := api.ErrorObject{
+			Error:      err.Error(),
+			Message:    fmt.Sprintf("error in reading request body"),
+			StatusCode: status,
+		}
+		json.NewEncoder(w).Encode(errObj)
+		return
+	}
+	defer r.Body.Close()
+
+	deck, err := rc.controller.CreateDeck(r.Context(), deckName.DeckName)
+	if err != nil {
+		log.Error().Err(err).Msg("while trying create deck")
+		status := toStatus(err)
+		w.WriteHeader(status)
+		errObj := api.ErrorObject{
+			Error:      err.Error(),
+			Message:    fmt.Sprintf("while trying create deck"),
+			StatusCode: status,
+		}
+		json.NewEncoder(w).Encode(errObj)
+		return
+	}
+
+	w.Header().Set("Content-Type", "plain/text")
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(deck))
+}
+
+func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, groupId string, deckId string) {
+	log := rc.logger.With().Str("method", "AddDeckToGroup").Logger()
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err := rc.controller.AddDeckToGroup(r.Context(), groupId, deckId)
+	if err != nil {
+		log.Error().Err(err).Msg("while trying create deck")
+		status := toStatus(err)
+		w.WriteHeader(status)
+		errObj := api.ErrorObject{
+			Error:      err.Error(),
+			Message:    fmt.Sprintf("while trying create deck"),
+			StatusCode: status,
+		}
+		json.NewEncoder(w).Encode(errObj)
+		return
+	}
+
+	w.Header().Set("Content-Type", "plain/text")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(groupId))
 }
 
 func toStatus(err error) int {
 	switch {
 	case errors.Is(err, logic.ErrInvalidToBeforeFrom),
-		errors.Is(err, logic.ErrInvalidGroupName):
+		errors.Is(err, logic.ErrInvalidGroupName),
+		errors.Is(err, logic.ErrInvalidDeckName),
+		errors.Is(err, logic.ErrEmptyGroupID),
+		errors.Is(err, logic.ErrEmptyDeckID):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError

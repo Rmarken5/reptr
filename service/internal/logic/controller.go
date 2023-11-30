@@ -19,7 +19,7 @@ type (
 		CreateGroup(ctx context.Context, groupName string) (string, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
-		CreateDeck(ctx context.Context, deck models.Deck) (string, error)
+		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
@@ -44,11 +44,21 @@ func New(logger zerolog.Logger, db *mongo.Database) *Logic {
 }
 
 // CreateDeck attempts to insert [models.Deck] into mongo. If repo returns an error, the error is logged and returned.
-func (l *Logic) CreateDeck(ctx context.Context, deck models.Deck) (string, error) {
+func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error) {
 	logger := l.logger.With().Str("module", "CreateDeck").Logger()
-	logger.Info().Msgf("insertDeck: %+v", deck)
+	logger.Info().Msgf("insertDeck: %s", deckName)
 
-	id, err := l.repo.InsertDeck(ctx, deck)
+	if deckName == "" {
+		logger.Error().Err(ErrInvalidGroupName).Msgf("deckName: ", deckName)
+		return "", ErrInvalidDeckName
+	}
+
+	id, err := l.repo.InsertDeck(ctx, models.Deck{
+		ID:        uuid.NewString(),
+		Name:      deckName,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
 	if err != nil {
 		l.logger.Error().Err(err).Msg("while inserting deck")
 		return "", err
@@ -179,6 +189,16 @@ func (l *Logic) CreateGroup(ctx context.Context, groupName string) (string, erro
 func (l *Logic) AddDeckToGroup(ctx context.Context, groupID, deckID string) error {
 	logger := l.logger.With().Str("module", "AddDeckToGroup").Logger()
 	logger.Info().Msgf("Adding deck: %s to group: %s", deckID, groupID)
+
+	if groupID == "" {
+		logger.Error().Err(ErrEmptyDeckID).Msgf("group: ", groupID)
+		return ErrEmptyDeckID
+	}
+
+	if deckID == "" {
+		logger.Error().Err(ErrEmptyDeckID).Msgf("deck: ", deckID)
+		return ErrEmptyDeckID
+	}
 
 	err := l.repo.AddDeckToGroup(ctx, groupID, deckID)
 	if err != nil {
