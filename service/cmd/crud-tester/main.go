@@ -111,7 +111,7 @@ func (m *menu) createDeck() {
 	}
 	deckName = strings.Trim(deckName, "\n")
 
-	id, err := m.logic.CreateDeck(context.TODO(), models.Deck{ID: uuid.NewString(), Name: deckName, CreatedAt: time.Now()})
+	id, err := m.logic.CreateDeck(context.TODO(), uuid.NewString())
 	if err != nil {
 		os.Stdout.WriteString(err.Error())
 	}

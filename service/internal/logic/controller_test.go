@@ -50,7 +50,7 @@ func TestLogic_InsertDeck(t *testing.T) {
 			}
 			logic := Logic{repo: mockRepo, logger: zerolog.Nop()}
 
-			gotDeckID, gotErr := logic.CreateDeck(ctx, models.Deck{})
+			gotDeckID, gotErr := logic.CreateDeck(ctx, uuid.NewString())
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 			assert.Equal(t, tc.wantDeckID, gotDeckID)
 		})

@@ -49,7 +49,7 @@ func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error)
 	logger.Info().Msgf("insertDeck: %s", deckName)
 
 	if deckName == "" {
-		logger.Error().Err(ErrInvalidGroupName).Msgf("deckName: ", deckName)
+		logger.Error().Err(ErrInvalidGroupName).Msgf("deckName: %s", deckName)
 		return "", ErrInvalidDeckName
 	}
 
@@ -169,7 +169,7 @@ func (l *Logic) CreateGroup(ctx context.Context, groupName string) (string, erro
 	logger := l.logger.With().Str("module", "CreateGroup").Logger()
 	logger.Info().Msgf("CreateGroup: %s", groupName)
 	if groupName == "" {
-		logger.Error().Err(ErrInvalidGroupName).Msgf("groupName: ", groupName)
+		logger.Error().Err(ErrInvalidGroupName).Msgf("groupName: %s", groupName)
 		return "", ErrInvalidGroupName
 	}
 	gpID, err := l.repo.InsertGroup(ctx, models.Group{
@@ -191,12 +191,12 @@ func (l *Logic) AddDeckToGroup(ctx context.Context, groupID, deckID string) erro
 	logger.Info().Msgf("Adding deck: %s to group: %s", deckID, groupID)
 
 	if groupID == "" {
-		logger.Error().Err(ErrEmptyDeckID).Msgf("group: ", groupID)
+		logger.Error().Err(ErrEmptyDeckID).Msgf("group: %s", groupID)
 		return ErrEmptyDeckID
 	}
 
 	if deckID == "" {
-		logger.Error().Err(ErrEmptyDeckID).Msgf("deck: ", deckID)
+		logger.Error().Err(ErrEmptyDeckID).Msgf("deck: %s", deckID)
 		return ErrEmptyDeckID
 	}
 
