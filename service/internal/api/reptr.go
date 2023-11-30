@@ -40,6 +40,7 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 			StatusCode: status,
 		}
 		json.NewEncoder(w).Encode(errObj)
+		return
 	}
 	g := make(api.GetGroups, len(groups))
 	for i, group := range groups {
@@ -55,15 +56,6 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 	json.NewEncoder(w).Encode(g)
 }
 
-func toStatus(err error) int {
-	switch {
-	case errors.Is(err, logic.ErrInvalidToBeforeFrom):
-		return 400
-	default:
-		return 500
-	}
-}
-
 func decksFromDecks(fromService []models.Deck) []api.Deck {
 	apiDecks := make([]api.Deck, len(fromService))
 	for i, deck := range fromService {
@@ -75,4 +67,49 @@ func decksFromDecks(fromService []models.Deck) []api.Deck {
 		}
 	}
 	return apiDecks
+}
+
+func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
+	log := rc.logger.With().Str("method", "AddGroup").Logger()
+
+	var groupName api.GroupName
+	err := json.NewDecoder(r.Body).Decode(&groupName)
+	if err != nil {
+		log.Error().Err(err).Msg("while trying to read request")
+		status := toStatus(err)
+		w.WriteHeader(status)
+		errObj := api.ErrorObject{
+			Error:      err.Error(),
+			Message:    fmt.Sprintf("error in reading request body"),
+			StatusCode: status,
+		}
+		json.NewEncoder(w).Encode(errObj)
+		return
+	}
+	defer r.Body.Close()
+
+	group, err := rc.controller.CreateGroup(r.Context(), groupName.GroupName)
+	if err != nil {
+		log.Error().Err(err).Msg("while trying create group")
+		status := toStatus(err)
+		w.WriteHeader(status)
+		errObj := api.ErrorObject{
+			Error:      err.Error(),
+			Message:    fmt.Sprintf("while trying create group"),
+			StatusCode: status,
+		}
+		json.NewEncoder(w).Encode(errObj)
+		return
+	}
+	json.NewEncoder(w).Encode(group)
+}
+
+func toStatus(err error) int {
+	switch {
+	case errors.Is(err, logic.ErrInvalidToBeforeFrom),
+		errors.Is(err, logic.ErrInvalidGroupName):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
 }

@@ -30,6 +30,9 @@ type Deck struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// DocumentID defines model for DocumentID.
+type DocumentID = string
+
 // ErrorObject defines model for ErrorObject.
 type ErrorObject struct {
 	// Error A brief error message indicating an internal server error.
@@ -50,6 +53,11 @@ type Group struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// GroupName defines model for GroupName.
+type GroupName struct {
+	GroupName string `json:"group_name"`
+}
+
 // GroupWithDecks defines model for GroupWithDecks.
 type GroupWithDecks struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -59,6 +67,9 @@ type GroupWithDecks struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// ConflictError defines model for ConflictError.
+type ConflictError = ErrorObject
+
 // GetGroups defines model for GetGroups.
 type GetGroups = []GroupWithDecks
 
@@ -67,6 +78,9 @@ type InternalServerError = ErrorObject
 
 // UserError defines model for UserError.
 type UserError = ErrorObject
+
+// AddGroupRequest defines model for AddGroupRequest.
+type AddGroupRequest = GroupName
 
 // GetGroupsParams defines parameters for GetGroups.
 type GetGroupsParams struct {
@@ -82,6 +96,9 @@ type GetGroupsParams struct {
 	// Offset number to start results from
 	Offset int `form:"offset" json:"offset"`
 }
+
+// AddGroupJSONRequestBody defines body for AddGroup for application/json ContentType.
+type AddGroupJSONRequestBody = GroupName
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -156,8 +173,37 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// AddGroupWithBody request with any body
+	AddGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddGroup(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) AddGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGroup(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGroupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -170,6 +216,46 @@ func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEdit
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewAddGroupRequest calls the generic AddGroup builder with application/json body
+func NewAddGroupRequest(server string, body AddGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddGroupRequestWithBody generates requests for AddGroup with any type of body
+func NewAddGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetGroupsRequest generates requests for GetGroups
@@ -300,8 +386,37 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// AddGroupWithBodyWithResponse request with any body
+	AddGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGroupResponse, error)
+
+	AddGroupWithResponse(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGroupResponse, error)
+
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
+}
+
+type AddGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *UserError
+	JSON409      *ConflictError
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r AddGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetGroupsResponse struct {
@@ -328,6 +443,23 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
+// AddGroupWithBodyWithResponse request with arbitrary body returning *AddGroupResponse
+func (c *ClientWithResponses) AddGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGroupResponse, error) {
+	rsp, err := c.AddGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGroupResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddGroupWithResponse(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGroupResponse, error) {
+	rsp, err := c.AddGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGroupResponse(rsp)
+}
+
 // GetGroupsWithResponse request returning *GetGroupsResponse
 func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error) {
 	rsp, err := c.GetGroups(ctx, params, reqEditors...)
@@ -335,6 +467,46 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseGetGroupsResponse(rsp)
+}
+
+// ParseAddGroupResponse parses an HTTP response from a AddGroupWithResponse call
+func ParseAddGroupResponse(rsp *http.Response) (*AddGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ConflictError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetGroupsResponse parses an HTTP response from a GetGroupsWithResponse call
@@ -379,6 +551,9 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// request to create new group
+	// (POST /api/v1/group)
+	AddGroup(w http.ResponseWriter, r *http.Request)
 	// Get Groups
 	// (GET /api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
@@ -392,6 +567,21 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AddGroup operation middleware
+func (siw *ServerInterfaceWrapper) AddGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddGroup(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // GetGroups operation middleware
 func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Request) {
@@ -579,6 +769,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.HandleFunc(options.BaseURL+"/api/v1/group", wrapper.AddGroup).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
 	return r
@@ -587,21 +779,24 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+SWUY/bNgzHvwrBDdgGeLFv2wGF3w7r0N1Ti/aGPRSHQbFoR60tqRR116DIdx8kO07S",
-	"+IoUfRmwp9gxRf5I/kXpEzZu8M6SlYD1J2QK3tlA+eUFyQt20eeXxlkhK+lRed+bRolxtnwXnE3/hWZD",
-	"g0pPRmjIK75narHG78pDiHI0C2X2+7eRzXNq3gfcFShbT1ijYlZb3O12BWoKDRufwmCNb2LTUAht7GEP",
-	"CW79jhqB1jEcWHcF3lohtqp/Q/xA/Aez469K4Uvk2dvLHHgJ8/WeLUGZtnzckAXZENMPAZSFaOmjp0ZI",
-	"AyVP4PJnCBk1wf8V/gvICtZKA9OHSEHABBiUJlhvM2wMCXVXTPFzt1Mj069n54nFjBJqmJSQ/kflFFrH",
-	"Q3pCrYR+FjMQzo0PwsZ2qQBGJ9uzv60aaPFD9PorY+wKTJkZJo312xRwcl8cA594vp+duKmQBR7X9Sxz",
-	"2rfwtNg3sGZD7dT8gUJQHYGxOrfWdkkjZpLvJIrRdoUF0kc1+D5B7BUOo8RhFMxCMacISyCaRJme9Ewx",
-	"GqwTReoykwrOZlWk1wuobpb03TSRmfSp0OFxY3oCzy5t6kPELLfVUiJBlMTwu9MLudxtCP68u3sFoxE0",
-	"TtPMPWL8SKtuVcB1Vf10wnxdVXOwlGE3KftYH0ehi6mvh8IuCSNPov/ZZvhsoqeB1fcvW6zfXnAS4K74",
-	"vFh67+ai8yRPn/NT5DS10eU5/H0eisa27lxar8kLw82rW3jumjiQlTyBUxmNZNHPFljgA3EY112tqlWV",
-	"iJwnq7zBGn9dXa0qLNAr2eSESuVN+XBVdvMh25EsIQgbeqAAXnXGpiZAb4KAa2FcCmuSR8pTuzMPZCF1",
-	"CljZLnUxVTVD32qsjw71RMJqICEOuU2nYbMPcWlPsUDv3PvooWU3YKoV1vghEm/3Yqlx+nQouHCk4uiI",
-	"ukyMT2GQ1RPEE/HF4bdHs3FYE6fKZtmlwEwS2ebMYR9yKX5vBiOXFcBYwaWp8wTN3ASmEHsJX+qCa9tA",
-	"34ZxX5xeA3+pqqe232xXnty/frtkxeGesyvw+pIVS9e6fAuJw6B4O4ob9hj5S7Yc1R25xxo3Ir4uy941",
-	"qt+4IPWz6tlVmWbAvwEAAP//2sT9HwsLAAA=",
+	"H4sIAAAAAAAC/+SWX2/bNhDAvwrBDdgGaJayLUCnt6wZsrysRZphD0VQ0OJJZiuRzPGYxCj83QdS/215",
+	"ddA+FOhTHJG8+93/+8gL01ijQZPj+UeOcO/B0R9GKogfLqS8QuPtTXsQPhVGE+j4U1hbq0KQMjp974wO",
+	"31yxgUaEX98jlDzn36WjjrQ9dWkU+rdogO92u4RLcAUqGwTxvKdgayO3rDTIhJRKV6wKj3i4j+Cs0W7O",
+	"uAdH8ESprYV6BtalKXwDmq4vl7larSOY80UBzpW+DowtIOvw+S7hL40ua1XQn4gGv5jzorRX6/dQ0BLm",
+	"TY8ZCFWZPm5AM9oAwg+OCYbgjMcCGDwpRy5gXgFFD7pnISqCxp0U6H8VbS6h+BCV0dYCz7lAFNsl/Dej",
+	"TweHm2hsNGhk3SX8WhOgFvUbwAfAr8jLmnkNTxYKAskgSGImHjMXUQP8P+5rQBZsLWSfs0w51ggJbL2N",
+	"sN4F1F3S6Y/RDoEMfy0aC0hdoygQBIF8J6IJpcEm/OJSEPxMqgE+BN4RKl0FBygZ63T/sw5tYenAW/lM",
+	"HbFV3HuFIHn+NijsxCdT4Jnku0GI6RyZ8ElbWOKauv3AMdBHeB6LC7ZGBWWXGw04JypgSssYeV2FFFJd",
+	"dnc5095d8YTDk2hsHSD6AmBtBbA2nxZ83WlYApFAQtUgB4r2wjpQhCRAEM7omDTh3xOoLpbSvyg8Ish5",
+	"HbDHjaqBWTSh5keNMRtXS4Y4EuTdSyMXbLndAPvr9vY1ay+xwkgYuFuMH2FVrRJ2nmU/zZjPs2xQFiys",
+	"usSfps9EddLFdXTsUt4MY+kbqpVxsh/YHcfjuyPIe+ond49qGcdK6Jp1/ark+dsTxhHfJftoshdz0lCL",
+	"LfBwlM0taEUewt/Fzqx0aQ4T+AYsIbt4fc36lhPHQAiWolhaww2e8AdA1747W2WrLBAZC1pYxXP+6+ps",
+	"lfGEW0GbaFAqrEofztJqSErTLnRzBCGl6xaZSj3EARGiwJSelmZcgXjUhxHxWoa67zexZLJJbo95c7Zs",
+	"pvub5v6W90t2dlxQd28QEl7/lmWffjDO4Pji90+/mK90u4Sfn6JnaVGJc9U3jcDtZOklw9pyYxoeJyvv",
+	"LHxtOQEtZRChggdwzIpK6VCprFaOmClbYY6tgR4hBrYNcChnhkJXcBDQcdkKiYSiAQJ0scrmaqMMMqHx",
+	"IrHamA/eshJNw0Oq85zfe8Bt31Fy3h2N9ULoIZmsOad1rGMYoGUHcUQ/Gf752rRv1oDBs7FrBMUI5FFH",
+	"y1mvckl/rRpFpzlAaeJLo+kIzRAEBOdrcv8XBVOWDj4P4+6gTE+ohtkO//w6/UIVdwXEeox4Em+22e2x",
+	"5jnfENk8TWtTiHpjHOUvshdnaWjh/wUAAP///3HPljkPAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
