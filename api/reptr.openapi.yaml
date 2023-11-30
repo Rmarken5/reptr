@@ -51,6 +51,111 @@ paths:
           $ref: '#/components/responses/UserError'
         500:
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/group:
+    post:
+      operationId: addGroup
+      summary: request to create new group
+      description: adds group given a name in the request body
+      requestBody:
+        $ref: '#/components/requestBodies/AddGroupRequest'
+        required: true
+      responses:
+        201:
+          $ref: '#/components/responses/AddGroup'
+        400:
+          $ref: '#/components/responses/UserError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/group/{group_id}/deck/{deck_id}:
+    put:
+      operationId: addDeckToGroup
+      summary: request to add deck to group
+      description: adds a deck to a group using ids
+      parameters:
+        - name: group_id
+          in: path
+          schema:
+            type: string
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        201:
+          $ref: '#/components/responses/AddGroup'
+        400:
+          $ref: '#/components/responses/UserError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+#  /api/v1/decks/{user_id}:
+#    get:
+#      operationId: 'getDecksForUser'
+#      summary: Gets all decks created by user
+#      description: Retrieves paginated list of decks between a given date range for a user
+#      parameters:
+#        - name: user_id
+#          in: path
+#
+#        - name: from
+#          description: date to start lookup from
+#          allowEmptyValue: false
+#          required: true
+#          in: query
+#          schema:
+#            type: string
+#            format: date-time
+#        - name: to
+#          description: date to end lookup
+#          allowEmptyValue: false
+#          required: false
+#          in: query
+#          schema:
+#            type: string
+#            format: date-time
+#        - name: limit
+#          description: number of items to return from query
+#          allowEmptyValue: false
+#          required: true
+#          in: query
+#          schema:
+#            type: integer
+#            format: int
+#        - name: offset
+#          description: number to start results from
+#          allowEmptyValue: false
+#          required: true
+#          in: query
+#          schema:
+#            type: integer
+#            format: int
+#      responses:
+#        200:
+#          $ref: '#/components/responses/GetGroups'
+#        400:
+#          $ref: '#/components/responses/UserError'
+#        500:
+#          $ref: '#/components/responses/InternalServerError'
+  /api/v1/deck:
+    post:
+      operationId: addDeck
+      summary: request to create new deck
+      description: adds deck given a name in the request body
+      requestBody:
+        $ref: '#/components/requestBodies/AddDeckRequest'
+        required: true
+      responses:
+        201:
+          $ref: '#/components/responses/AddDeck'
+        400:
+          $ref: '#/components/responses/UserError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
 components:
   responses:
     GetGroups:
@@ -61,6 +166,18 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/GroupWithDecks'
+    AddGroup:
+      description: response body for successful add group request
+      content:
+        'text/plain':
+          schema:
+            $ref: "#/components/schemas/DocumentID"
+    AddDeck:
+      description: response body for successful add deck request
+      content:
+        'text/plain':
+          schema:
+            $ref: "#/components/schemas/DocumentID"
     NotFound:
       description: Response for if/when a resource is not found
       content:
@@ -73,6 +190,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorObject'
+    ConflictError:
+      description: Response for if/when there's a resource exists
+      content:
+        application/json:
+          schema:
+            type: object
+            $ref: '#/components/schemas/ErrorObject'
     InternalServerError:
       description: Response for if/when there's an unexpected error on the server
       content:
@@ -80,7 +204,22 @@ components:
           schema:
             type: object
             $ref: '#/components/schemas/ErrorObject'
+  requestBodies:
+    AddGroupRequest:
+      description: request body for adding group
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/GroupName'
+    AddDeckRequest:
+      description: request body for adding deck
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/DeckName'
   schemas:
+    DocumentID:
+      type: string
     Card:
       type: 'object'
       properties:
@@ -110,6 +249,18 @@ components:
           type: string
           format: date-time
       required: [ id, name, created_at, updated_at ]
+    GroupName:
+      type: object
+      properties:
+        group_name:
+          type: string
+      required: [ group_name ]
+    DeckName:
+      type: object
+      properties:
+        deck_name:
+          type: string
+      required: [ deck_name ]
     DeckWithCards:
       allOf:
         - $ref: '#/components/schemas/Deck'
@@ -160,5 +311,6 @@ components:
           type: string
           description: A detailed message describing the reason for the internal server error.
           example: An unexpected error occurred on the server while processing the request.
+
 
 

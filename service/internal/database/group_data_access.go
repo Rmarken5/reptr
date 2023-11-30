@@ -12,7 +12,20 @@ import (
 	"time"
 )
 
-var _ GroupDataAccess = &GroupDAO{}
+var (
+	_ GroupDataAccess = &GroupDAO{}
+
+	deckFromGroupsLookup = bson.D{
+		{"$lookup",
+			bson.D{
+				{"from", "decks"},
+				{"localField", "deck_ids"},
+				{"foreignField", "_id"},
+				{"as", "decks"},
+			},
+		},
+	}
+)
 
 type (
 	GroupDataAccess interface {
@@ -21,7 +34,6 @@ type (
 		GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		DeleteGroup(ctx context.Context, groupID string) error
 		GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error)
-
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 	}
 	GroupDAO struct {
@@ -79,23 +91,12 @@ func (g *GroupDAO) UpdateGroup(ctx context.Context, group models.Group) error {
 }
 
 func (g *GroupDAO) GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error) {
-	logger := g.log.With().Str("method", "GetWithCards").Logger()
+	logger := g.log.With().Str("method", "GetGroupsWithDecks").Logger()
 	logger.Info().Msgf("Getting GetGroupsWithDecks %v - %v, limit: %d offset %d", from, to, limit, offset)
-
-	lookupCards :=
-		bson.D{{"$lookup",
-			bson.D{
-				{"from", "decks"},
-				{"localField", "_id"},
-				{"foreignField", "group_ids"},
-				{"as", "decks"},
-			},
-		},
-		}
 
 	filter := append(
 		pipeline.Paginate(from, to, limit, offset),
-		lookupCards,
+		deckFromGroupsLookup,
 	)
 	logger.Debug().Msgf("%+v", filter)
 
@@ -159,20 +160,10 @@ func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) e
 func (g *GroupDAO) GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error) {
 	logger := g.log.With().Str("method", "deleteGroup").Logger()
 	match := bson.D{{"$match", bson.D{{"name", "test"}}}}
-	lookupDecks := bson.D{
-		{"$lookup",
-			bson.D{
-				{"from", "decks"},
-				{"localField", "_id"},
-				{"foreignField", "group_ids"},
-				{"as", "decks"},
-			},
-		},
-	}
 
 	filter := bson.A{
 		match,
-		lookupDecks,
+		deckFromGroupsLookup,
 	}
 	logger.Debug().Msgf("%+v", filter)
 

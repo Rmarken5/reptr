@@ -30,6 +30,14 @@ type Deck struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// DeckName defines model for DeckName.
+type DeckName struct {
+	DeckName string `json:"deck_name"`
+}
+
+// DocumentID defines model for DocumentID.
+type DocumentID = string
+
 // ErrorObject defines model for ErrorObject.
 type ErrorObject struct {
 	// Error A brief error message indicating an internal server error.
@@ -50,6 +58,11 @@ type Group struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// GroupName defines model for GroupName.
+type GroupName struct {
+	GroupName string `json:"group_name"`
+}
+
 // GroupWithDecks defines model for GroupWithDecks.
 type GroupWithDecks struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -59,6 +72,9 @@ type GroupWithDecks struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// ConflictError defines model for ConflictError.
+type ConflictError = ErrorObject
+
 // GetGroups defines model for GetGroups.
 type GetGroups = []GroupWithDecks
 
@@ -67,6 +83,12 @@ type InternalServerError = ErrorObject
 
 // UserError defines model for UserError.
 type UserError = ErrorObject
+
+// AddDeckRequest defines model for AddDeckRequest.
+type AddDeckRequest = DeckName
+
+// AddGroupRequest defines model for AddGroupRequest.
+type AddGroupRequest = GroupName
 
 // GetGroupsParams defines parameters for GetGroups.
 type GetGroupsParams struct {
@@ -82,6 +104,12 @@ type GetGroupsParams struct {
 	// Offset number to start results from
 	Offset int `form:"offset" json:"offset"`
 }
+
+// AddDeckJSONRequestBody defines body for AddDeck for application/json ContentType.
+type AddDeckJSONRequestBody = DeckName
+
+// AddGroupJSONRequestBody defines body for AddGroup for application/json ContentType.
+type AddGroupJSONRequestBody = GroupName
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -156,8 +184,81 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// AddDeckWithBody request with any body
+	AddDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddDeck(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddGroupWithBody request with any body
+	AddGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddGroup(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddDeckToGroup request
+	AddDeckToGroup(ctx context.Context, groupId string, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) AddDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddDeckRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddDeck(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddDeckRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGroup(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGroupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddDeckToGroup(ctx context.Context, groupId string, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddDeckToGroupRequest(c.Server, groupId, deckId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -170,6 +271,127 @@ func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEdit
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewAddDeckRequest calls the generic AddDeck builder with application/json body
+func NewAddDeckRequest(server string, body AddDeckJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddDeckRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddDeckRequestWithBody generates requests for AddDeck with any type of body
+func NewAddDeckRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/deck")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAddGroupRequest calls the generic AddGroup builder with application/json body
+func NewAddGroupRequest(server string, body AddGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddGroupRequestWithBody generates requests for AddGroup with any type of body
+func NewAddGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAddDeckToGroupRequest generates requests for AddDeckToGroup
+func NewAddDeckToGroupRequest(server string, groupId string, deckId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "group_id", runtime.ParamLocationPath, groupId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "deck_id", runtime.ParamLocationPath, deckId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/group/%s/deck/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewGetGroupsRequest generates requests for GetGroups
@@ -300,8 +522,93 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// AddDeckWithBodyWithResponse request with any body
+	AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error)
+
+	AddDeckWithResponse(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*AddDeckResponse, error)
+
+	// AddGroupWithBodyWithResponse request with any body
+	AddGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGroupResponse, error)
+
+	AddGroupWithResponse(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGroupResponse, error)
+
+	// AddDeckToGroupWithResponse request
+	AddDeckToGroupWithResponse(ctx context.Context, groupId string, deckId string, reqEditors ...RequestEditorFn) (*AddDeckToGroupResponse, error)
+
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
+}
+
+type AddDeckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *UserError
+	JSON409      *ConflictError
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r AddDeckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddDeckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *UserError
+	JSON409      *ConflictError
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r AddGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddDeckToGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *UserError
+	JSON409      *ConflictError
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r AddDeckToGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddDeckToGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetGroupsResponse struct {
@@ -328,6 +635,49 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
+// AddDeckWithBodyWithResponse request with arbitrary body returning *AddDeckResponse
+func (c *ClientWithResponses) AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error) {
+	rsp, err := c.AddDeckWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddDeckResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddDeckWithResponse(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*AddDeckResponse, error) {
+	rsp, err := c.AddDeck(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddDeckResponse(rsp)
+}
+
+// AddGroupWithBodyWithResponse request with arbitrary body returning *AddGroupResponse
+func (c *ClientWithResponses) AddGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGroupResponse, error) {
+	rsp, err := c.AddGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGroupResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddGroupWithResponse(ctx context.Context, body AddGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGroupResponse, error) {
+	rsp, err := c.AddGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGroupResponse(rsp)
+}
+
+// AddDeckToGroupWithResponse request returning *AddDeckToGroupResponse
+func (c *ClientWithResponses) AddDeckToGroupWithResponse(ctx context.Context, groupId string, deckId string, reqEditors ...RequestEditorFn) (*AddDeckToGroupResponse, error) {
+	rsp, err := c.AddDeckToGroup(ctx, groupId, deckId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddDeckToGroupResponse(rsp)
+}
+
 // GetGroupsWithResponse request returning *GetGroupsResponse
 func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error) {
 	rsp, err := c.GetGroups(ctx, params, reqEditors...)
@@ -335,6 +685,126 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseGetGroupsResponse(rsp)
+}
+
+// ParseAddDeckResponse parses an HTTP response from a AddDeckWithResponse call
+func ParseAddDeckResponse(rsp *http.Response) (*AddDeckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddDeckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ConflictError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddGroupResponse parses an HTTP response from a AddGroupWithResponse call
+func ParseAddGroupResponse(rsp *http.Response) (*AddGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ConflictError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddDeckToGroupResponse parses an HTTP response from a AddDeckToGroupWithResponse call
+func ParseAddDeckToGroupResponse(rsp *http.Response) (*AddDeckToGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddDeckToGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ConflictError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetGroupsResponse parses an HTTP response from a GetGroupsWithResponse call
@@ -379,6 +849,15 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// request to create new deck
+	// (POST /api/v1/deck)
+	AddDeck(w http.ResponseWriter, r *http.Request)
+	// request to create new group
+	// (POST /api/v1/group)
+	AddGroup(w http.ResponseWriter, r *http.Request)
+	// request to add deck to group
+	// (PUT /api/v1/group/{group_id}/deck/{deck_id})
+	AddDeckToGroup(w http.ResponseWriter, r *http.Request, groupId string, deckId string)
 	// Get Groups
 	// (GET /api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
@@ -392,6 +871,71 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AddDeck operation middleware
+func (siw *ServerInterfaceWrapper) AddDeck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDeck(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AddGroup operation middleware
+func (siw *ServerInterfaceWrapper) AddGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddGroup(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AddDeckToGroup operation middleware
+func (siw *ServerInterfaceWrapper) AddDeckToGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "group_id" -------------
+	var groupId string
+
+	err = runtime.BindStyledParameter("simple", false, "group_id", mux.Vars(r)["group_id"], &groupId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "group_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "deck_id" -------------
+	var deckId string
+
+	err = runtime.BindStyledParameter("simple", false, "deck_id", mux.Vars(r)["deck_id"], &deckId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deck_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDeckToGroup(w, r, groupId, deckId)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // GetGroups operation middleware
 func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Request) {
@@ -579,6 +1123,12 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.HandleFunc(options.BaseURL+"/api/v1/deck", wrapper.AddDeck).Methods("POST")
+
+	r.HandleFunc(options.BaseURL+"/api/v1/group", wrapper.AddGroup).Methods("POST")
+
+	r.HandleFunc(options.BaseURL+"/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
+
 	r.HandleFunc(options.BaseURL+"/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
 	return r
@@ -587,21 +1137,26 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+SWUY/bNgzHvwrBDdgGeLFv2wGF3w7r0N1Ti/aGPRSHQbFoR60tqRR116DIdx8kO07S",
-	"+IoUfRmwp9gxRf5I/kXpEzZu8M6SlYD1J2QK3tlA+eUFyQt20eeXxlkhK+lRed+bRolxtnwXnE3/hWZD",
-	"g0pPRmjIK75narHG78pDiHI0C2X2+7eRzXNq3gfcFShbT1ijYlZb3O12BWoKDRufwmCNb2LTUAht7GEP",
-	"CW79jhqB1jEcWHcF3lohtqp/Q/xA/Aez469K4Uvk2dvLHHgJ8/WeLUGZtnzckAXZENMPAZSFaOmjp0ZI",
-	"AyVP4PJnCBk1wf8V/gvICtZKA9OHSEHABBiUJlhvM2wMCXVXTPFzt1Mj069n54nFjBJqmJSQ/kflFFrH",
-	"Q3pCrYR+FjMQzo0PwsZ2qQBGJ9uzv60aaPFD9PorY+wKTJkZJo312xRwcl8cA594vp+duKmQBR7X9Sxz",
-	"2rfwtNg3sGZD7dT8gUJQHYGxOrfWdkkjZpLvJIrRdoUF0kc1+D5B7BUOo8RhFMxCMacISyCaRJme9Ewx",
-	"GqwTReoykwrOZlWk1wuobpb03TSRmfSp0OFxY3oCzy5t6kPELLfVUiJBlMTwu9MLudxtCP68u3sFoxE0",
-	"TtPMPWL8SKtuVcB1Vf10wnxdVXOwlGE3KftYH0ehi6mvh8IuCSNPov/ZZvhsoqeB1fcvW6zfXnAS4K74",
-	"vFh67+ai8yRPn/NT5DS10eU5/H0eisa27lxar8kLw82rW3jumjiQlTyBUxmNZNHPFljgA3EY112tqlWV",
-	"iJwnq7zBGn9dXa0qLNAr2eSESuVN+XBVdvMh25EsIQgbeqAAXnXGpiZAb4KAa2FcCmuSR8pTuzMPZCF1",
-	"CljZLnUxVTVD32qsjw71RMJqICEOuU2nYbMPcWlPsUDv3PvooWU3YKoV1vghEm/3Yqlx+nQouHCk4uiI",
-	"ukyMT2GQ1RPEE/HF4bdHs3FYE6fKZtmlwEwS2ebMYR9yKX5vBiOXFcBYwaWp8wTN3ASmEHsJX+qCa9tA",
-	"34ZxX5xeA3+pqqe232xXnty/frtkxeGesyvw+pIVS9e6fAuJw6B4O4ob9hj5S7Yc1R25xxo3Ir4uy941",
-	"qt+4IPWz6tlVmWbAvwEAAP//2sT9HwsLAAA=",
+	"H4sIAAAAAAAC/+RX3W4bNxN9FYLfB7QFtlq5bYBUd25SuL5pAsdFLwIjoJazEuNdkh4ObQuG3r0gub/S",
+	"KpEdAw2aO2lJzhzOnDMzfOCFqa3RoMnxxQNHuPHg6DcjFcQPp1K+huL6In0PXwqjCXT8KaytVCFIGZ1/",
+	"dEaHb65YQy3Cr/8jlHzB/5f3LvK06vJg809RA99utxmX4ApUNtjhixYDWxq5YaVBJqRUesUkFNd8mwVI",
+	"Z2i8fW5M0ehjQa3CIR72IzhrtBuFbQcbwT3lthLqMZEyha9B0/nraVjJaY/L+aIA50pfBYgxaKwBPwze",
+	"v48sRm4I7ZXRZaUK+h3R4LNlNVp7s/wIBU3BvGhhBoSqzO/WoBmtAeE7xwRDcMZjAQzulSMXYJ4BxQi6",
+	"R0FUBLU7ioF/K1oH7kRntLHAF1wgis0U/Hd9TLuAm3jZeKEe6zbj55oAtajeAd4CfkVR1sxruLdQEEgG",
+	"wRIzcZm5CDWA/8t9DZAFWwrZcpYpx2ohgS03Eax3Aeo2a/zHbLdFwKKxgNQU1QJBEMgPIl6hNFiHX1wK",
+	"gh9J1cC7xDtCpVchAEpGne5+1qFeTS14Kx/pI9awG68QJF+8Dw4b89kQ8MjyVWfENIHMeFfa964datGH",
+	"A4B3nPdbJ130lWfq6sPM7oGAlkTjdJ+yJSooG/rV4JxYAVNaRnLpVWCpagTU0DLtnfGMw72obRVAtBpj",
+	"SWQsUXYinY2HKSASSKgKZIcibVgGFIFnCMIZHXkZ/h6B6nRKYUXhEUGOpcbu1qoCZtGEstJ7jISfTV3E",
+	"kSDvXhk5cZfLNbA/Li/fsrSJFUZChzvB+B5mq1nGXsznP4wwv5jPO2fhhqtGW0OSDFxnTV77wE7xput8",
+	"35Ac+6lm796xAx8pyMHeg176zhUKc1W9Kfni/REdj2+zqVLhju6br5vJcKdb7pcUNwH+KhZ/pUuzT+AL",
+	"sITs9O05a0tO7DQhWYqitLodPOO3gC6dO5nNZ/OAyFjQwiq+4D/PTmZznnEraB0vlAur8tuTXLYtwqRZ",
+	"doxASOnSELdSt7EDhRwwpYfCjDMWj94wAjyXQfXNDJoNpvrNoVCOBv98Z+rfnW5/mp8cttPsa22Ew7/M",
+	"55/f33f4eOLXz58YD4zbjL84xs/UGBS7tq9rgZvBrE+GJaUxDXfN82ObdYlbddXkcObSkPuU1CVlPC13",
+	"o+fRU5PXSvO/kb3+nTZKX/6QCpuS2yjE/CFOHkpuY2L9obyKpEkyTDQ59rFbKukO6fDStCm1AkUNBOhi",
+	"fQxvrlgW2gK/4C0ong2G2b0CPXm0wf/Jk1ffLiW6NzGZQ5xIvRFoqh0QKrgFx6xYKR3aLquUI2bKZMyx",
+	"JdAdRLEn0YfezFDoFezxon+c7VFi7DbaIBOmKCRWGXPtLSvR1DxLDLjxgJueAs1S3/wIPQz5cNz4cQgG",
+	"aNmAOOCfDP9yb9rXS8AQ2TgCBMcI5FHHm7PW5ZT/StWKjguA0sSn5swDaLokIDhfkftUFkxZOvgyGPs6",
+	"PUIOozf/44X6TJI7A2ItjLgSdyZ2e6z4gq+J7CLPK1OIam0cLV7OX57kYR77JwAA//86/7eplRQAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
