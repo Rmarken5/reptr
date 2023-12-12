@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"context"
-	"github.com/rmarken/reptr/service/internal/logic"
+	"github.com/rmarken/reptr/service/internal/database"
+	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,8 +15,12 @@ const (
 	dbName   = "DB_NAME"
 )
 
-func MustLoadLogic(logger zerolog.Logger, db *mongo.Database) *logic.Logic {
-	return logic.New(logger, db)
+func MustLoadLogic(logger zerolog.Logger, repo database.Repository) *decks.Logic {
+	return decks.New(logger, repo)
+}
+
+func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DAO {
+	return database.NewRepository(logger, db)
 }
 func MustConnectMongo(ctx context.Context, logger zerolog.Logger) *mongo.Database {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)

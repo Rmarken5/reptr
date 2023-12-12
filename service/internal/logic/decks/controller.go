@@ -1,4 +1,4 @@
-package logic
+package decks
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -35,11 +34,11 @@ type (
 	}
 )
 
-func New(logger zerolog.Logger, db *mongo.Database) *Logic {
-	l := logger.With().Str("module", "logic").Logger()
+func New(logger zerolog.Logger, repo database.Repository) *Logic {
+	l := logger.With().Str("module", "deck logic").Logger()
 	return &Logic{
 		logger: l,
-		repo:   database.NewRepository(l, db),
+		repo:   repo,
 	}
 }
 

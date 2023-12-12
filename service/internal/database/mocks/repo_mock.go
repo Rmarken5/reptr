@@ -126,6 +126,21 @@ func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
 }
 
+// GetUserIDFor mocks base method.
+func (m *MockRepository) GetUserIDFor(arg0 context.Context, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserIDFor", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserIDFor indicates an expected call of GetUserIDFor.
+func (mr *MockRepositoryMockRecorder) GetUserIDFor(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDFor", reflect.TypeOf((*MockRepository)(nil).GetUserIDFor), arg0, arg1)
+}
+
 // GetWithCards mocks base method.
 func (m *MockRepository) GetWithCards(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.DeckWithCards, error) {
 	m.ctrl.T.Helper()
@@ -183,6 +198,20 @@ func (m *MockRepository) InsertGroup(arg0 context.Context, arg1 models.Group) (s
 func (mr *MockRepositoryMockRecorder) InsertGroup(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertGroup", reflect.TypeOf((*MockRepository)(nil).InsertGroup), arg0, arg1)
+}
+
+// InsertUserSubjectPair mocks base method.
+func (m *MockRepository) InsertUserSubjectPair(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertUserSubjectPair", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertUserSubjectPair indicates an expected call of InsertUserSubjectPair.
+func (mr *MockRepositoryMockRecorder) InsertUserSubjectPair(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUserSubjectPair", reflect.TypeOf((*MockRepository)(nil).InsertUserSubjectPair), arg0, arg1, arg2)
 }
 
 // RemoveUserFromDownvote mocks base method.

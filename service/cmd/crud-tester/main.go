@@ -5,7 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/rmarken/reptr/service/internal/logic"
+	"github.com/rmarken/reptr/service/internal/database"
+	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,7 +21,7 @@ const uri = "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTim
 
 type (
 	menu struct {
-		logic logic.Controller
+		logic decks.Controller
 	}
 )
 
@@ -42,7 +43,9 @@ func main() {
 
 	db := client.Database("deck")
 
-	l := logic.New(log, db)
+	repo := database.NewRepository(log, db)
+
+	l := decks.New(log, repo)
 
 	m := menu{
 		l,

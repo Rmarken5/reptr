@@ -12,11 +12,13 @@ type (
 		CardDataAccess
 		DeckDataAccess
 		GroupDataAccess
+		ProviderUsersDataAccess
 	}
 	DAO struct {
 		CardDataAccess
 		DeckDataAccess
 		GroupDataAccess
+		ProviderUsersDataAccess
 	}
 )
 
@@ -26,5 +28,6 @@ func NewRepository(logger zerolog.Logger, db *mongo.Database) *DAO {
 		NewCardDataAccess(db, l),
 		NewDeckDataAccess(db, l),
 		NewGroupDataAccess(db, l),
+		NewProviderUsersDataAccess(db, l),
 	}
 }

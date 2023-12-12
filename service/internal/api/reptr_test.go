@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/rmarken/reptr/api"
-	"github.com/rmarken/reptr/service/internal/logic"
-	mockLogic "github.com/rmarken/reptr/service/internal/logic/mocks"
+	"github.com/rmarken/reptr/service/internal/logic/decks"
+	mockLogic "github.com/rmarken/reptr/service/internal/logic/decks/mocks"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	r := New(zerolog.Nop(), &logic.Logic{})
+	r := New(zerolog.Nop(), &decks.Logic{})
 	assert.NotNil(t, r)
 }
 func TestGetGroups(t *testing.T) {
@@ -86,7 +86,7 @@ func TestGetGroups(t *testing.T) {
 			},
 			ExpectedCode: http.StatusBadRequest,
 			mockCtrl: func(mock *mockLogic.MockController) {
-				mock.EXPECT().GetGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, logic.ErrInvalidToBeforeFrom)
+				mock.EXPECT().GetGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, decks.ErrInvalidToBeforeFrom)
 			},
 			wantGroups: nil,
 		},

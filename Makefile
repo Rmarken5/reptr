@@ -19,3 +19,8 @@ test:
 
 cover:
 	go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
+
+.PHONY: gen
+gen:
+	find . -name "*_mock.go" -type f -delete
+	go generate ./...

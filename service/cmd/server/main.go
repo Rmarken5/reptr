@@ -22,8 +22,8 @@ func main() {
 
 	db := cmd.MustConnectMongo(ctx, log)
 	defer db.Client().Disconnect(ctx)
-
-	l := cmd.MustLoadLogic(log, db)
+	repo := cmd.MustLoadRepo(log, db)
+	l := cmd.MustLoadLogic(log, repo)
 	reptrClient := api.New(log, l)
 
 	// This is how you set up a basic Gorilla router

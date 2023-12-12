@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rmarken/reptr/api"
-	"github.com/rmarken/reptr/service/internal/logic"
+	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
@@ -15,10 +15,10 @@ var _ api.ServerInterface = ReprtClient{}
 
 type ReprtClient struct {
 	logger     zerolog.Logger
-	controller logic.Controller
+	controller decks.Controller
 }
 
-func New(logger zerolog.Logger, controller logic.Controller) *ReprtClient {
+func New(logger zerolog.Logger, controller decks.Controller) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:     logger,
@@ -174,11 +174,11 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 
 func toStatus(err error) int {
 	switch {
-	case errors.Is(err, logic.ErrInvalidToBeforeFrom),
-		errors.Is(err, logic.ErrInvalidGroupName),
-		errors.Is(err, logic.ErrInvalidDeckName),
-		errors.Is(err, logic.ErrEmptyGroupID),
-		errors.Is(err, logic.ErrEmptyDeckID):
+	case errors.Is(err, decks.ErrInvalidToBeforeFrom),
+		errors.Is(err, decks.ErrInvalidGroupName),
+		errors.Is(err, decks.ErrInvalidDeckName),
+		errors.Is(err, decks.ErrEmptyGroupID),
+		errors.Is(err, decks.ErrEmptyDeckID):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
