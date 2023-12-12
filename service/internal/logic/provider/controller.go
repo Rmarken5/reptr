@@ -73,6 +73,7 @@ func (c *Controller) Authenticate(ctx context.Context, username, password string
 		return models.TokenResp{}, err
 	}
 
+	req = req.WithContext(ctx)
 	req.Header.Set("content-type", "application/x-www-form-urlencoded")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
