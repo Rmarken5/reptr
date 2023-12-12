@@ -105,8 +105,8 @@ func TestGetGroups(t *testing.T) {
 			}
 
 			rc := ReprtClient{
-				logger:     zerolog.Nop(),
-				controller: l,
+				logger:         zerolog.Nop(),
+				deckController: l,
 			}
 			// Create a request object with necessary parameters
 			req, err := http.NewRequest("GET", "/groups", nil)

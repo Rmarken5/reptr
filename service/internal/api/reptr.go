@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
+	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
@@ -14,22 +15,23 @@ import (
 var _ api.ServerInterface = ReprtClient{}
 
 type ReprtClient struct {
-	logger     zerolog.Logger
-	controller decks.Controller
+	logger             zerolog.Logger
+	deckController     decks.Controller
+	providerController provider.Controller
 }
 
 func New(logger zerolog.Logger, controller decks.Controller) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
-		logger:     logger,
-		controller: controller,
+		logger:         logger,
+		deckController: controller,
 	}
 }
 
 func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params api.GetGroupsParams) {
 	log := rc.logger.With().Str("method", "GetGroups").Logger()
 	w.Header().Set("Content-Type", "application/json")
-	groups, err := rc.controller.GetGroups(r.Context(), params.From, params.To, params.Limit, params.Offset)
+	groups, err := rc.deckController.GetGroups(r.Context(), params.From, params.To, params.Limit, params.Offset)
 	if err != nil {
 		log.Error().Err(err).Msgf("while getting groups with: %+v", params)
 		status := toStatus(err)
@@ -89,7 +91,7 @@ func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	group, err := rc.controller.CreateGroup(r.Context(), groupName.GroupName)
+	group, err := rc.deckController.CreateGroup(r.Context(), groupName.GroupName)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create group")
 		status := toStatus(err)
@@ -128,7 +130,7 @@ func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	deck, err := rc.controller.CreateDeck(r.Context(), deckName.DeckName)
+	deck, err := rc.deckController.CreateDeck(r.Context(), deckName.DeckName)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create deck")
 		status := toStatus(err)
@@ -153,7 +155,7 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err := rc.controller.AddDeckToGroup(r.Context(), groupId, deckId)
+	err := rc.deckController.AddDeckToGroup(r.Context(), groupId, deckId)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create deck")
 		status := toStatus(err)
@@ -170,6 +172,18 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 	w.Header().Set("Content-Type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(groupId))
+}
+
+func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Bad request - Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	username := r.FormValue("username")
+	passowrd := r.FormValue("password")
+
 }
 
 func toStatus(err error) int {

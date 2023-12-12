@@ -72,6 +72,19 @@ type GroupWithDecks struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// Login defines model for Login.
+type Login struct {
+	Password *string `json:"password,omitempty"`
+	Username *string `json:"username,omitempty"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	AccessToken *string `json:"access_token,omitempty"`
+	ExpiresIn   *int    `json:"expires_in,omitempty"`
+	TokenType   *string `json:"token_type,omitempty"`
+}
+
 // ConflictError defines model for ConflictError.
 type ConflictError = ErrorObject
 
@@ -80,6 +93,9 @@ type GetGroups = []GroupWithDecks
 
 // InternalServerError defines model for InternalServerError.
 type InternalServerError = ErrorObject
+
+// PostLogin defines model for PostLogin.
+type PostLogin = LoginResponse
 
 // UserError defines model for UserError.
 type UserError = ErrorObject
@@ -104,6 +120,9 @@ type GetGroupsParams struct {
 	// Offset number to start results from
 	Offset int `form:"offset" json:"offset"`
 }
+
+// LoginFormdataRequestBody defines body for Login for application/x-www-form-urlencoded ContentType.
+type LoginFormdataRequestBody = Login
 
 // AddDeckJSONRequestBody defines body for AddDeck for application/json ContentType.
 type AddDeckJSONRequestBody = DeckName
@@ -184,6 +203,11 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// LoginWithBody request with any body
+	LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddDeckWithBody request with any body
 	AddDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -199,6 +223,30 @@ type ClientInterface interface {
 
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLoginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLoginRequestWithFormdataBody(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) AddDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -271,6 +319,46 @@ func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEdit
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewLoginRequestWithFormdataBody calls the generic Login builder with application/x-www-form-urlencoded body
+func NewLoginRequestWithFormdataBody(server string, body LoginFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewLoginRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewLoginRequestWithBody generates requests for Login with any type of body
+func NewLoginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewAddDeckRequest calls the generic AddDeck builder with application/json body
@@ -522,6 +610,11 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// LoginWithBodyWithResponse request with any body
+	LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error)
+
+	LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
+
 	// AddDeckWithBodyWithResponse request with any body
 	AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error)
 
@@ -537,6 +630,28 @@ type ClientWithResponsesInterface interface {
 
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
+}
+
+type LoginResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *PostLogin
+}
+
+// Status returns HTTPResponse.Status
+func (r LoginResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type AddDeckResponse struct {
@@ -635,6 +750,23 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
+// LoginWithBodyWithResponse request with arbitrary body returning *LoginResponse
+func (c *ClientWithResponses) LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error) {
+	rsp, err := c.LoginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLoginResponse(rsp)
+}
+
+func (c *ClientWithResponses) LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error) {
+	rsp, err := c.LoginWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLoginResponse(rsp)
+}
+
 // AddDeckWithBodyWithResponse request with arbitrary body returning *AddDeckResponse
 func (c *ClientWithResponses) AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error) {
 	rsp, err := c.AddDeckWithBody(ctx, contentType, body, reqEditors...)
@@ -685,6 +817,32 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseGetGroupsResponse(rsp)
+}
+
+// ParseLoginResponse parses an HTTP response from a LoginWithResponse call
+func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LoginResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest PostLogin
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseAddDeckResponse parses an HTTP response from a AddDeckWithResponse call
@@ -849,6 +1007,9 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// handles login
+	// (POST /api/v1/auth)
+	Login(w http.ResponseWriter, r *http.Request)
 	// request to create new deck
 	// (POST /api/v1/deck)
 	AddDeck(w http.ResponseWriter, r *http.Request)
@@ -871,6 +1032,21 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // AddDeck operation middleware
 func (siw *ServerInterfaceWrapper) AddDeck(w http.ResponseWriter, r *http.Request) {
@@ -1123,6 +1299,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.HandleFunc(options.BaseURL+"/api/v1/auth", wrapper.Login).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/api/v1/deck", wrapper.AddDeck).Methods("POST")
 
 	r.HandleFunc(options.BaseURL+"/api/v1/group", wrapper.AddGroup).Methods("POST")
@@ -1137,26 +1315,30 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RX3W4bNxN9FYLfB7QFtlq5bYBUd25SuL5pAsdFLwIjoJazEuNdkh4ObQuG3r0gub/S",
-	"KpEdAw2aO2lJzhzOnDMzfOCFqa3RoMnxxQNHuPHg6DcjFcQPp1K+huL6In0PXwqjCXT8KaytVCFIGZ1/",
-	"dEaHb65YQy3Cr/8jlHzB/5f3LvK06vJg809RA99utxmX4ApUNtjhixYDWxq5YaVBJqRUesUkFNd8mwVI",
-	"Z2i8fW5M0ehjQa3CIR72IzhrtBuFbQcbwT3lthLqMZEyha9B0/nraVjJaY/L+aIA50pfBYgxaKwBPwze",
-	"v48sRm4I7ZXRZaUK+h3R4LNlNVp7s/wIBU3BvGhhBoSqzO/WoBmtAeE7xwRDcMZjAQzulSMXYJ4BxQi6",
-	"R0FUBLU7ioF/K1oH7kRntLHAF1wgis0U/Hd9TLuAm3jZeKEe6zbj55oAtajeAd4CfkVR1sxruLdQEEgG",
-	"wRIzcZm5CDWA/8t9DZAFWwrZcpYpx2ohgS03Eax3Aeo2a/zHbLdFwKKxgNQU1QJBEMgPIl6hNFiHX1wK",
-	"gh9J1cC7xDtCpVchAEpGne5+1qFeTS14Kx/pI9awG68QJF+8Dw4b89kQ8MjyVWfENIHMeFfa964datGH",
-	"A4B3nPdbJ130lWfq6sPM7oGAlkTjdJ+yJSooG/rV4JxYAVNaRnLpVWCpagTU0DLtnfGMw72obRVAtBpj",
-	"SWQsUXYinY2HKSASSKgKZIcibVgGFIFnCMIZHXkZ/h6B6nRKYUXhEUGOpcbu1qoCZtGEstJ7jISfTV3E",
-	"kSDvXhk5cZfLNbA/Li/fsrSJFUZChzvB+B5mq1nGXsznP4wwv5jPO2fhhqtGW0OSDFxnTV77wE7xput8",
-	"35Ac+6lm796xAx8pyMHeg176zhUKc1W9Kfni/REdj2+zqVLhju6br5vJcKdb7pcUNwH+KhZ/pUuzT+AL",
-	"sITs9O05a0tO7DQhWYqitLodPOO3gC6dO5nNZ/OAyFjQwiq+4D/PTmZznnEraB0vlAur8tuTXLYtwqRZ",
-	"doxASOnSELdSt7EDhRwwpYfCjDMWj94wAjyXQfXNDJoNpvrNoVCOBv98Z+rfnW5/mp8cttPsa22Ew7/M",
-	"55/f33f4eOLXz58YD4zbjL84xs/UGBS7tq9rgZvBrE+GJaUxDXfN82ObdYlbddXkcObSkPuU1CVlPC13",
-	"o+fRU5PXSvO/kb3+nTZKX/6QCpuS2yjE/CFOHkpuY2L9obyKpEkyTDQ59rFbKukO6fDStCm1AkUNBOhi",
-	"fQxvrlgW2gK/4C0ong2G2b0CPXm0wf/Jk1ffLiW6NzGZQ5xIvRFoqh0QKrgFx6xYKR3aLquUI2bKZMyx",
-	"JdAdRLEn0YfezFDoFezxon+c7VFi7DbaIBOmKCRWGXPtLSvR1DxLDLjxgJueAs1S3/wIPQz5cNz4cQgG",
-	"aNmAOOCfDP9yb9rXS8AQ2TgCBMcI5FHHm7PW5ZT/StWKjguA0sSn5swDaLokIDhfkftUFkxZOvgyGPs6",
-	"PUIOozf/44X6TJI7A2ItjLgSdyZ2e6z4gq+J7CLPK1OIam0cLV7OX57kYR77JwAA//86/7eplRQAAA==",
+	"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",
+	"fwUAAP//2zfOdAAYAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
