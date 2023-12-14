@@ -24,7 +24,10 @@ func main() {
 	defer db.Client().Disconnect(ctx)
 	repo := cmd.MustLoadRepo(log, db)
 	l := cmd.MustLoadLogic(log, repo)
-	reptrClient := api.New(log, l)
+
+	httpClient := http.Client{}
+	p := cmd.MustLoadProvider(log, httpClient, repo)
+	reptrClient := api.New(log, l, p)
 
 	// This is how you set up a basic Gorilla router
 	r := mux.NewRouter()

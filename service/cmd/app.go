@@ -4,9 +4,11 @@ import (
 	"context"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
+	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"net/http"
 	"os"
 )
 
@@ -17,6 +19,15 @@ const (
 
 func MustLoadLogic(logger zerolog.Logger, repo database.Repository) *decks.Logic {
 	return decks.New(logger, repo)
+}
+
+func MustLoadProvider(logger zerolog.Logger, client http.Client, repo database.Repository) *provider.Controller {
+	audience := os.Getenv("AUTH0_AUDIENCE")
+	clientID := os.Getenv("AUTH0_CLIENT_ID")
+	clientSecret := os.Getenv("AUTH0_CLIENT_SECRET")
+	grantType := os.Getenv("AUTH0_GRANT_TYPE")
+	authEndpoint := os.Getenv("AUTH0_ENDPOINT")
+	return provider.New(logger, clientID, clientSecret, authEndpoint, grantType, audience, client, repo)
 }
 
 func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DAO {

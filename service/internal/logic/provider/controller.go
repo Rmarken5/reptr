@@ -13,7 +13,7 @@ import (
 	"net/url"
 )
 
-var _ Logic = Controller{}
+var _ Logic = &Controller{}
 
 // Logic represents an interface for the business logic operations.
 type (
@@ -24,10 +24,12 @@ type (
 	}
 
 	Controller struct {
+		audience     string
 		clientID     string
 		clientSecret string
-		httpClient   http.Client
+		grantType    string
 		authEndpoint string
+		httpClient   http.Client
 		logger       zerolog.Logger
 		repo         database.Repository
 	}
@@ -41,12 +43,14 @@ type (
 //
 // Returns:
 // - *Controller: A pointer to the newly created `Controller` instance.
-func New(logger zerolog.Logger, clientID, clientSecret, authEndpoint string, httpClient http.Client, repo database.Repository) *Controller {
+func New(logger zerolog.Logger, clientID, clientSecret, authEndpoint, grantType, audience string, httpClient http.Client, repo database.Repository) *Controller {
 	log := logger.With().Str("module", "provider logic").Logger()
 	return &Controller{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		authEndpoint: authEndpoint,
+		grantType:    grantType,
+		audience:     audience,
 		httpClient:   httpClient,
 		logger:       log,
 		repo:         repo,
@@ -58,10 +62,10 @@ func (c *Controller) Authenticate(ctx context.Context, username, password string
 	logger.Info().Msgf("authenticating: %s", username)
 
 	form := url.Values{}
-	form.Set("grant_type", "password")
+	form.Set("grant_type", c.grantType)
 	form.Set("username", username)
 	form.Set("password", password)
-	form.Set("audience", "reptr")
+	form.Set("audience", c.audience)
 	form.Set("client_id", c.clientID)
 	form.Set("client_secret", c.clientSecret)
 
@@ -72,9 +76,11 @@ func (c *Controller) Authenticate(ctx context.Context, username, password string
 		logger.Error().Err(err).Msgf("error creating http request for authentication: %s", username)
 		return models.TokenResp{}, err
 	}
-
 	req = req.WithContext(ctx)
-	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+	header := req.Header
+	header.Set("content-type", "application/x-www-form-urlencoded")
+	logger.Debug().Msgf("header %+v", req.Header)
+	logger.Debug().Msgf("c %+v", *c)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while trying to authenticate: %s", username)

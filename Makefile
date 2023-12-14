@@ -4,10 +4,16 @@ docker-build-service:
 
 .Phony:
 docker-run-service:
-	docker run -d --rm -p 8081:8080 -e PORT=8080 \
-                                 -e MONGO_URI="mongodb://host.docker.internal:27017/?directConnection=true&serverSelectionTimeoutMS=2000" \
-                                 -e DB_NAME="deck" \
-                                 gcr.io/small-biz-template/markenshop/reptr:latest
+	docker run -d --rm -p 8081:8080 \
+    		-e PORT=8080 \
+    		-e MONGO_URI="mongodb://host.docker.internal:27017/?directConnection=true&serverSelectionTimeoutMS=2000" \
+    		-e DB_NAME="deck" \
+    		-e AUTH0_AUDIENCE="$(AUTH0_AUDIENCE)" \
+    		-e AUTH0_CLIENT_ID="$(AUTH0_CLIENT_ID)" \
+    		-e AUTH0_CLIENT_SECRET="$(AUTH0_CLIENT_SECRET)" \
+    		-e AUTH0_GRANT_TYPE="$(AUTH0_GRANT_TYPE)" \
+    		-e AUTH0_ENDPOINT="$(AUTH0_ENDPOINT)" \
+    		gcr.io/small-biz-template/markenshop/reptr:latest
 docker-build-mongo:
 	docker build -f ./dockerfiles/mongo.dockerfile -t reprt-mongo:latest .
 

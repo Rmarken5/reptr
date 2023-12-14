@@ -17,14 +17,15 @@ var _ api.ServerInterface = ReprtClient{}
 type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
-	providerController provider.Controller
+	providerController provider.Logic
 }
 
-func New(logger zerolog.Logger, controller decks.Controller) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Logic) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
-		logger:         logger,
-		deckController: controller,
+		logger:             logger,
+		deckController:     deckController,
+		providerController: providerController,
 	}
 }
 
@@ -175,15 +176,25 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 }
 
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
+	logger := rc.logger.With().Str("method", "Login").Logger()
+
 	err := r.ParseForm()
 	if err != nil {
+		logger.Error().Err(err).Msgf("Bad request - Invalid form data")
 		http.Error(w, "Bad request - Invalid form data", http.StatusBadRequest)
 		return
 	}
 
 	username := r.FormValue("username")
-	passowrd := r.FormValue("password")
+	password := r.FormValue("password")
 
+	tokenResp, err := rc.providerController.Authenticate(r.Context(), username, password)
+	if err != nil {
+		logger.Error().Err(err).Msgf("error authenticating %s: %v", username, err)
+		json.NewEncoder(w).Encode(err)
+	}
+
+	json.NewEncoder(w).Encode(tokenResp)
 }
 
 func toStatus(err error) int {

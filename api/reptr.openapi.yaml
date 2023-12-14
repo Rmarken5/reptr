@@ -12,10 +12,10 @@ paths:
       summary: handles login
       description: handles login form request and responds with a redirect to home
       requestBody:
-        $ref: "#/components/requestBodies/LoginRequest"
+        $ref: "#/components/requestBodies/LoginRequestBody"
       responses:
         201:
-          $ref: '#/components/responses/PostLogin'
+          $ref: '#/components/responses/LoginResponseBody'
   /api/v1/groups:
     get:
       operationId: 'getGroups'
@@ -168,12 +168,12 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   responses:
-    PostLogin:
+    LoginResponseBody:
       description: Response that contains token if user has been authenticated
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/LoginResponse'
+            $ref: '#/components/schemas/LoginResponseSchema'
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -221,7 +221,7 @@ components:
             type: object
             $ref: '#/components/schemas/ErrorObject'
   requestBodies:
-    LoginRequest:
+    LoginRequestBody:
       description: request body for log in
       required: true
       content:
@@ -248,7 +248,7 @@ components:
           type: string
         password:
           type: string
-    LoginResponse:
+    LoginResponseSchema:
       type: object
       properties:
         access_token:
