@@ -33,16 +33,26 @@ func main() {
 		log.Panic().Err(err).Msg("While creating authenticator")
 	}
 	p := cmd.MustLoadProvider(log, httpClient, repo)
-	reptrClient := api.New(log, l, p, authenticator)
+	serverImpl := api.New(log, l, p, authenticator)
 
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
-	fromMux := exAPI.HandlerFromMux(reptrClient, r)
-	secureRouter := r.PathPrefix("/secure/api/v1/groups").Subrouter()
-	secureRouter.Use(middlewares.Authenticate(log, *authenticator))
+	wrapper := exAPI.ServerInterfaceWrapper{
+		Handler: serverImpl,
+	}
+
+	router.HandleFunc("/api/v1/login", wrapper.Login).Methods("GET")
+
+	secureRoute := router.PathPrefix("/secure").Subrouter()
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods("POST")
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods("POST")
+	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods("POST")
+	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
+	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods("GET")
+	secureRoute.Use(middlewares.Authenticate(log, *authenticator))
 
 	s := &http.Server{
-		Handler: fromMux,
+		Handler: router,
 		Addr:    net.JoinHostPort("0.0.0.0", mustGetPort(log)),
 	}
 
