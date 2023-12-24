@@ -6,6 +6,8 @@ import (
 	exAPI "github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/cmd"
 	"github.com/rmarken/reptr/service/internal/api"
+	"github.com/rmarken/reptr/service/internal/api/middlewares"
+	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rs/zerolog"
 	"net"
 	"net/http"
@@ -26,21 +28,24 @@ func main() {
 	l := cmd.MustLoadLogic(log, repo)
 
 	httpClient := http.Client{}
+	authenticator, err := auth.New()
+	if err != nil {
+		log.Panic().Err(err).Msg("While creating authenticator")
+	}
 	p := cmd.MustLoadProvider(log, httpClient, repo)
-	reptrClient := api.New(log, l, p)
+	reptrClient := api.New(log, l, p, authenticator)
 
-	// This is how you set up a basic Gorilla router
 	r := mux.NewRouter()
 
-	// We now register our petStore above as the handler for the interface
-	exAPI.HandlerFromMux(reptrClient, r)
+	fromMux := exAPI.HandlerFromMux(reptrClient, r)
+	secureRouter := r.PathPrefix("/secure/api/v1/groups").Subrouter()
+	secureRouter.Use(middlewares.Authenticate(log, *authenticator))
 
 	s := &http.Server{
-		Handler: r,
+		Handler: fromMux,
 		Addr:    net.JoinHostPort("0.0.0.0", mustGetPort(log)),
 	}
 
-	// And we serve HTTP until the world ends.
 	log.Fatal().Err(s.ListenAndServe())
 
 }

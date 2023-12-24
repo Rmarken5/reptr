@@ -1,15 +1,18 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/rmarken/reptr/api"
+	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
+	"strings"
 )
 
 var _ api.ServerInterface = ReprtClient{}
@@ -18,14 +21,16 @@ type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
 	providerController provider.Logic
+	authenticator      *auth.Authenticator
 }
 
-func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Logic) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Logic, authenticator *auth.Authenticator) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:             logger,
 		deckController:     deckController,
 		providerController: providerController,
+		authenticator:      authenticator,
 	}
 }
 
@@ -177,24 +182,23 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "Login").Logger()
+	logger.Debug().Msg("login called")
 
-	err := r.ParseForm()
+	username, password, err := parseBasicAuth(r.Header.Get("Authorization"))
 	if err != nil {
-		logger.Error().Err(err).Msgf("Bad request - Invalid form data")
-		http.Error(w, "Bad request - Invalid form data", http.StatusBadRequest)
+		logger.Error().Err(err).Msgf("Bad request - Authorization header")
+		http.Error(w, "Bad request - Authorization header", http.StatusBadRequest)
 		return
 	}
 
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-
-	tokenResp, err := rc.providerController.Authenticate(r.Context(), username, password)
+	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), username, password)
 	if err != nil {
 		logger.Error().Err(err).Msgf("error authenticating %s: %v", username, err)
-		json.NewEncoder(w).Encode(err)
+		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
+		return
 	}
 
-	json.NewEncoder(w).Encode(tokenResp)
+	json.NewEncoder(w).Encode(token.AccessToken)
 }
 
 func toStatus(err error) int {
@@ -208,4 +212,28 @@ func toStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func parseBasicAuth(basicAuthHeader string) (string, string, error) {
+	authParts := strings.SplitN(basicAuthHeader, " ", 2)
+
+	if len(authParts) != 2 || authParts[0] != "Basic" {
+		return "", "", errors.New("invalid basic auth header")
+	}
+
+	// Decode the base64-encoded credentials
+	credentials, err := base64.StdEncoding.DecodeString(authParts[1])
+	if err != nil {
+		fmt.Println("Error decoding credentials:", err)
+		return "", "", errors.New("error decoding credentials")
+
+	}
+
+	// Split the decoded credentials into username and password
+	credentialsSplit := strings.SplitN(string(credentials), ":", 2)
+	if len(credentialsSplit) != 2 {
+		fmt.Println("Invalid credentials format")
+		return "", "", errors.New("invalid credentials format")
+	}
+	return credentialsSplit[0], credentialsSplit[1], nil
 }

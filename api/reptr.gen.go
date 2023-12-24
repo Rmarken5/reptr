@@ -341,7 +341,7 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/auth")
+	operationPath := fmt.Sprintf("/api/v1/login")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -351,7 +351,7 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), body)
+	req, err := http.NewRequest("GET", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func NewAddDeckRequestWithBody(server string, contentType string, body io.Reader
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/deck")
+	operationPath := fmt.Sprintf("/secure/api/v1/deck")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -421,7 +421,7 @@ func NewAddGroupRequestWithBody(server string, contentType string, body io.Reade
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/group")
+	operationPath := fmt.Sprintf("/secure/api/v1/group")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -464,7 +464,7 @@ func NewAddDeckToGroupRequest(server string, groupId string, deckId string) (*ht
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/group/%s/deck/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/secure/api/v1/group/%s/deck/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -491,7 +491,7 @@ func NewGetGroupsRequest(server string, params *GetGroupsParams) (*http.Request,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/groups")
+	operationPath := fmt.Sprintf("/secure/api/v1/groups")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1008,19 +1008,19 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// handles login
-	// (POST /api/v1/auth)
+	// (GET /api/v1/login)
 	Login(w http.ResponseWriter, r *http.Request)
 	// request to create new deck
-	// (POST /api/v1/deck)
+	// (POST /secure/api/v1/deck)
 	AddDeck(w http.ResponseWriter, r *http.Request)
 	// request to create new group
-	// (POST /api/v1/group)
+	// (POST /secure/api/v1/group)
 	AddGroup(w http.ResponseWriter, r *http.Request)
 	// request to add deck to group
-	// (PUT /api/v1/group/{group_id}/deck/{deck_id})
+	// (PUT /secure/api/v1/group/{group_id}/deck/{deck_id})
 	AddDeckToGroup(w http.ResponseWriter, r *http.Request, groupId string, deckId string)
 	// Get Groups
-	// (GET /api/v1/groups)
+	// (GET /secure/api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
 }
 
@@ -1299,15 +1299,15 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
-	r.HandleFunc(options.BaseURL+"/api/v1/auth", wrapper.Login).Methods("POST")
+	r.HandleFunc(options.BaseURL+"/api/v1/login", wrapper.Login).Methods("GET")
 
-	r.HandleFunc(options.BaseURL+"/api/v1/deck", wrapper.AddDeck).Methods("POST")
+	r.HandleFunc(options.BaseURL+"/secure/api/v1/deck", wrapper.AddDeck).Methods("POST")
 
-	r.HandleFunc(options.BaseURL+"/api/v1/group", wrapper.AddGroup).Methods("POST")
+	r.HandleFunc(options.BaseURL+"/secure/api/v1/group", wrapper.AddGroup).Methods("POST")
 
-	r.HandleFunc(options.BaseURL+"/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
+	r.HandleFunc(options.BaseURL+"/secure/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
 
-	r.HandleFunc(options.BaseURL+"/api/v1/groups", wrapper.GetGroups).Methods("GET")
+	r.HandleFunc(options.BaseURL+"/secure/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
 	return r
 }
@@ -1315,30 +1315,30 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RY227bRhN+lcH+P9AWoEW5bYBUd25SpAaKJnBc9CIIjBV3KG5M7jK7Q8uCoXcvZnk2",
-	"KUd2AjRo7iTuYb45fTOzdyKxRWkNGvJidSccfqzQ069WaQwfzpR6icn1Rf2dvyTWEJrwU5ZlrhNJ2pr4",
-	"g7eGv/kkw0Lyr/87TMVK/C/uRcT1qo/5zj9lgWK/30dCoU+cLvkesWoxwNqqHaTWgVRKmw0oTK7FPmJI",
-	"r5ytyi+NKVz6WFAbPsSo/rAbbS468+0egHV7st1uT1LripPK5WgSq1AdjzNIOgpjbjegjYjCinYshFyF",
-	"fNKhL63xIyffg0x4S3GZS/0Yv9qkKtDQ+ct5gLXQHqGvkgS9T6ucDRpcDI0aQ1f/+8iCn4fQXliT5jqh",
-	"35yz7ovFYLjt9foDJjQH86KFyQh1Gm8zNEAZOvzOgwSH3lYuQcBb7ckzzFdIwYL+URA1YeGPype/NWUc",
-	"O0EY7UoUKyGdk7s5+G97m3YGt0HZoFCPdR+Jc0PojMzfortB9xVZ2UBl8LbEhFAB8k1gwzL4AHVABvU1",
-	"n2CDx0Ef3fy2PvKQCpRJApYstfFA9hoN6BQqjw4y6WGNaEBWlKEhRoSK8f/lvwaTS1hL1eYcaA+FVAjr",
-	"XTA2ayD4okYCA2hJrHS2REdNCUscsl5XMqjAtMu/hJKEJ6QLFF3genLabNgAOvDx5LPh6jC3UJXqkTL2",
-	"Q1Z+xwKb66Mh4NHN77tLbGPISHSFdKI2c+nVAcD3hPdbZ0X0zDmn+tCzExDYBtHY3WewdhrTJn0K9F5u",
-	"ELRRIbjMhrNMNwTQpFW9dyEigbeyKHMG0XIE1CQBdcjOuLORMAdEIUmdo+pQ1BvWjILjzKH01oS45L9H",
-	"oDqbY4gkqZxDNaYK2GY6RyidZVrsJYaAX8wp4klS5V9YNaPLZYbw++XlG6g3AbcVHe4axve42CwieLZc",
-	"/jDC/Gy57ISxhpsmt4ZBMhAdNX7tDTsXN13l/obSse8hJ3qHDuLIhBzsPSilr7xMzHn+OhWrd0dUbLGP",
-	"5qjCH133XzZ9+L1qP6UUPwP+fVsdpwYqpfdb6+ZdzXR/2HYTC82VyYlAGbqRq1AUZ4Xibakd+is9XO7y",
-	"IxLh5FX9/QhY/Emb1E5T9wJLcnD25hxasg01lsNUUyCVboeIxA06X587XSwXS0ZiSzSy1GIlflqcLpYi",
-	"EqWkLGgZy1LHN6cxF/lgA1vPTGMEmTQqR88jgw5sV3SFVxrVtGvKw1ZTFjpNpR33bWQhsyFN2LIB9bkS",
-	"q8bH0WCg3B2Kq9HMGU/mqPvDyo/L08M3NfviaQMWWoWqKKTb3Vc3rLVmUm0PMWsmqZSvp5SNvgktCgcl",
-	"aDNk7jBETCzSDllPsMm9IfxJFmnF7yPx83L56f19CxhO/PLpE+OJaB+JZ8fImevzx75qrUoWaioGg9vm",
-	"NWDguE1Xbg57rp7inuK6mjqf5rvRa8VTnddy93/De82zyX33xXd15dNqHxIxvgutqVb74NjqkF9lnZNk",
-	"QTY+rkI7pZU/lIeXtnVpKZ0skND5UECZ7AN7th3ASrSgRDSYdiZ0P3u0wf/gyfffbkh0jz5kD8VE3Twh",
-	"zVVNchpv0EMpN9pwXwa59gQ2rS/j8Za2YcJtkp6bN3DSbKYVq399mITEWGy4gyy32Y4gt/a6KiF1thBR",
-	"HQEfK3S7PgSapfEb3DAejutPD8FAoxoQB+STFZ8vzVTFGh1bNvSILNghVc4EzaEVOSc/14Wm4wygDYm5",
-	"QeQAms4JDn2Vk3/ICzZNPX4ejGmeHpEOo0etxyfqF0q5V0jQwggrYWcd3ZXLuSMiKldxnNtE5pn1tHq+",
-	"fH4ac8P+TwAAAP//XidnIyQYAAA=",
+	"H4sIAAAAAAAC/+RYbW/bRhL+K4O9A+4OoEX52gCpvrlJkRoomsBx0Q9BYKy4Q3JjcpfZHVoWDP33YpYv",
+	"okzSlp0ADZpvEvdlnnl7ZmbvRGLLyho05MXqTjj8XKOnn63SGD6cKfUak+uL5jt/SawhNOGnrKpCJ5K0",
+	"NfEnbw1/80mOpeRf/3aYipX4V7wXETerPuY7f5clit1uFwmFPnG64nvEqsMAa6u2kFoHUiltMlCYXItd",
+	"xJDeOFtXXxtTuPSpoDI+xKh+s5k2F735tg/Auj3ZbDYnqXXlSe0KNIlVqI7HGSQdhbGwGWgjorCiHQsh",
+	"VyOfdOgra/yBk+9BJryluCqkfopfbVKXaOj89TTARugeoa+TBL1P64INGlwMrRpDV//9yIKfh9BeWZMW",
+	"OqFfnLPuq8VguO3t+hMmNAXzooPJCHUab3I0QDk6/I8HCQ69rV2CgLfak2eYb5CCBf2TIGrC0h+VL39q",
+	"yjl2gjDaVihWQjont1Pw3+9t2hvcBmWDQnusu0icG0JnZPEe3Q26b8jKBmqDtxUmhAqQbwIblsEHqAMy",
+	"aK55hA2eBv3g5vfNkYdUoFwSsGSpjQey12hAp1B7dJBLD2tEA7KmHA0xIlSM/w//LZhcwlqqLudAeyil",
+	"Qlhvg7FZA8EXtRIYQEdilbMVOmpLWOKQ9bqSQQWmXf4llCQ8IV2i6APXk9MmYwPowMejz4arw9RCXakn",
+	"ytgNWfkDC2yvj4aAD27+2F9iW0NGoi+kI7WZS69mAN8Tvt86KWLPnFOqDz07AoFdEB26+wzWTmPapk+J",
+	"3ssMQRsVgstknGW6JYA2rZq9CxEJvJVlVTCIjiOgIQloQnbCna2EKSAKSeoCVY+i2bBmFBxnDqW3JsQl",
+	"/z0C1dkUQyRJ7RyqQ6qATa4LhMpZpsW9xBDwiylFPEmq/SurJnS5zBF+vbx8B80m4Laix93A+C8uskUE",
+	"L5bL/x1gfrFc9sJYw6zNrWGQDERHrV/3hp2Km75yf0fpuO8hR3qHDuLIhBzsnZWyr7xMzEXxNhWrD0dU",
+	"bLGLpqjCH133X7d9+L1qP6YUPwH+Y1cdxwaqpPcb66ZdzXQ/b7uRhabK5EigDN3IVSiKk0LxttIO/ZUe",
+	"Lvf5EYlw8qr5fgQs/qRNasepe4EVOTh7dw4d2YYay2GqKZBKv0NE4gadb86dLpaLJSOxFRpZabESPyxO",
+	"F0sRiUpSHrSMZaXjm9O46KyeIY0R5NKoAj2EXcwaZV94pVFtu6Y8bDTlodNU2nHfRhZyG9KELRtQnyux",
+	"an0cDQbK7VxcHcyc8WiOuj+s/H95On9Tuy8eN2ChVajLUrrtfXXDWuwxqR121lJdK2H9hLWkUr4ZVjJ9",
+	"EzoVjk3QZkjgYZYYGaabtZ5hmnuz+LMM04nfReLH5fLx/ftOMJz46fETh4PRLhIvjpEz1e4fuqyzKllo",
+	"GBkMbtpHgbH/sr74zDuwmeme48GGSJ/nwoO3i+f6sGPyf4YT20eUGS/Gd0051GoX0jK+C/2qVrvg33rO",
+	"vbLJULIgW1fXocfSys9l5aXtPFtJJ0skdD5UVWbOQKldW7ASHSgRDUagUQ2YPNrif/Dkx+83MvqXILKP",
+	"hIafrWcXSE7jDXqoZKYN92xQaE9g0+ZOHn1pE6bflgK4sQMnTTauZvuXiVFkHIoNd5DlFtwRFNZe1xWk",
+	"zpYiagLhc41uu4+EdunwfW4YFsf1rnMw0KgWxIx8suLLpZm6XKNjy4b+kQU7pNqZoDl0IqfkF7rUdJwB",
+	"tCExNaTMoOmd4NDXBfmHvGDT1OOXwRin6xFZcfDg9fR8/UqZ9wYJOhhhJexsort2BXdLRNUqjgubyCK3",
+	"nlYvly9PY27m/woAAP//eCNBC0AYAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

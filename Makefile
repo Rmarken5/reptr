@@ -13,6 +13,7 @@ docker-run-service:
     		-e AUTH0_CLIENT_SECRET="$(AUTH0_CLIENT_SECRET)" \
     		-e AUTH0_GRANT_TYPE="$(AUTH0_GRANT_TYPE)" \
     		-e AUTH0_ENDPOINT="$(AUTH0_ENDPOINT)" \
+    		-e AUTH0_CALLBACK_URL="$(AUTH0_CALLBACK_URL)" \
     		gcr.io/small-biz-template/markenshop/reptr:latest
 docker-build-mongo:
 	docker build -f ./dockerfiles/mongo.dockerfile -t reprt-mongo:latest .

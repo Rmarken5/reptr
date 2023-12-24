@@ -6,8 +6,8 @@ info:
 servers:
   - url: http://localhost:8081/
 paths:
-  /api/v1/auth:
-    post:
+  /api/v1/login:
+    get:
       operationId: login
       summary: handles login
       description: handles login form request and responds with a redirect to home
@@ -16,7 +16,7 @@ paths:
       responses:
         201:
           $ref: '#/components/responses/LoginResponseBody'
-  /api/v1/groups:
+  /secure/api/v1/groups:
     get:
       operationId: 'getGroups'
       summary: Get Groups
@@ -61,7 +61,7 @@ paths:
           $ref: '#/components/responses/UserError'
         500:
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/group:
+  /secure/api/v1/group:
     post:
       operationId: addGroup
       summary: request to create new group
@@ -78,7 +78,7 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/group/{group_id}/deck/{deck_id}:
+  /secure/api/v1/group/{group_id}/deck/{deck_id}:
     put:
       operationId: addDeckToGroup
       summary: request to add deck to group
@@ -149,7 +149,7 @@ paths:
   #          $ref: '#/components/responses/UserError'
   #        500:
   #          $ref: '#/components/responses/InternalServerError'
-  /api/v1/deck:
+  /secure/api/v1/deck:
     post:
       operationId: addDeck
       summary: request to create new deck
