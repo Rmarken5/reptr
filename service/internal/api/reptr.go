@@ -20,17 +20,17 @@ var _ api.ServerInterface = ReprtClient{}
 type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
-	providerController provider.Logic
-	authenticator      *auth.Authenticator
+	providerController provider.Controller
+	authenticator      auth.Authentication
 }
 
-func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Logic, authenticator *auth.Authenticator) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:             logger,
 		deckController:     deckController,
 		providerController: providerController,
-		authenticator:      authenticator,
+		authenticator:      authentication,
 	}
 }
 
@@ -197,8 +197,8 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
 		return
 	}
-
-	json.NewEncoder(w).Encode(token.AccessToken)
+	logger.Debug().Msgf("token %+v", token)
+	json.NewEncoder(w).Encode(token.Extra("id_token").(string))
 }
 
 func toStatus(err error) int {

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/rmarken/reptr/api"
+	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	mockLogic "github.com/rmarken/reptr/service/internal/logic/decks/mocks"
+	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +21,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	r := New(zerolog.Nop(), &decks.Logic{})
+	r := New(zerolog.Nop(), &decks.Logic{}, &provider.Logic{}, &auth.Authenticator{})
 	assert.NotNil(t, r)
 }
 func TestGetGroups(t *testing.T) {

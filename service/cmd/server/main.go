@@ -7,7 +7,6 @@ import (
 	"github.com/rmarken/reptr/service/cmd"
 	"github.com/rmarken/reptr/service/internal/api"
 	"github.com/rmarken/reptr/service/internal/api/middlewares"
-	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rs/zerolog"
 	"net"
 	"net/http"
@@ -27,12 +26,8 @@ func main() {
 	repo := cmd.MustLoadRepo(log, db)
 	l := cmd.MustLoadLogic(log, repo)
 
-	httpClient := http.Client{}
-	authenticator, err := auth.New()
-	if err != nil {
-		log.Panic().Err(err).Msg("While creating authenticator")
-	}
-	p := cmd.MustLoadProvider(log, httpClient, repo)
+	authenticator := cmd.MustLoadAuth(ctx, log)
+	p := cmd.MustLoadProvider(log, repo)
 	serverImpl := api.New(log, l, p, authenticator)
 
 	router := mux.NewRouter()
@@ -49,7 +44,7 @@ func main() {
 	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods("POST")
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
 	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods("GET")
-	secureRoute.Use(middlewares.Authenticate(log, *authenticator))
+	secureRoute.Use(middlewares.Authenticate(log, authenticator))
 
 	s := &http.Server{
 		Handler: router,

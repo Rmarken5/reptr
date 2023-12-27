@@ -65,7 +65,7 @@ func TestController_UserExists(t *testing.T) {
 				tc.mockDB(mockRepo)
 			}
 
-			c := Controller{
+			c := Logic{
 				logger: zerolog.Nop(),
 				repo:   mockRepo,
 			}
@@ -119,7 +119,7 @@ func TestController_InsertPair(t *testing.T) {
 				tc.mockRepo(mockRepo)
 			}
 
-			c := Controller{
+			c := Logic{
 				logger: zerolog.Nop(),
 				repo:   mockRepo,
 			}

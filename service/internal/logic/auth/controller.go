@@ -4,32 +4,37 @@ package auth
 
 import (
 	"context"
-	"os"
-
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
-// Authenticator is used to authenticate our users.
-type Authenticator struct {
-	*oidc.Provider
-	oauth2.Config
-}
+//go:generate mockgen -destination ./mocks/controller_mock.go -package auth . Authentication
+type (
+	Authentication interface {
+		VerifyIDToken(ctx context.Context, rawToken string) (*oidc.IDToken, error)
+		PasswordCredentialsToken(ctx context.Context, username string, password string) (*oauth2.Token, error)
+	}
+	// Authenticator is used to authenticate our users.
+	Authenticator struct {
+		*oidc.Provider
+		oauth2.Config
+	}
+)
 
 // New instantiates the *Authenticator.
-func New() (*Authenticator, error) {
+func New(ctx context.Context, endpoint, clientID, clientSecret, callbackURL string) (*Authenticator, error) {
 	provider, err := oidc.NewProvider(
-		context.Background(),
-		os.Getenv("AUTH0_ENDPOINT")+"/",
+		ctx,
+		endpoint,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	conf := oauth2.Config{
-		ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
-		ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("AUTH0_CALLBACK_URL"),
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  callbackURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "profile"},
 	}
