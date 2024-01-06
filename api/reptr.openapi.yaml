@@ -10,12 +10,22 @@ paths:
     get:
       operationId: login
       summary: handles login
-      description: handles login form request and responds with a redirect to home
+      description: handles login form request and responds with a jwt
       requestBody:
         $ref: "#/components/requestBodies/LoginRequestBody"
       responses:
-        201:
+        200:
           $ref: '#/components/responses/LoginResponseBody'
+  /api/v1/register:
+    post:
+      operationId: register
+      summary: handles user registration
+      description: handles registration form request and responds with home
+      requestBody:
+        $ref: "#/components/requestBodies/RegisterRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/RegistrationResponseBody'
   /secure/api/v1/groups:
     get:
       operationId: 'getGroups'
@@ -174,6 +184,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LoginResponseSchema'
+    RegistrationResponseBody:
+      description: Response that home page if successful
+      content:
+        text/html:
+          schema:
+            type: string
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -228,6 +244,13 @@ components:
         application/x-www-form-urlencoded:
           schema:
             $ref: "#/components/schemas/Login"
+    RegisterRequestBody:
+      description: request body for registration
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/Register"
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -248,6 +271,16 @@ components:
           type: string
         password:
           type: string
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        repassword:
+          type: string
+      required: [username, password, repassword]
     LoginResponseSchema:
       type: object
       properties:

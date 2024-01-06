@@ -17,6 +17,8 @@ import (
 
 var _ api.ServerInterface = ReprtClient{}
 
+const IDToken = "id_token"
+
 type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
@@ -180,6 +182,46 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 	w.Write([]byte(groupId))
 }
 
+func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
+	log := rc.logger.With().Str("method", "register").Logger()
+	log.Info().Msgf("calling register")
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	username := r.PostForm.Get("username")
+	password := r.PostForm.Get("password")
+	repassword := r.PostForm.Get("repassword")
+
+	if username == "" {
+		http.Error(w, "must provide a username", http.StatusBadRequest)
+	}
+
+	if password == "" {
+		http.Error(w, "must provide a password", http.StatusBadRequest)
+	}
+
+	// check password strength
+
+	if password != repassword {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+	}
+
+	user, err := rc.authenticator.RegisterUser(r.Context(), username, password)
+	if err != nil {
+		log.Error().Err(err).Msg("while registering")
+		http.Error(w, "while registering", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(user))
+
+}
+
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "Login").Logger()
 	logger.Debug().Msg("login called")
@@ -197,8 +239,17 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
 		return
 	}
-	logger.Debug().Msgf("token %+v", token)
-	json.NewEncoder(w).Encode(token.Extra("id_token").(string))
+
+	if tokenString, ok := token.Extra(IDToken).(string); ok {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(tokenString))
+		return
+	}
+
+	logger.Error().Msgf("Bad request - token doesn't contain %s", IDToken)
+	http.Error(w, fmt.Sprintf("Bad request - token doesn't contain %s", IDToken), http.StatusInternalServerError)
+	return
+
 }
 
 func toStatus(err error) int {
@@ -231,7 +282,7 @@ func parseBasicAuth(basicAuthHeader string) (string, string, error) {
 
 	// Split the decoded credentials into username and password
 	credentialsSplit := strings.SplitN(string(credentials), ":", 2)
-	if len(credentialsSplit) != 2 {
+	if len(credentialsSplit) != 2 || credentialsSplit[0] == "" || credentialsSplit[1] == "" {
 		fmt.Println("Invalid credentials format")
 		return "", "", errors.New("invalid credentials format")
 	}

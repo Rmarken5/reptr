@@ -85,6 +85,13 @@ type LoginResponseSchema struct {
 	TokenType   *string `json:"token_type,omitempty"`
 }
 
+// Register defines model for Register.
+type Register struct {
+	Password   string `json:"password"`
+	Repassword string `json:"repassword"`
+	Username   string `json:"username"`
+}
+
 // ConflictError defines model for ConflictError.
 type ConflictError = ErrorObject
 
@@ -123,6 +130,9 @@ type GetGroupsParams struct {
 
 // LoginFormdataRequestBody defines body for Login for application/x-www-form-urlencoded ContentType.
 type LoginFormdataRequestBody = Login
+
+// RegisterFormdataRequestBody defines body for Register for application/x-www-form-urlencoded ContentType.
+type RegisterFormdataRequestBody = Register
 
 // AddDeckJSONRequestBody defines body for AddDeck for application/json ContentType.
 type AddDeckJSONRequestBody = DeckName
@@ -208,6 +218,11 @@ type ClientInterface interface {
 
 	LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RegisterWithBody request with any body
+	RegisterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RegisterWithFormdataBody(ctx context.Context, body RegisterFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddDeckWithBody request with any body
 	AddDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -239,6 +254,30 @@ func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.
 
 func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLoginRequestWithFormdataBody(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RegisterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRegisterRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RegisterWithFormdataBody(ctx context.Context, body RegisterFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRegisterRequestWithFormdataBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -352,6 +391,46 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRegisterRequestWithFormdataBody calls the generic Register builder with application/x-www-form-urlencoded body
+func NewRegisterRequestWithFormdataBody(server string, body RegisterFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRegisterRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRegisterRequestWithBody generates requests for Register with any type of body
+func NewRegisterRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/register")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -615,6 +694,11 @@ type ClientWithResponsesInterface interface {
 
 	LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
 
+	// RegisterWithBodyWithResponse request with any body
+	RegisterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterResponse, error)
+
+	RegisterWithFormdataBodyWithResponse(ctx context.Context, body RegisterFormdataRequestBody, reqEditors ...RequestEditorFn) (*RegisterResponse, error)
+
 	// AddDeckWithBodyWithResponse request with any body
 	AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error)
 
@@ -635,7 +719,7 @@ type ClientWithResponsesInterface interface {
 type LoginResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *LoginResponseBody
+	JSON200      *LoginResponseBody
 }
 
 // Status returns HTTPResponse.Status
@@ -648,6 +732,27 @@ func (r LoginResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r LoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RegisterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r RegisterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RegisterResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -767,6 +872,23 @@ func (c *ClientWithResponses) LoginWithFormdataBodyWithResponse(ctx context.Cont
 	return ParseLoginResponse(rsp)
 }
 
+// RegisterWithBodyWithResponse request with arbitrary body returning *RegisterResponse
+func (c *ClientWithResponses) RegisterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterResponse, error) {
+	rsp, err := c.RegisterWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRegisterResponse(rsp)
+}
+
+func (c *ClientWithResponses) RegisterWithFormdataBodyWithResponse(ctx context.Context, body RegisterFormdataRequestBody, reqEditors ...RequestEditorFn) (*RegisterResponse, error) {
+	rsp, err := c.RegisterWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRegisterResponse(rsp)
+}
+
 // AddDeckWithBodyWithResponse request with arbitrary body returning *AddDeckResponse
 func (c *ClientWithResponses) AddDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddDeckResponse, error) {
 	rsp, err := c.AddDeckWithBody(ctx, contentType, body, reqEditors...)
@@ -833,13 +955,29 @@ func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LoginResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseRegisterResponse parses an HTTP response from a RegisterWithResponse call
+func ParseRegisterResponse(rsp *http.Response) (*RegisterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RegisterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil
@@ -1010,6 +1148,9 @@ type ServerInterface interface {
 	// handles login
 	// (GET /api/v1/login)
 	Login(w http.ResponseWriter, r *http.Request)
+	// handles user registration
+	// (POST /api/v1/register)
+	Register(w http.ResponseWriter, r *http.Request)
 	// request to create new deck
 	// (POST /secure/api/v1/deck)
 	AddDeck(w http.ResponseWriter, r *http.Request)
@@ -1039,6 +1180,21 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Login(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Register operation middleware
+func (siw *ServerInterfaceWrapper) Register(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Register(w, r)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -1301,6 +1457,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/api/v1/login", wrapper.Login).Methods("GET")
 
+	r.HandleFunc(options.BaseURL+"/api/v1/register", wrapper.Register).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/deck", wrapper.AddDeck).Methods("POST")
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/group", wrapper.AddGroup).Methods("POST")
@@ -1315,30 +1473,32 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RYbW/bRhL+K4O9A+4OoEX52gCpvrlJkRoomsBx0Q9BYKy4Q3JjcpfZHVoWDP33YpYv",
-	"okzSlp0ADZpvEvdlnnl7ZmbvRGLLyho05MXqTjj8XKOnn63SGD6cKfUak+uL5jt/SawhNOGnrKpCJ5K0",
-	"NfEnbw1/80mOpeRf/3aYipX4V7wXETerPuY7f5clit1uFwmFPnG64nvEqsMAa6u2kFoHUiltMlCYXItd",
-	"xJDeOFtXXxtTuPSpoDI+xKh+s5k2F735tg/Auj3ZbDYnqXXlSe0KNIlVqI7HGSQdhbGwGWgjorCiHQsh",
-	"VyOfdOgra/yBk+9BJryluCqkfopfbVKXaOj89TTARugeoa+TBL1P64INGlwMrRpDV//9yIKfh9BeWZMW",
-	"OqFfnLPuq8VguO3t+hMmNAXzooPJCHUab3I0QDk6/I8HCQ69rV2CgLfak2eYb5CCBf2TIGrC0h+VL39q",
-	"yjl2gjDaVihWQjont1Pw3+9t2hvcBmWDQnusu0icG0JnZPEe3Q26b8jKBmqDtxUmhAqQbwIblsEHqAMy",
-	"aK55hA2eBv3g5vfNkYdUoFwSsGSpjQey12hAp1B7dJBLD2tEA7KmHA0xIlSM/w//LZhcwlqqLudAeyil",
-	"Qlhvg7FZA8EXtRIYQEdilbMVOmpLWOKQ9bqSQQWmXf4llCQ8IV2i6APXk9MmYwPowMejz4arw9RCXakn",
-	"ytgNWfkDC2yvj4aAD27+2F9iW0NGoi+kI7WZS69mAN8Tvt86KWLPnFOqDz07AoFdEB26+wzWTmPapk+J",
-	"3ssMQRsVgstknGW6JYA2rZq9CxEJvJVlVTCIjiOgIQloQnbCna2EKSAKSeoCVY+i2bBmFBxnDqW3JsQl",
-	"/z0C1dkUQyRJ7RyqQ6qATa4LhMpZpsW9xBDwiylFPEmq/SurJnS5zBF+vbx8B80m4Laix93A+C8uskUE",
-	"L5bL/x1gfrFc9sJYw6zNrWGQDERHrV/3hp2Km75yf0fpuO8hR3qHDuLIhBzsnZWyr7xMzEXxNhWrD0dU",
-	"bLGLpqjCH133X7d9+L1qP6YUPwH+Y1cdxwaqpPcb66ZdzXQ/b7uRhabK5EigDN3IVSiKk0LxttIO/ZUe",
-	"Lvf5EYlw8qr5fgQs/qRNasepe4EVOTh7dw4d2YYay2GqKZBKv0NE4gadb86dLpaLJSOxFRpZabESPyxO",
-	"F0sRiUpSHrSMZaXjm9O46KyeIY0R5NKoAj2EXcwaZV94pVFtu6Y8bDTlodNU2nHfRhZyG9KELRtQnyux",
-	"an0cDQbK7VxcHcyc8WiOuj+s/H95On9Tuy8eN2ChVajLUrrtfXXDWuwxqR121lJdK2H9hLWkUr4ZVjJ9",
-	"EzoVjk3QZkjgYZYYGaabtZ5hmnuz+LMM04nfReLH5fLx/ftOMJz46fETh4PRLhIvjpEz1e4fuqyzKllo",
-	"GBkMbtpHgbH/sr74zDuwmeme48GGSJ/nwoO3i+f6sGPyf4YT20eUGS/Gd0051GoX0jK+C/2qVrvg33rO",
-	"vbLJULIgW1fXocfSys9l5aXtPFtJJ0skdD5UVWbOQKldW7ASHSgRDUagUQ2YPNrif/Dkx+83MvqXILKP",
-	"hIafrWcXSE7jDXqoZKYN92xQaE9g0+ZOHn1pE6bflgK4sQMnTTauZvuXiVFkHIoNd5DlFtwRFNZe1xWk",
-	"zpYiagLhc41uu4+EdunwfW4YFsf1rnMw0KgWxIx8suLLpZm6XKNjy4b+kQU7pNqZoDl0IqfkF7rUdJwB",
-	"tCExNaTMoOmd4NDXBfmHvGDT1OOXwRin6xFZcfDg9fR8/UqZ9wYJOhhhJexsort2BXdLRNUqjgubyCK3",
-	"nlYvly9PY27m/woAAP//eCNBC0AYAAA=",
+	"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",
+	"ZxsAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -60,10 +60,10 @@ func mustLoadMongoDBName(logger zerolog.Logger) string {
 }
 
 func MustLoadAuth(ctx context.Context, logger zerolog.Logger) *auth.Authenticator {
-	//audience := os.Getenv("AUTH0_AUDIENCE")
-	//if audience == "" {
-	//	logger.Panic().Msg("unable to get value for audience")
-	//}
+	audience := os.Getenv("AUTH0_AUDIENCE")
+	if audience == "" {
+		logger.Panic().Msg("unable to get value for audience")
+	}
 	clientID := os.Getenv("AUTH0_CLIENT_ID")
 	if clientID == "" {
 		logger.Panic().Msg("unable to get value for client id")
@@ -84,7 +84,7 @@ func MustLoadAuth(ctx context.Context, logger zerolog.Logger) *auth.Authenticato
 	if callbackURL == "" {
 		logger.Panic().Msg("unable to get value for callbackURL")
 	}
-	authenticator, err := auth.New(ctx, authEndpoint, clientID, clientSecret, callbackURL)
+	authenticator, err := auth.New(ctx, logger, audience, authEndpoint, clientID, clientSecret, callbackURL)
 	if err != nil {
 		panic(err)
 	}

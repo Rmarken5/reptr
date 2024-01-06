@@ -36,14 +36,15 @@ func main() {
 		Handler: serverImpl,
 	}
 
-	router.HandleFunc("/api/v1/login", wrapper.Login).Methods("GET")
+	router.HandleFunc("/api/v1/login", wrapper.Login).Methods(http.MethodGet)
+	router.HandleFunc("/api/v1/register", wrapper.Register).Methods(http.MethodPost)
 
 	secureRoute := router.PathPrefix("/secure").Subrouter()
-	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods("POST")
-	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods("POST")
-	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods("POST")
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
+	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
-	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods("GET")
+	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods(http.MethodGet)
 	secureRoute.Use(middlewares.Authenticate(log, authenticator))
 
 	s := &http.Server{
