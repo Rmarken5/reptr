@@ -36,8 +36,10 @@ func main() {
 		Handler: serverImpl,
 	}
 
-	router.HandleFunc("/api/v1/login", wrapper.Login).Methods(http.MethodGet)
-	router.HandleFunc("/api/v1/register", wrapper.Register).Methods(http.MethodPost)
+	router.HandleFunc("/login", wrapper.LoginPage).Methods(http.MethodGet)
+	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
+	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
+	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
 
 	secureRoute := router.PathPrefix("/secure").Subrouter()
 	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)

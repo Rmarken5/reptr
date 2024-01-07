@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/controller_mock.go -package auth . Authentication
 //
+
 // Package auth is a generated GoMock package.
 package auth
 
@@ -13,6 +14,7 @@ import (
 	reflect "reflect"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
+	models "github.com/rmarken/reptr/service/internal/models"
 	gomock "go.uber.org/mock/gomock"
 	oauth2 "golang.org/x/oauth2"
 )
@@ -53,6 +55,22 @@ func (m *MockAuthentication) PasswordCredentialsToken(arg0 context.Context, arg1
 func (mr *MockAuthenticationMockRecorder) PasswordCredentialsToken(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PasswordCredentialsToken", reflect.TypeOf((*MockAuthentication)(nil).PasswordCredentialsToken), arg0, arg1, arg2)
+}
+
+// RegisterUser mocks base method.
+func (m *MockAuthentication) RegisterUser(arg0 context.Context, arg1, arg2 string) (models.RegistrationUser, models.RegistrationError, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.RegistrationUser)
+	ret1, _ := ret[1].(models.RegistrationError)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// RegisterUser indicates an expected call of RegisterUser.
+func (mr *MockAuthenticationMockRecorder) RegisterUser(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterUser", reflect.TypeOf((*MockAuthentication)(nil).RegisterUser), arg0, arg1, arg2)
 }
 
 // VerifyIDToken mocks base method.

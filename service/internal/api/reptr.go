@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,9 +9,9 @@ import (
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
+	"github.com/rmarken/reptr/service/internal/web/components"
 	"github.com/rs/zerolog"
 	"net/http"
-	"strings"
 )
 
 var _ api.ServerInterface = ReprtClient{}
@@ -181,6 +180,15 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(groupId))
 }
+func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
+	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
+	log.Info().Msgf("serving registration page")
+	err := components.Register(nil).Render(r.Context(), w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
 
 func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "register").Logger()
@@ -193,63 +201,122 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := r.PostForm.Get("username")
+	email := r.PostForm.Get("email")
 	password := r.PostForm.Get("password")
 	repassword := r.PostForm.Get("repassword")
 
-	if username == "" {
-		http.Error(w, "must provide a username", http.StatusBadRequest)
+	if email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		err := components.Register(components.Banner("Must provide email")).Render(r.Context(), w)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
 	}
 
 	if password == "" {
-		http.Error(w, "must provide a password", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		err := components.Register(components.Banner("Must provide password")).Render(r.Context(), w)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
 	}
 
-	// check password strength
+	//TODO: check password strength
 
 	if password != repassword {
-		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		err := components.Register(components.Banner("Passwords do not match")).Render(r.Context(), w)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
 	}
 
-	user, err := rc.authenticator.RegisterUser(r.Context(), username, password)
+	user, registrationError, err := rc.authenticator.RegisterUser(r.Context(), email, password)
 	if err != nil {
 		log.Error().Err(err).Msg("while registering")
 		http.Error(w, "while registering", http.StatusInternalServerError)
+		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(user))
+	if !registrationError.IsZero() {
+		w.WriteHeader(registrationError.StatusCode)
+		err := components.Register(components.Banner(registrationError.Description)).Render(r.Context(), w)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
 
+	log.Info().Msgf("user is registered: %+v", user)
+	w.WriteHeader(http.StatusCreated)
+	err = components.Login(components.Banner("Registration Successful")).Render(r.Context(), w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
+	log := rc.logger.With().Str("method", "LoginPage").Logger()
+	log.Info().Msgf("serving login page")
+	err := components.Login(nil).Render(r.Context(), w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "Login").Logger()
 	logger.Debug().Msg("login called")
 
-	username, password, err := parseBasicAuth(r.Header.Get("Authorization"))
+	err := r.ParseForm()
 	if err != nil {
-		logger.Error().Err(err).Msgf("Bad request - Authorization header")
-		http.Error(w, "Bad request - Authorization header", http.StatusBadRequest)
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), username, password)
+	email := r.PostForm.Get("email")
+	if email == "" {
+		logger.Info().Msgf("login attempt without email")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	password := r.PostForm.Get("password")
+	if password == "" {
+		logger.Info().Msgf("login attempt without password - email: %s", email)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), email, password)
 	if err != nil {
-		logger.Error().Err(err).Msgf("error authenticating %s: %v", username, err)
+		logger.Error().Err(err).Msgf("error authenticating %s: %v", email, err)
 		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
 	if tokenString, ok := token.Extra(IDToken).(string); ok {
+		idToken, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
+		if err != nil {
+			http.Error(w, "unable to verify token", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Authorization", "Bearer "+tokenString)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(tokenString))
+		components.Home(idToken.Subject).Render(r.Context(), w)
+
 		return
 	}
 
 	logger.Error().Msgf("Bad request - token doesn't contain %s", IDToken)
 	http.Error(w, fmt.Sprintf("Bad request - token doesn't contain %s", IDToken), http.StatusInternalServerError)
 	return
-
 }
 
 func toStatus(err error) int {
@@ -263,28 +330,4 @@ func toStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func parseBasicAuth(basicAuthHeader string) (string, string, error) {
-	authParts := strings.SplitN(basicAuthHeader, " ", 2)
-
-	if len(authParts) != 2 || authParts[0] != "Basic" {
-		return "", "", errors.New("invalid basic auth header")
-	}
-
-	// Decode the base64-encoded credentials
-	credentials, err := base64.StdEncoding.DecodeString(authParts[1])
-	if err != nil {
-		fmt.Println("Error decoding credentials:", err)
-		return "", "", errors.New("error decoding credentials")
-
-	}
-
-	// Split the decoded credentials into username and password
-	credentialsSplit := strings.SplitN(string(credentials), ":", 2)
-	if len(credentialsSplit) != 2 || credentialsSplit[0] == "" || credentialsSplit[1] == "" {
-		fmt.Println("Invalid credentials format")
-		return "", "", errors.New("invalid credentials format")
-	}
-	return credentialsSplit[0], credentialsSplit[1], nil
 }

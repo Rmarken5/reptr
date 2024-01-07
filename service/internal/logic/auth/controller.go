@@ -22,7 +22,7 @@ type (
 	Authentication interface {
 		VerifyIDToken(ctx context.Context, rawToken string) (*oidc.IDToken, error)
 		PasswordCredentialsToken(ctx context.Context, username string, password string) (*oauth2.Token, error)
-		RegisterUser(ctx context.Context, username, password string) (string, error)
+		RegisterUser(ctx context.Context, username, password string) (models.RegistrationUser, models.RegistrationError, error)
 	}
 	// Authenticator is used to authenticate our users.
 	Authenticator struct {
@@ -69,10 +69,9 @@ func (a *Authenticator) VerifyIDToken(ctx context.Context, rawToken string) (*oi
 	oidcConfig := &oidc.Config{
 		ClientID: a.ClientID,
 	}
-
 	return a.Verifier(oidcConfig).Verify(ctx, rawToken)
 }
-func (a *Authenticator) RegisterUser(ctx context.Context, username, password string) (string, error) {
+func (a *Authenticator) RegisterUser(ctx context.Context, username, password string) (models.RegistrationUser, models.RegistrationError, error) {
 	log := a.logger.With().Str("module", "registerUser").Logger()
 
 	reqBody := models.RegistrationRequest{
@@ -85,12 +84,12 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 
 	jsonBytes, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", err
+		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
 
 	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%sdbconnections/signup", a.endpoint), bytes.NewReader(jsonBytes))
 	if err != nil {
-		return "", nil
+		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
 	h := request.Header
 	h.Set("Content-Type", "application/json")
@@ -98,12 +97,29 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 
 	resp, err := a.httpClient.Do(request)
 	if err != nil {
-		return "", err
+		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
 	log.Debug().Msgf("resp: %s", respBytes)
-	return string(respBytes), nil
+
+	var registerUser models.RegistrationUser
+	err = json.Unmarshal(respBytes, &registerUser)
+	if err != nil {
+		return models.RegistrationUser{}, models.RegistrationError{}, err
+	}
+
+	if registerUser.IsZero() {
+		var registrationErr models.RegistrationError
+		err := json.Unmarshal(respBytes, &registrationErr)
+		if err != nil {
+			return models.RegistrationUser{}, models.RegistrationError{}, err
+		}
+		log.Debug().Msgf("reg err: %+v", registrationErr)
+		return models.RegistrationUser{}, registrationErr, nil
+	}
+
+	return registerUser, models.RegistrationError{}, nil
 }

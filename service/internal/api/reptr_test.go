@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/uuid"
 	"github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
@@ -143,15 +145,141 @@ func TestGetGroups(t *testing.T) {
 	}
 }
 
+func TestReprtClient_RegistrationPage(t *testing.T) {
+	t.Run("return registration page", func(t *testing.T) {
+		reprt := ReprtClient{
+			logger: zerolog.Nop(),
+		}
+		// Create a request object with necessary parameters
+		req, err := http.NewRequest(http.MethodGet, "/register", nil)
+		require.NoError(t, err)
+
+		// Create a response recorder to record the response
+		rr := httptest.NewRecorder()
+
+		// Call the Login method with the mocked dependencies
+		reprt.RegistrationPage(rr, req)
+
+		// Check the status code of the response
+		assert.Equal(t, http.StatusOK, rr.Code)
+		snaps.MatchSnapshot(t, rr.Body.String())
+	})
+}
+
+func TestReprtClient_Register(t *testing.T) {
+	testCases := map[string]struct {
+		haveEmail         string
+		havePassword      string
+		haveRepass        string
+		mockAuthenticator func(mock *mockAuth.MockAuthentication)
+		wantStatus        int
+	}{
+		"should return return login page on successful registration": {
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
+			haveRepass:   "str0ngP@ssword!",
+			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
+				mock.EXPECT().
+					RegisterUser(gomock.Any(), "someone@somewhere.com", "str0ngP@ssword!").
+					Return(models.RegistrationUser{
+						ID:            uuid.NewString(),
+						Email:         "fake@email.com",
+						EmailVerified: false,
+					}, models.RegistrationError{}, nil)
+			},
+			wantStatus: http.StatusCreated,
+		},
+		"should return bad request when user doesn't provide email": {
+			haveEmail:  "",
+			wantStatus: http.StatusBadRequest,
+		},
+		"should return bad request when user doesn't provide password": {
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "",
+			wantStatus:   http.StatusBadRequest,
+		},
+		"should return bad request when passwords don't match": {
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
+			haveRepass:   "str0ngP@ssword!1",
+			wantStatus:   http.StatusBadRequest,
+		},
+		"should return bad request when validator returns registration error": {
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
+			haveRepass:   "str0ngP@ssword!",
+			wantStatus:   http.StatusBadRequest,
+			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
+				mock.EXPECT().
+					RegisterUser(gomock.Any(), "someone@somewhere.com", "str0ngP@ssword!").
+					Return(models.RegistrationUser{}, models.RegistrationError{
+						Name:        "invalid_registration",
+						Code:        "invalid_registration",
+						Description: "invalid_registration",
+						StatusCode:  http.StatusBadRequest,
+					}, nil)
+			},
+		},
+		"should return bad request when validator returns error": {
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
+			haveRepass:   "str0ngP@ssword!",
+			wantStatus:   http.StatusInternalServerError,
+			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
+				mock.EXPECT().
+					RegisterUser(gomock.Any(), "someone@somewhere.com", "str0ngP@ssword!").
+					Return(models.RegistrationUser{}, models.RegistrationError{}, errors.New("oops"))
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockAuthenticator := mockAuth.NewMockAuthentication(ctrl)
+			if tc.mockAuthenticator != nil {
+				tc.mockAuthenticator(mockAuthenticator)
+			}
+			reprt := ReprtClient{
+				logger:        zerolog.Nop(),
+				authenticator: mockAuthenticator,
+			}
+			// Create a request object with necessary parameters
+			req, err := http.NewRequest(http.MethodPost, "/login", nil)
+			require.NoError(t, err)
+
+			req.PostForm = map[string][]string{}
+			req.PostForm.Set("email", tc.haveEmail)
+			req.PostForm.Set("password", tc.havePassword)
+			req.PostForm.Set("repassword", tc.haveRepass)
+
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+
+			// Call the Login method with the mocked dependencies
+			reprt.Register(rr, req)
+
+			// Check the status code of the response
+			assert.Equal(t, tc.wantStatus, rr.Code)
+			snaps.MatchSnapshot(t, rr.Body.String())
+
+		})
+	}
+}
+
 func TestReprtClient_Login(t *testing.T) {
 	testCases := map[string]struct {
-		haveHeader        http.Header
+		haveEmail         string
+		havePassword      string
 		mockAuthenticator func(mock *mockAuth.MockAuthentication)
 		wantStatus        int
 		wantResponse      string
 	}{
 		"should return token on login": {
-			haveHeader: http.Header{"Authorization": []string{"Basic am9obi1kb2U6c2VjcmV0cEBzc3cwcmQ="}},
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
 			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
 				extra := map[string]interface{}{IDToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature"}
 				token := &oauth2.Token{
@@ -162,28 +290,22 @@ func TestReprtClient_Login(t *testing.T) {
 				}
 				token = token.WithExtra(extra)
 				mock.EXPECT().PasswordCredentialsToken(gomock.Any(), gomock.Any(), gomock.Any()).Return(token, nil)
-			},
-			wantResponse: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature",
-			wantStatus:   http.StatusOK,
-		},
-		"should return token on login with colon in pass": {
-			haveHeader: http.Header{"Authorization": []string{"Basic am9obi1kb2U6bXk6cGFzc3dvcmQxMjM="}},
-			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
-				extra := map[string]interface{}{IDToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature"}
-				token := &oauth2.Token{
-					AccessToken:  "",
-					TokenType:    "",
-					RefreshToken: "",
-					Expiry:       time.Time{},
-				}
-				token = token.WithExtra(extra)
-				mock.EXPECT().PasswordCredentialsToken(gomock.Any(), gomock.Any(), gomock.Any()).Return(token, nil)
+				mock.EXPECT().VerifyIDToken(gomock.Any(), token.Extra(IDToken)).Return(&oidc.IDToken{
+					Issuer:          "",
+					Audience:        nil,
+					Subject:         "123-456",
+					Expiry:          time.Time{},
+					IssuedAt:        time.Time{},
+					Nonce:           "",
+					AccessTokenHash: "",
+				}, nil)
 			},
 			wantResponse: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature",
 			wantStatus:   http.StatusOK,
 		},
 		"should return unauthorized when authenticator does not return token": {
-			haveHeader: http.Header{"Authorization": []string{"Basic am9obi1kb2U6c2VjcmV0cEBzc3cwcmQ="}},
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "str0ngP@ssword!",
 			mockAuthenticator: func(mock *mockAuth.MockAuthentication) {
 
 				mock.EXPECT().PasswordCredentialsToken(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("random error"))
@@ -191,18 +313,15 @@ func TestReprtClient_Login(t *testing.T) {
 			wantResponse: "",
 			wantStatus:   http.StatusUnauthorized,
 		},
-		"should return bad request when header isn't basic auth": {
-			haveHeader:   http.Header{"Authorization": []string{"Bearer am9obi1kb2U6c2VjcmV0cEBzc3cwcmQ="}},
-			wantResponse: "",
-			wantStatus:   http.StatusBadRequest,
-		},
 		"should return bad request when header doesn't contain password": {
-			haveHeader:   http.Header{"Authorization": []string{"Basic am9obi1kb2U6"}},
+			haveEmail:    "someone@somewhere.com",
+			havePassword: "",
 			wantResponse: "",
 			wantStatus:   http.StatusBadRequest,
 		},
-		"should return bad request when header doesn't contain user": {
-			haveHeader:   http.Header{"Authorization": []string{"Basic OnBhc3N3b3Jk"}},
+		"should return bad request when header doesn't contain email": {
+			haveEmail:    "",
+			havePassword: "str0ngP@ssword!",
 			wantResponse: "",
 			wantStatus:   http.StatusBadRequest,
 		},
@@ -222,10 +341,12 @@ func TestReprtClient_Login(t *testing.T) {
 				authenticator: mockAuthenticator,
 			}
 			// Create a request object with necessary parameters
-			req, err := http.NewRequest(http.MethodGet, "/login", nil)
+			req, err := http.NewRequest(http.MethodPost, "/login", nil)
 			require.NoError(t, err)
 
-			req.Header = tc.haveHeader
+			req.PostForm = map[string][]string{}
+			req.PostForm.Set("email", tc.haveEmail)
+			req.PostForm.Set("password", tc.havePassword)
 
 			// Create a response recorder to record the response
 			rr := httptest.NewRecorder()
@@ -236,9 +357,30 @@ func TestReprtClient_Login(t *testing.T) {
 			// Check the status code of the response
 			assert.Equal(t, tc.wantStatus, rr.Code)
 			if rr.Code == http.StatusOK {
-				assert.Equal(t, tc.wantResponse, rr.Body.String())
+				snaps.MatchSnapshot(t, rr.Body.String())
 				require.NoError(t, err)
 			}
 		})
 	}
+}
+
+func TestReprtClient_LoginPage(t *testing.T) {
+	t.Run("return login page", func(t *testing.T) {
+		reprt := ReprtClient{
+			logger: zerolog.Nop(),
+		}
+		// Create a request object with necessary parameters
+		req, err := http.NewRequest(http.MethodGet, "/login", nil)
+		require.NoError(t, err)
+
+		// Create a response recorder to record the response
+		rr := httptest.NewRecorder()
+
+		// Call the Login method with the mocked dependencies
+		reprt.LoginPage(rr, req)
+
+		// Check the status code of the response
+		assert.Equal(t, http.StatusOK, rr.Code)
+		snaps.MatchSnapshot(t, rr.Body.String())
+	})
 }

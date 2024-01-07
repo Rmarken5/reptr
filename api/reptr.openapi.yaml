@@ -6,8 +6,18 @@ info:
 servers:
   - url: http://localhost:8081/
 paths:
-  /api/v1/login:
+  /login:
     get:
+      operationId: loginPage
+      summary: serve login page
+      description: returns html page for login
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
       operationId: login
       summary: handles login
       description: handles login form request and responds with a jwt
@@ -16,7 +26,17 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/LoginResponseBody'
-  /api/v1/register:
+  /register:
+    get:
+      operationId: registrationPage
+      summary: serve registration page
+      description: returns html page for registration
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
     post:
       operationId: register
       summary: handles user registration

@@ -1,9 +1,9 @@
 .Phony:
-docker-build-service:
+docker-build-service: gen
 	docker build -f ./dockerfiles/service.dockerfile . -t gcr.io/small-biz-template/markenshop/reptr:latest
 
 .Phony:
-docker-run-service:
+docker-run-service: docker-build-service
 	docker run -d --rm -p 8081:8080 \
     		-e PORT=8080 \
     		-e MONGO_URI="mongodb://host.docker.internal:27017/?directConnection=true&serverSelectionTimeoutMS=2000" \
@@ -22,12 +22,16 @@ docker-run-mongo:
 	docker run -d --rm -p 27017:27017 -v /home/ryan/data/db:/data/db -v /home/ryan/data/log/mongodb/mongo.log:/data/log/mongodb/mongo.log reprt-mongo:latest
 
 test:
-	go test ./...
+	export UPDATE_SNAPS=false && go test ./...
+
+test-update:
+	export UPDATE_SNAPS=true && go test ./...
 
 cover:
-	go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
+	export UPDATE_SNAPS=false && go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
 
 .PHONY: gen
 gen:
 	find . -name "*_mock.go" -type f -delete
 	go generate ./...
+	templ generate
