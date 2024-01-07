@@ -12,8 +12,7 @@
 ---
 
 [TestReprtClient_Register/should_return_bad_request_when_user_doesn't_provide_password - 1]
-must provide a password
-<body><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+<body><p>Must provide password</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
 ---
 
 [TestReprtClient_Register/should_return_return_login_page_on_successful_registration - 1]
@@ -26,15 +25,13 @@ while registering
 ---
 
 [TestReprtClient_Register/should_return_bad_request_when_user_doesn't_provide_email - 1]
-must provide an email
-<body><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+<body><p>Must provide email</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
 ---
 
 [TestReprtClient_Register/should_return_bad_request_when_passwords_don't_match - 1]
-<body><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+<body><p>Passwords do not match</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
 ---
 
 [TestReprtClient_Register/should_return_bad_request_when_validator_returns_registration_error - 1]
-invalid_registration
-
+<body><p>invalid_registration</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
 ---
