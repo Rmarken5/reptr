@@ -6,6 +6,7 @@ import (
 	exAPI "github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/cmd"
 	"github.com/rmarken/reptr/service/internal/api"
+	"github.com/rmarken/reptr/service/internal/api/middlewares"
 	"github.com/rs/zerolog"
 	"net"
 	"net/http"
@@ -22,22 +23,37 @@ func main() {
 
 	db := cmd.MustConnectMongo(ctx, log)
 	defer db.Client().Disconnect(ctx)
+	repo := cmd.MustLoadRepo(log, db)
+	l := cmd.MustLoadLogic(log, repo)
 
-	l := cmd.MustLoadLogic(log, db)
-	reptrClient := api.New(log, l)
+	authenticator := cmd.MustLoadAuth(ctx, log)
+	p := cmd.MustLoadProvider(log, repo)
+	serverImpl := api.New(log, l, p, authenticator)
 
-	// This is how you set up a basic Gorilla router
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
-	// We now register our petStore above as the handler for the interface
-	exAPI.HandlerFromMux(reptrClient, r)
+	wrapper := exAPI.ServerInterfaceWrapper{
+		Handler: serverImpl,
+	}
+
+	router.HandleFunc("/login", wrapper.LoginPage).Methods(http.MethodGet)
+	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
+	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
+	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
+
+	secureRoute := router.PathPrefix("/secure").Subrouter()
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
+	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
+	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
+	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
+	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods(http.MethodGet)
+	secureRoute.Use(middlewares.Authenticate(log, authenticator))
 
 	s := &http.Server{
-		Handler: r,
+		Handler: router,
 		Addr:    net.JoinHostPort("0.0.0.0", mustGetPort(log)),
 	}
 
-	// And we serve HTTP until the world ends.
 	log.Fatal().Err(s.ListenAndServe())
 
 }

@@ -6,7 +6,47 @@ info:
 servers:
   - url: http://localhost:8081/
 paths:
-  /api/v1/groups:
+  /login:
+    get:
+      operationId: loginPage
+      summary: serve login page
+      description: returns html page for login
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: login
+      summary: handles login
+      description: handles login form request and responds with a jwt
+      requestBody:
+        $ref: "#/components/requestBodies/LoginRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/LoginResponseBody'
+  /register:
+    get:
+      operationId: registrationPage
+      summary: serve registration page
+      description: returns html page for registration
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: register
+      summary: handles user registration
+      description: handles registration form request and responds with home
+      requestBody:
+        $ref: "#/components/requestBodies/RegisterRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/RegistrationResponseBody'
+  /secure/api/v1/groups:
     get:
       operationId: 'getGroups'
       summary: Get Groups
@@ -51,7 +91,7 @@ paths:
           $ref: '#/components/responses/UserError'
         500:
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/group:
+  /secure/api/v1/group:
     post:
       operationId: addGroup
       summary: request to create new group
@@ -68,7 +108,7 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/group/{group_id}/deck/{deck_id}:
+  /secure/api/v1/group/{group_id}/deck/{deck_id}:
     put:
       operationId: addDeckToGroup
       summary: request to add deck to group
@@ -91,55 +131,55 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
-#  /api/v1/decks/{user_id}:
-#    get:
-#      operationId: 'getDecksForUser'
-#      summary: Gets all decks created by user
-#      description: Retrieves paginated list of decks between a given date range for a user
-#      parameters:
-#        - name: user_id
-#          in: path
-#
-#        - name: from
-#          description: date to start lookup from
-#          allowEmptyValue: false
-#          required: true
-#          in: query
-#          schema:
-#            type: string
-#            format: date-time
-#        - name: to
-#          description: date to end lookup
-#          allowEmptyValue: false
-#          required: false
-#          in: query
-#          schema:
-#            type: string
-#            format: date-time
-#        - name: limit
-#          description: number of items to return from query
-#          allowEmptyValue: false
-#          required: true
-#          in: query
-#          schema:
-#            type: integer
-#            format: int
-#        - name: offset
-#          description: number to start results from
-#          allowEmptyValue: false
-#          required: true
-#          in: query
-#          schema:
-#            type: integer
-#            format: int
-#      responses:
-#        200:
-#          $ref: '#/components/responses/GetGroups'
-#        400:
-#          $ref: '#/components/responses/UserError'
-#        500:
-#          $ref: '#/components/responses/InternalServerError'
-  /api/v1/deck:
+  #  /api/v1/decks/{user_id}:
+  #    get:
+  #      operationId: 'getDecksForUser'
+  #      summary: Gets all decks created by user
+  #      description: Retrieves paginated list of decks between a given date range for a user
+  #      parameters:
+  #        - name: user_id
+  #          in: path
+  #
+  #        - name: from
+  #          description: date to start lookup from
+  #          allowEmptyValue: false
+  #          required: true
+  #          in: query
+  #          schema:
+  #            type: string
+  #            format: date-time
+  #        - name: to
+  #          description: date to end lookup
+  #          allowEmptyValue: false
+  #          required: false
+  #          in: query
+  #          schema:
+  #            type: string
+  #            format: date-time
+  #        - name: limit
+  #          description: number of items to return from query
+  #          allowEmptyValue: false
+  #          required: true
+  #          in: query
+  #          schema:
+  #            type: integer
+  #            format: int
+  #        - name: offset
+  #          description: number to start results from
+  #          allowEmptyValue: false
+  #          required: true
+  #          in: query
+  #          schema:
+  #            type: integer
+  #            format: int
+  #      responses:
+  #        200:
+  #          $ref: '#/components/responses/GetGroups'
+  #        400:
+  #          $ref: '#/components/responses/UserError'
+  #        500:
+  #          $ref: '#/components/responses/InternalServerError'
+  /secure/api/v1/deck:
     post:
       operationId: addDeck
       summary: request to create new deck
@@ -158,6 +198,18 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   responses:
+    LoginResponseBody:
+      description: Response that contains token if user has been authenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LoginResponseSchema'
+    RegistrationResponseBody:
+      description: Response that home page if successful
+      content:
+        text/html:
+          schema:
+            type: string
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -205,6 +257,20 @@ components:
             type: object
             $ref: '#/components/schemas/ErrorObject'
   requestBodies:
+    LoginRequestBody:
+      description: request body for log in
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/Login"
+    RegisterRequestBody:
+      description: request body for registration
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/Register"
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -218,6 +284,32 @@ components:
           schema:
             $ref: '#/components/schemas/DeckName'
   schemas:
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        repassword:
+          type: string
+      required: [username, password, repassword]
+    LoginResponseSchema:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
     DocumentID:
       type: string
     Card:

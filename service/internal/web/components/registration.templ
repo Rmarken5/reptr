@@ -1,0 +1,20 @@
+package components
+
+templ Register(banner templ.Component) {
+  <body>
+  if banner != nil {
+    @banner
+  }
+    <form action="/register" method="POST" >
+    <label for="email">Email: </label>
+    <input type="text" id="email" name="email"/><br/>
+    <label for="password">Password: </label>
+    <input type="password" id="password" name="password" /><br/>
+    <label for="repassword">Confirm Password: </label>
+    <input type="password" id="repassword" name="repassword"/><br/>
+    <input type="submit" value="Register"/> <a href="/login">or login</a>
+    </form>
+  </body>
+}
+
+

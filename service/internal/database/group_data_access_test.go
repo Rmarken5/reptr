@@ -123,7 +123,6 @@ func TestUpdateGroup(t *testing.T) {
 }
 
 func TestGetGroupsWithDecks(t *testing.T) {
-	// Set up mock database and logger
 	var (
 		db            = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 		logger        = zerolog.Nop()
