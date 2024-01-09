@@ -22,6 +22,10 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+const (
+	Jwt_authScopes = "jwt_auth.Scopes"
+)
+
 // Deck defines model for Deck.
 type Deck struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -112,6 +116,21 @@ type AddDeckRequest = DeckName
 
 // AddGroupRequest defines model for AddGroupRequest.
 type AddGroupRequest = GroupName
+
+// GetDecksForUserParams defines parameters for GetDecksForUser.
+type GetDecksForUserParams struct {
+	// From date to start lookup from
+	From time.Time `form:"from" json:"from"`
+
+	// To date to end lookup
+	To *time.Time `form:"to,omitempty" json:"to,omitempty"`
+
+	// Limit number of items to return from query
+	Limit int `form:"limit" json:"limit"`
+
+	// Offset number to start results from
+	Offset int `form:"offset" json:"offset"`
+}
 
 // GetGroupsParams defines parameters for GetGroups.
 type GetGroupsParams struct {
@@ -234,6 +253,9 @@ type ClientInterface interface {
 
 	AddDeck(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDecksForUser request
+	GetDecksForUser(ctx context.Context, params *GetDecksForUserParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddGroupWithBody request with any body
 	AddGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -332,6 +354,18 @@ func (c *Client) AddDeckWithBody(ctx context.Context, contentType string, body i
 
 func (c *Client) AddDeck(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddDeckRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDecksForUser(ctx context.Context, params *GetDecksForUserParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDecksForUserRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -560,6 +594,91 @@ func NewAddDeckRequestWithBody(server string, contentType string, body io.Reader
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetDecksForUserRequest generates requests for GetDecksForUser
+func NewGetDecksForUserRequest(server string, params *GetDecksForUserParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/secure/api/v1/decks")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "from", runtime.ParamLocationQuery, params.From); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "to", runtime.ParamLocationQuery, *params.To); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, params.Limit); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, params.Offset); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -794,6 +913,9 @@ type ClientWithResponsesInterface interface {
 
 	AddDeckWithResponse(ctx context.Context, body AddDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*AddDeckResponse, error)
 
+	// GetDecksForUserWithResponse request
+	GetDecksForUserWithResponse(ctx context.Context, params *GetDecksForUserParams, reqEditors ...RequestEditorFn) (*GetDecksForUserResponse, error)
+
 	// AddGroupWithBodyWithResponse request with any body
 	AddGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGroupResponse, error)
 
@@ -909,6 +1031,30 @@ func (r AddDeckResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r AddDeckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDecksForUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *GetGroups
+	JSON400      *UserError
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDecksForUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDecksForUserResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1054,6 +1200,15 @@ func (c *ClientWithResponses) AddDeckWithResponse(ctx context.Context, body AddD
 		return nil, err
 	}
 	return ParseAddDeckResponse(rsp)
+}
+
+// GetDecksForUserWithResponse request returning *GetDecksForUserResponse
+func (c *ClientWithResponses) GetDecksForUserWithResponse(ctx context.Context, params *GetDecksForUserParams, reqEditors ...RequestEditorFn) (*GetDecksForUserResponse, error) {
+	rsp, err := c.GetDecksForUser(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDecksForUserResponse(rsp)
 }
 
 // AddGroupWithBodyWithResponse request with arbitrary body returning *AddGroupResponse
@@ -1205,6 +1360,46 @@ func ParseAddDeckResponse(rsp *http.Response) (*AddDeckResponse, error) {
 	return response, nil
 }
 
+// ParseGetDecksForUserResponse parses an HTTP response from a GetDecksForUserWithResponse call
+func ParseGetDecksForUserResponse(rsp *http.Response) (*GetDecksForUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDecksForUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetGroups
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest UserError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAddGroupResponse parses an HTTP response from a AddGroupWithResponse call
 func ParseAddGroupResponse(rsp *http.Response) (*AddGroupResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1342,6 +1537,9 @@ type ServerInterface interface {
 	// request to create new deck
 	// (POST /secure/api/v1/deck)
 	AddDeck(w http.ResponseWriter, r *http.Request)
+	// Gets all decks created by user
+	// (GET /secure/api/v1/decks)
+	GetDecksForUser(w http.ResponseWriter, r *http.Request, params GetDecksForUserParams)
 	// request to create new group
 	// (POST /secure/api/v1/group)
 	AddGroup(w http.ResponseWriter, r *http.Request)
@@ -1437,6 +1635,79 @@ func (siw *ServerInterfaceWrapper) AddDeck(w http.ResponseWriter, r *http.Reques
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// GetDecksForUser operation middleware
+func (siw *ServerInterfaceWrapper) GetDecksForUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDecksForUserParams
+
+	// ------------- Required query parameter "from" -------------
+
+	if paramValue := r.URL.Query().Get("from"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "from", r.URL.Query(), &params.From)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "to", r.URL.Query(), &params.To)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "limit" -------------
+
+	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "offset" -------------
+
+	if paramValue := r.URL.Query().Get("offset"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDecksForUser(w, r, params)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // AddGroup operation middleware
 func (siw *ServerInterfaceWrapper) AddGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -1492,6 +1763,8 @@ func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 
 	var err error
+
+	ctx = context.WithValue(ctx, Jwt_authScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetGroupsParams
@@ -1683,6 +1956,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/deck", wrapper.AddDeck).Methods("POST")
 
+	r.HandleFunc(options.BaseURL+"/secure/api/v1/decks", wrapper.GetDecksForUser).Methods("GET")
+
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/group", wrapper.AddGroup).Methods("POST")
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
@@ -1695,32 +1970,34 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

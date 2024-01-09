@@ -19,3 +19,8 @@ type (
 		Username string `bson:"username"`
 	}
 )
+
+type UserIDCtxKey struct {
+}
+
+var UserIDKey = UserIDCtxKey{}

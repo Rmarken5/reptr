@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"context"
 	"errors"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
+	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
 	"strings"
@@ -12,7 +14,8 @@ func Authenticate(logger zerolog.Logger, authenticator auth.Authentication) func
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logger := logger.With().Str("middleware", "Authenticate").Logger()
-			logger.Debug().Msg("authenticating")
+			logger.Info().Msg("authenticating")
+
 			authHeader := r.Header.Get("Authorization")
 			token, err := parseBearerToken(authHeader)
 			if err != nil {
@@ -21,12 +24,16 @@ func Authenticate(logger zerolog.Logger, authenticator auth.Authentication) func
 				return
 			}
 
-			_, err = authenticator.VerifyIDToken(r.Context(), token)
+			idToken, err := authenticator.VerifyIDToken(r.Context(), token)
 			if err != nil {
 				logger.Error().Err(err).Msgf("error authenticating %s: %v", token, err)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+
+			logger.Debug().Msgf("userID from authentication: %s", idToken.Subject)
+			r = r.WithContext(context.WithValue(r.Context(), models.UserIDKey, strings.TrimPrefix(idToken.Subject, "auth0|")))
+
 			next.ServeHTTP(w, r)
 		})
 	}

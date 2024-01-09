@@ -26,7 +26,7 @@ func main() {
 	repo := cmd.MustLoadRepo(log, db)
 	l := cmd.MustLoadLogic(log, repo)
 
-	authenticator := cmd.MustLoadAuth(ctx, log)
+	authenticator := cmd.MustLoadAuth(ctx, log, repo)
 	p := cmd.MustLoadProvider(log, repo)
 	serverImpl := api.New(log, l, p, authenticator)
 

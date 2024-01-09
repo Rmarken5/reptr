@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
@@ -16,6 +17,8 @@ import (
 )
 
 var _ Authentication = new(Authenticator)
+
+const connection = "Username-Password-Authentication"
 
 //go:generate mockgen -destination ./mocks/controller_mock.go -package auth . Authentication
 type (
@@ -32,11 +35,12 @@ type (
 		endpoint   string
 		logger     zerolog.Logger
 		httpClient http.Client
+		repo       database.ProviderUsersDataAccess
 	}
 )
 
 // New instantiates the *Authenticator.
-func New(ctx context.Context, logger zerolog.Logger, audience, endpoint, clientID, clientSecret, callbackURL string) (*Authenticator, error) {
+func New(ctx context.Context, logger zerolog.Logger, repo database.ProviderUsersDataAccess, audience, endpoint, clientID, clientSecret, callbackURL string) (*Authenticator, error) {
 	log := logger.With().Str("module", "authenticator").Logger()
 	provider, err := oidc.NewProvider(
 		ctx,
@@ -60,6 +64,7 @@ func New(ctx context.Context, logger zerolog.Logger, audience, endpoint, clientI
 		Provider: provider,
 		Config:   conf,
 		logger:   log,
+		repo:     repo,
 	}, nil
 }
 
@@ -78,7 +83,7 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 		ClientID:   a.Config.ClientID,
 		Email:      username,
 		Password:   password,
-		Connection: "Username-Password-Authentication",
+		Connection: connection,
 		Username:   username,
 	}
 
@@ -103,7 +108,6 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 	if err != nil {
 		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
-	log.Debug().Msgf("resp: %s", respBytes)
 
 	var registerUser models.RegistrationUser
 	err = json.Unmarshal(respBytes, &registerUser)
@@ -119,6 +123,12 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 		}
 		log.Debug().Msgf("reg err: %+v", registrationErr)
 		return models.RegistrationUser{}, registrationErr, nil
+	}
+
+	log.Debug().Msgf("userID from registration: %s", registerUser.ID)
+	err = a.repo.InsertUserSubjectPair(ctx, username, registerUser.ID)
+	if err != nil {
+		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}
 
 	return registerUser, models.RegistrationError{}, nil

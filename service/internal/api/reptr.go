@@ -319,6 +319,11 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (rc ReprtClient) GetDecksForUser(w http.ResponseWriter, r *http.Request, params api.GetDecksForUserParams) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func toStatus(err error) int {
 	switch {
 	case errors.Is(err, decks.ErrInvalidToBeforeFrom),
