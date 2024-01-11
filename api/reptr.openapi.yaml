@@ -51,6 +51,8 @@ paths:
       operationId: 'getGroups'
       summary: Get Groups
       description: Retrieves paginated list of groups between a given date range
+      security:
+        - jwt_auth: [ ]
       parameters:
         - name: from
           description: date to start lookup from
@@ -131,54 +133,51 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
-  #  /api/v1/decks/{user_id}:
-  #    get:
-  #      operationId: 'getDecksForUser'
-  #      summary: Gets all decks created by user
-  #      description: Retrieves paginated list of decks between a given date range for a user
-  #      parameters:
-  #        - name: user_id
-  #          in: path
-  #
-  #        - name: from
-  #          description: date to start lookup from
-  #          allowEmptyValue: false
-  #          required: true
-  #          in: query
-  #          schema:
-  #            type: string
-  #            format: date-time
-  #        - name: to
-  #          description: date to end lookup
-  #          allowEmptyValue: false
-  #          required: false
-  #          in: query
-  #          schema:
-  #            type: string
-  #            format: date-time
-  #        - name: limit
-  #          description: number of items to return from query
-  #          allowEmptyValue: false
-  #          required: true
-  #          in: query
-  #          schema:
-  #            type: integer
-  #            format: int
-  #        - name: offset
-  #          description: number to start results from
-  #          allowEmptyValue: false
-  #          required: true
-  #          in: query
-  #          schema:
-  #            type: integer
-  #            format: int
-  #      responses:
-  #        200:
-  #          $ref: '#/components/responses/GetGroups'
-  #        400:
-  #          $ref: '#/components/responses/UserError'
-  #        500:
-  #          $ref: '#/components/responses/InternalServerError'
+  /secure/api/v1/decks:
+    get:
+      operationId: 'getDecksForUser'
+      summary: Gets all decks created by user
+      description: Retrieves paginated list of decks between a given date range for a user
+      parameters:
+        - name: from
+          description: date to start lookup from
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          description: date to end lookup
+          allowEmptyValue: false
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          description: number of items to return from query
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: integer
+            format: int
+        - name: offset
+          description: number to start results from
+          allowEmptyValue: false
+          required: true
+          in: query
+          schema:
+            type: integer
+            format: int
+      responses:
+        200:
+          $ref: '#/components/responses/GetGroups'
+        400:
+          $ref: '#/components/responses/UserError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
   /secure/api/v1/deck:
     post:
       operationId: addDeck
@@ -197,6 +196,11 @@ paths:
         500:
           $ref: '#/components/responses/InternalServerError'
 components:
+  securitySchemes:
+    jwt_auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   responses:
     LoginResponseBody:
       description: Response that contains token if user has been authenticated
@@ -300,7 +304,7 @@ components:
           type: string
         repassword:
           type: string
-      required: [username, password, repassword]
+      required: [ username, password, repassword ]
     LoginResponseSchema:
       type: object
       properties:

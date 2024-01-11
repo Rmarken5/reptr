@@ -127,19 +127,19 @@ func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
 }
 
-// GetUserIDFor mocks base method.
-func (m *MockRepository) GetUserIDFor(arg0 context.Context, arg1 string) (string, error) {
+// GetUserNameForSubject mocks base method.
+func (m *MockRepository) GetUserNameForSubject(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserIDFor", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetUserNameForSubject", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserIDFor indicates an expected call of GetUserIDFor.
-func (mr *MockRepositoryMockRecorder) GetUserIDFor(arg0, arg1 any) *gomock.Call {
+// GetUserNameForSubject indicates an expected call of GetUserNameForSubject.
+func (mr *MockRepositoryMockRecorder) GetUserNameForSubject(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDFor", reflect.TypeOf((*MockRepository)(nil).GetUserIDFor), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserNameForSubject", reflect.TypeOf((*MockRepository)(nil).GetUserNameForSubject), arg0, arg1)
 }
 
 // GetWithCards mocks base method.

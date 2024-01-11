@@ -71,7 +71,7 @@ func TestProviderUsersDAO_GetUserIDFor(t *testing.T) {
 				collection: t.Coll,
 				log:        zerolog.Nop(),
 			}
-			userID, err := dao.GetUserIDFor(context.Background(), "")
+			userID, err := dao.GetUserNameForSubject(context.Background(), "")
 			assert.ErrorIs(t, err, tc.wantErr)
 			assert.Equal(t, userID, tc.wantUserID)
 		})
