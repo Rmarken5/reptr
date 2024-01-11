@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"github.com/google/uuid"
 	"github.com/rmarken/reptr/service/internal/database"
 	mocks "github.com/rmarken/reptr/service/internal/database/mocks"
 	"github.com/rs/zerolog"
@@ -20,7 +22,7 @@ func TestNew(t *testing.T) {
 		assert.NotNil(t, c)
 	})
 }
-func TestController_UserExists(t *testing.T) {
+func TestLogic_UserExists(t *testing.T) {
 	testCases := map[string]struct {
 		mockDB     func(mockDB *mocks.MockRepository)
 		err        error
@@ -30,7 +32,7 @@ func TestController_UserExists(t *testing.T) {
 	}{
 		"user exists": {
 			mockDB: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("123", nil)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("123", nil)
 			},
 			err:        nil,
 			subject:    "exists",
@@ -39,7 +41,7 @@ func TestController_UserExists(t *testing.T) {
 		},
 		"user does not exist": {
 			mockDB: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
 			},
 			err:        nil,
 			subject:    "notExists",
@@ -48,7 +50,7 @@ func TestController_UserExists(t *testing.T) {
 		},
 		"error handling": {
 			mockDB: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("", mongo.ErrNilCursor)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", mongo.ErrNilCursor)
 			},
 			err:        mongo.ErrNilCursor,
 			subject:    "error",
@@ -77,7 +79,7 @@ func TestController_UserExists(t *testing.T) {
 	}
 }
 
-func TestController_InsertPair(t *testing.T) {
+func TestLogic_InsertPair(t *testing.T) {
 
 	// Testing InsertPair
 	insertTestCases := map[string]struct {
@@ -86,25 +88,25 @@ func TestController_InsertPair(t *testing.T) {
 	}{
 		"user does not exist": {
 			mockRepo: func(repo *mocks.MockRepository) {
-				repo.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
+				repo.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
 				repo.EXPECT().InsertUserSubjectPair(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		"user exists": {
 			mockRepo: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("123", nil)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("123", nil)
 			},
 			wantErr: ErrUserExists,
 		},
 		"error handling from first get user": {
 			mockRepo: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("", database.ErrFind)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", database.ErrFind)
 			},
 			wantErr: database.ErrFind,
 		},
 		"error handling from insert  user": {
 			mockRepo: func(mockDB *mocks.MockRepository) {
-				mockDB.EXPECT().GetUserIDFor(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
+				mockDB.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
 				mockDB.EXPECT().InsertUserSubjectPair(gomock.Any(), gomock.Any(), gomock.Any()).Return(database.ErrInsert)
 			},
 			wantErr: database.ErrInsert,
@@ -128,4 +130,55 @@ func TestController_InsertPair(t *testing.T) {
 			assert.ErrorIs(t, err, tc.wantErr)
 		})
 	}
+}
+
+func TestLogic_GetUserIDFromSubject(t *testing.T) {
+
+	var (
+		haveUserID = uuid.NewString()
+		haveErr    = errors.New("err")
+	)
+
+	testCases := map[string]struct {
+		mockRepo   func(mock *mocks.MockRepository)
+		wantUserID string
+		wantErr    error
+	}{
+		"should return userID for subject": {
+			mockRepo: func(mock *mocks.MockRepository) {
+				mock.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return(haveUserID, nil)
+			},
+			wantUserID: haveUserID,
+		},
+		"should return error from repo": {
+			mockRepo: func(mock *mocks.MockRepository) {
+				mock.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", haveErr)
+			},
+			wantErr: haveErr,
+		},
+		"should return ErrNoUser from when not found from repo": {
+			mockRepo: func(mock *mocks.MockRepository) {
+				mock.EXPECT().GetUserNameForSubject(gomock.Any(), gomock.Any()).Return("", database.ErrNoResults)
+			},
+			wantErr: ErrNoUser,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockRepo := mocks.NewMockRepository(ctrl)
+			if tc.mockRepo != nil {
+				tc.mockRepo(mockRepo)
+			}
+			logic := Logic{repo: mockRepo, logger: zerolog.Nop()}
+
+			userID, err := logic.GetUserIDFromSubject(context.Background(), uuid.NewString())
+			assert.ErrorIs(t, err, tc.wantErr)
+			assert.Equal(t, tc.wantUserID, userID)
+		})
+	}
+
 }

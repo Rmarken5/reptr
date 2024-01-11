@@ -47,7 +47,7 @@ func main() {
 	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
 	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods(http.MethodGet)
-	secureRoute.Use(middlewares.Authenticate(log, authenticator))
+	secureRoute.Use(middlewares.Authenticate(log, authenticator), middlewares.ExchangeSubjectForUser(log, p))
 
 	s := &http.Server{
 		Handler: router,

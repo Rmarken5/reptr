@@ -13,8 +13,8 @@ const providerUsersCollection = "provider_users"
 
 type (
 	ProviderUsersDataAccess interface {
-		InsertUserSubjectPair(ctx context.Context, userID, subject string) error
-		GetUserIDFor(ctx context.Context, subject string) (string, error)
+		InsertUserSubjectPair(ctx context.Context, userName, subject string) error
+		GetUserNameForSubject(ctx context.Context, subject string) (string, error)
 	}
 
 	ProviderUsersDAO struct {
@@ -47,7 +47,7 @@ func (dao *ProviderUsersDAO) InsertUserSubjectPair(ctx context.Context, userID, 
 
 	return nil
 }
-func (dao *ProviderUsersDAO) GetUserIDFor(ctx context.Context, subject string) (string, error) {
+func (dao *ProviderUsersDAO) GetUserNameForSubject(ctx context.Context, subject string) (string, error) {
 	var result struct {
 		UserID string `bson:"user_id"`
 	}

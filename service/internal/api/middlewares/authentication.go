@@ -31,8 +31,8 @@ func Authenticate(logger zerolog.Logger, authenticator auth.Authentication) func
 				return
 			}
 
-			logger.Debug().Msgf("userID from authentication: %s", idToken.Subject)
-			r = r.WithContext(context.WithValue(r.Context(), models.UserIDKey, strings.TrimPrefix(idToken.Subject, "auth0|")))
+			logger.Debug().Msgf("subject from authentication: %s", idToken.Subject)
+			r = r.WithContext(context.WithValue(r.Context(), models.SubjectKey, strings.TrimPrefix(idToken.Subject, "auth0|")))
 
 			next.ServeHTTP(w, r)
 		})
