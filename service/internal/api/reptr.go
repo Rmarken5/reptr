@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
@@ -16,22 +17,28 @@ import (
 
 var _ api.ServerInterface = ReprtClient{}
 
-const IDToken = "id_token"
+const (
+	IDToken         = "id_token"
+	SessionTokenKey = "token"
+	CookieSessionID = "reptr-session-id"
+)
 
 type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
 	providerController provider.Controller
 	authenticator      auth.Authentication
+	store              sessions.Store
 }
 
-func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication, store sessions.Store) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:             logger,
 		deckController:     deckController,
 		providerController: providerController,
 		authenticator:      authentication,
+		store:              store,
 	}
 }
 
@@ -257,7 +264,6 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 }
 
 func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -302,15 +308,21 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokenString, ok := token.Extra(IDToken).(string); ok {
-		idToken, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
+		_, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
 		if err != nil {
 			http.Error(w, "unable to verify token", http.StatusInternalServerError)
 			return
 		}
+		session, _ := rc.store.Get(r, CookieSessionID)
+		session.Values[SessionTokenKey] = "Bearer " + tokenString
+		session.Options.Secure = true
+		err = session.Save(r, w)
+		if err != nil {
+			http.Error(w, "unable to save session", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
-		w.WriteHeader(http.StatusOK)
-		components.Home(idToken.Subject).Render(r.Context(), w)
-
+		http.Redirect(w, r, "/secure/home", http.StatusSeeOther)
 		return
 	}
 
@@ -320,8 +332,22 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc ReprtClient) GetDecksForUser(w http.ResponseWriter, r *http.Request, params api.GetDecksForUserParams) {
-	//TODO implement me
+	_ = rc.logger.With().Str("method", "GetDecksForUser")
 	panic("implement me")
+}
+
+func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
+	logger := rc.logger.With().Str("method", "HomePage").Logger()
+	logger.Debug().Msgf("HomePage called.")
+
+	var userName string
+	var ok bool
+	if userName, ok = r.Context().Value(models.UserNameKey).(string); !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Something went wrong with getting username"))
+		return
+	}
+	components.Home(userName).Render(r.Context(), w)
 }
 
 func toStatus(err error) int {

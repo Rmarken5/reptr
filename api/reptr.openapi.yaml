@@ -46,6 +46,17 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/RegistrationResponseBody'
+  /secure/home:
+    get:
+      operationId: homePage
+      summary: serve home page
+      description: returns html page for home
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+               type: string
   /secure/api/v1/groups:
     get:
       operationId: 'getGroups'

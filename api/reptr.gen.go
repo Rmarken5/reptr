@@ -266,6 +266,9 @@ type ClientInterface interface {
 
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HomePage request
+	HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) LoginPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -414,6 +417,18 @@ func (c *Client) AddDeckToGroup(ctx context.Context, groupId string, deckId stri
 
 func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGroupsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHomePageRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -849,6 +864,33 @@ func NewGetGroupsRequest(server string, params *GetGroupsParams) (*http.Request,
 	return req, nil
 }
 
+// NewHomePageRequest generates requests for HomePage
+func NewHomePageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/secure/home")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -926,6 +968,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
+
+	// HomePageWithResponse request
+	HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error)
 }
 
 type LoginPageResponse struct {
@@ -1133,6 +1178,27 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
+type HomePageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r HomePageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HomePageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // LoginPageWithResponse request returning *LoginPageResponse
 func (c *ClientWithResponses) LoginPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LoginPageResponse, error) {
 	rsp, err := c.LoginPage(ctx, reqEditors...)
@@ -1244,6 +1310,15 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseGetGroupsResponse(rsp)
+}
+
+// HomePageWithResponse request returning *HomePageResponse
+func (c *ClientWithResponses) HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error) {
+	rsp, err := c.HomePage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHomePageResponse(rsp)
 }
 
 // ParseLoginPageResponse parses an HTTP response from a LoginPageWithResponse call
@@ -1520,6 +1595,22 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 	return response, nil
 }
 
+// ParseHomePageResponse parses an HTTP response from a HomePageWithResponse call
+func ParseHomePageResponse(rsp *http.Response) (*HomePageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HomePageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// serve login page
@@ -1549,6 +1640,9 @@ type ServerInterface interface {
 	// Get Groups
 	// (GET /secure/api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
+	// serve home page
+	// (GET /secure/home)
+	HomePage(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1833,6 +1927,21 @@ func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// HomePage operation middleware
+func (siw *ServerInterfaceWrapper) HomePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.HomePage(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1964,40 +2073,43 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
+	r.HandleFunc(options.BaseURL+"/secure/home", wrapper.HomePage).Methods("GET")
+
 	return r
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/+xZXW/bvBX+KwQ3YBugWM62Au98l7VrmmFYizRFL4ogoMVji4lEqiQVxwj034dDUl82",
+	"ndhuu7doe5dIIs9zvp7z4UeaqbJSEqQ1dPZINXyuwdh/Ki7APTjj/BVkd5f+OT7JlLQg3Z+sqgqRMSuU",
+	"TG+NkvjMZDmUDP/6o4YFndE/pL2I1L81Kd75X1YCbZomoRxMpkWF99BZi4HMFV+ThdKEcS7kknDI7miT",
+	"IKRzrerqa2Nylx4KaomHENV/1FLIy8586ydgPZysVquThdLlSa0LkJniwPfH6STthbFQSyIkTdwboVGI",
+	"1TU0Cb2EpTAW9P8FcCtsL8zafayd4G3kDT4xlZJmFJ4b2C082LQqmDgkIlVWlyDtxas4TC+0x2nqLANj",
+	"FnWBoeCCkwRlhkH6+yNzETqE9lLJRSEy+y+tlf5q2eNuezu/hczGYF62MBGhWKSrHCSxOWj4kyGMaDCq",
+	"1hkQeBDGGoR5DtZZ0BwEUVgozV6Z/lHYHGPHCbPrCuiMMq3ZOgb/fW/TzuDKKesU6rE2Cb2QFrRkxXvQ",
+	"96C/IytLUkt4qCCzwAngTUS518Q4qAMa89c8QwuHQR/d/N4feUoFmzNLUDIT0hCr7kASsSC1AU1yZsgc",
+	"QBJW2xykRUTAaUdsnj6eUMPlYW7LYow/hIGxWsjl8+hyVQKp2BIQWJ92iOOD+R5cz8ic8Tb3iTCkZBzI",
+	"fO2cjpakeFGQgABaMq20qkDb0ARkGtC+N8ypgHUA/6KcWTixogSabFouoYJHDJpQifU19qKu+IEymmF1",
+	"+IQCw/XJEPDo5uvuEhUMmdCuFdlSGzn9ZgfgDeH9p1ERPYPHVB96dgsEtEE0dvcZmWsBi5DGJRjjwlBy",
+	"F1xyidkuAhGF9PbfTmhC4YGVVYEgWq4inqyID9mIO4OEGBAOlokCeIfCfzBHFBhnGphR0sUl/rsHqrMY",
+	"U2VZrTXwMWWRVS4KIJVWmHu9RBfwk5gixjJbm5eKR3S5yoG8ubp6R/xHBPucDreH8WeYLCcJeTGd/mWE",
+	"+cV02glDDZcht4ZBMhCdBL/2ho3FTddB/ETp2HfhW3q7TmbPhBx8u1NK3wEgMRfF2wWdfdqjc6BNEqMK",
+	"s3f/8SpMMhtdxzalmAj467ZKbxuoYsaslI67Gul+t+22LBQr11sCmSt5N644R4XCQyU0mBsxfN3lR0Ld",
+	"yRv/fC9Y3SxxmPIavsA2Q690Xya9wNH12w5D0oGs1sKunR093NuVvcHuBf+eA9OgX7dJ9u+PVzRUZbzH",
+	"v+0TLre28h2AkAu1zWKXUFlNzt5dkLbutMOUFdbxa/cFTeg9aOPPnU6mkylaQ1UgWSXojP5tcjqZOlVt",
+	"7lCnRRt5S7DbojXYWktDsLPyjVEYQ90Uit5yUC44nfkAe4fUtzHT/XU6PbJbc6auy5LpNT7HCuGFOyyo",
+	"WqVMBHbOJC/AhG+R7LqeiUkeOn5uyErYnDByu7JxbcK8OhioYyww2rGkW3uDJm6O+E3hu3S7bR/bYqSh",
+	"e5fqQSYd4MyN+XxshWH3/e1dO4Syp4dHR55xNHb3OzR06Xiwq2NLl6O8vXPIiTvdjUwjv7kAcKQEKatE",
+	"en+a8rbzj9qPcW78jmMp7t1ggSRIhBz2W24FsWWxdkVzhME2lo/btjp93lat+Cahf9/Htv3g5k784/kT",
+	"431Kk9AX+8iJbQnG7mutahXxDRSRsApb0Lj/zM5cvgSrBdyDwTwREhswUghjiVq4G3Gctis3UQcPY5NG",
+	"NJMh7ZkfFzedew7WdVCvlf7g31dMsxIsaOOaqTEMd6lV2F9rSwql7uqKLLQqKRYzOqOfa9DrtnGc0fBq",
+	"vARMBjyxX2O6CwZIHkDskG8V/XJpsi7noNHSrjlEwZ5aneakFRmTX4hS2P0MIKSlsQlkB5rOCRpMXVjz",
+	"lBfUYmHgy2BcH0Nzo63a4cn7ldLwHKwhrChCnoRZhszX/QJlIxWX3di2m0v9VvYYMvUjyHFsOvrd5Fg6",
+	"bWegH4NPww84O7yYPvpBUvDGMWz66DY9gjfOv/Uu9zJfLK1CPnWurt12QnCzq0BeqdazGxTqUhI78D4j",
+	"W1AjdooQUeRowP/kyeufNzK633KseiY0jiu2/ugT1TZWYgML/iquv4rrj1FcwzrEBXG/CPl0jaqMKi9p",
+	"MQ6S0M1lhw2t0VHujSrh2w+p3W9EfmXj19Y+fWtdhHXOLE0LlbEiV8bOfpv+dprS5rr5XwAAAP//P+qa",
+	"IZ0hAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

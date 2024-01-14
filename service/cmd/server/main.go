@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	exAPI "github.com/rmarken/reptr/api"
 	"github.com/rmarken/reptr/service/cmd"
 	"github.com/rmarken/reptr/service/internal/api"
@@ -28,7 +29,8 @@ func main() {
 
 	authenticator := cmd.MustLoadAuth(ctx, log, repo)
 	p := cmd.MustLoadProvider(log, repo)
-	serverImpl := api.New(log, l, p, authenticator)
+	store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	serverImpl := api.New(log, l, p, authenticator, store)
 
 	router := mux.NewRouter()
 
@@ -40,6 +42,8 @@ func main() {
 	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
+	h := middlewares.Session(log, store)(middlewares.Authenticate(log, authenticator)(middlewares.ExchangeSubjectForUser(log, p)(http.HandlerFunc(wrapper.HomePage))))
+	router.Handle("/secure/home", h)
 
 	secureRoute := router.PathPrefix("/secure").Subrouter()
 	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
@@ -47,7 +51,10 @@ func main() {
 	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
 	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods(http.MethodGet)
-	secureRoute.Use(middlewares.Authenticate(log, authenticator), middlewares.ExchangeSubjectForUser(log, p))
+
+	secureRoute.Use(
+		middlewares.Authenticate(log, authenticator),
+		middlewares.ExchangeSubjectForUser(log, p))
 
 	s := &http.Server{
 		Handler: router,
