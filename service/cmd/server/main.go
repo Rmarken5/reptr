@@ -42,8 +42,15 @@ func main() {
 	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
-	h := middlewares.Session(log, store)(middlewares.Authenticate(log, authenticator)(middlewares.ExchangeSubjectForUser(log, p)(http.HandlerFunc(wrapper.HomePage))))
-	router.Handle("/secure/home", h)
+
+	pageRoute := router.PathPrefix("/page").Subrouter()
+	pageRoute.HandleFunc("/home", wrapper.HomePage)
+	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup)
+
+	pageRoute.Use(
+		middlewares.Session(log, store),
+		middlewares.Authenticate(log, authenticator),
+		middlewares.ExchangeSubjectForUser(log, p))
 
 	secureRoute := router.PathPrefix("/secure").Subrouter()
 	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)

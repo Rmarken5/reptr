@@ -240,6 +240,12 @@ type ClientInterface interface {
 
 	LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateGroup request
+	CreateGroup(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// HomePage request
+	HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RegistrationPage request
 	RegistrationPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -266,9 +272,6 @@ type ClientInterface interface {
 
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// HomePage request
-	HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) LoginPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -297,6 +300,30 @@ func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.
 
 func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLoginRequestWithFormdataBody(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateGroup(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGroupRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewHomePageRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -427,18 +454,6 @@ func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEdit
 	return c.Client.Do(req)
 }
 
-func (c *Client) HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewHomePageRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // NewLoginPageRequest generates requests for LoginPage
 func NewLoginPageRequest(server string) (*http.Request, error) {
 	var err error
@@ -502,6 +517,60 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateGroupRequest generates requests for CreateGroup
+func NewCreateGroupRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/create-group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewHomePageRequest generates requests for HomePage
+func NewHomePageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/home")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -864,33 +933,6 @@ func NewGetGroupsRequest(server string, params *GetGroupsParams) (*http.Request,
 	return req, nil
 }
 
-// NewHomePageRequest generates requests for HomePage
-func NewHomePageRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/secure/home")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -942,6 +984,12 @@ type ClientWithResponsesInterface interface {
 
 	LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
 
+	// CreateGroupWithResponse request
+	CreateGroupWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error)
+
+	// HomePageWithResponse request
+	HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error)
+
 	// RegistrationPageWithResponse request
 	RegistrationPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RegistrationPageResponse, error)
 
@@ -968,9 +1016,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
-
-	// HomePageWithResponse request
-	HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error)
 }
 
 type LoginPageResponse struct {
@@ -1010,6 +1055,48 @@ func (r LoginResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r LoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type HomePageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r HomePageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r HomePageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1178,27 +1265,6 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
-type HomePageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r HomePageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r HomePageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 // LoginPageWithResponse request returning *LoginPageResponse
 func (c *ClientWithResponses) LoginPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LoginPageResponse, error) {
 	rsp, err := c.LoginPage(ctx, reqEditors...)
@@ -1223,6 +1289,24 @@ func (c *ClientWithResponses) LoginWithFormdataBodyWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseLoginResponse(rsp)
+}
+
+// CreateGroupWithResponse request returning *CreateGroupResponse
+func (c *ClientWithResponses) CreateGroupWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error) {
+	rsp, err := c.CreateGroup(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateGroupResponse(rsp)
+}
+
+// HomePageWithResponse request returning *HomePageResponse
+func (c *ClientWithResponses) HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error) {
+	rsp, err := c.HomePage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseHomePageResponse(rsp)
 }
 
 // RegistrationPageWithResponse request returning *RegistrationPageResponse
@@ -1312,15 +1396,6 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 	return ParseGetGroupsResponse(rsp)
 }
 
-// HomePageWithResponse request returning *HomePageResponse
-func (c *ClientWithResponses) HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error) {
-	rsp, err := c.HomePage(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseHomePageResponse(rsp)
-}
-
 // ParseLoginPageResponse parses an HTTP response from a LoginPageWithResponse call
 func ParseLoginPageResponse(rsp *http.Response) (*LoginPageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1358,6 +1433,38 @@ func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
 		}
 		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseCreateGroupResponse parses an HTTP response from a CreateGroupWithResponse call
+func ParseCreateGroupResponse(rsp *http.Response) (*CreateGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseHomePageResponse parses an HTTP response from a HomePageWithResponse call
+func ParseHomePageResponse(rsp *http.Response) (*HomePageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HomePageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil
@@ -1595,22 +1702,6 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 	return response, nil
 }
 
-// ParseHomePageResponse parses an HTTP response from a HomePageWithResponse call
-func ParseHomePageResponse(rsp *http.Response) (*HomePageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &HomePageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// serve login page
@@ -1619,6 +1710,12 @@ type ServerInterface interface {
 	// handles login
 	// (POST /login)
 	Login(w http.ResponseWriter, r *http.Request)
+	// serve create group page
+	// (GET /page/create-group)
+	CreateGroup(w http.ResponseWriter, r *http.Request)
+	// serve home page
+	// (GET /page/home)
+	HomePage(w http.ResponseWriter, r *http.Request)
 	// serve registration page
 	// (GET /register)
 	RegistrationPage(w http.ResponseWriter, r *http.Request)
@@ -1640,9 +1737,6 @@ type ServerInterface interface {
 	// Get Groups
 	// (GET /secure/api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
-	// serve home page
-	// (GET /secure/home)
-	HomePage(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1675,6 +1769,36 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Login(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// CreateGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroup(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// HomePage operation middleware
+func (siw *ServerInterfaceWrapper) HomePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.HomePage(w, r)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -1927,21 +2051,6 @@ func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// HomePage operation middleware
-func (siw *ServerInterfaceWrapper) HomePage(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.HomePage(w, r)
-	}))
-
-	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
-		handler = siw.HandlerMiddlewares[i](handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2059,6 +2168,10 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/login", wrapper.Login).Methods("POST")
 
+	r.HandleFunc(options.BaseURL+"/page/create-group", wrapper.CreateGroup).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/page/home", wrapper.HomePage).Methods("GET")
+
 	r.HandleFunc(options.BaseURL+"/register", wrapper.RegistrationPage).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/register", wrapper.Register).Methods("POST")
@@ -2073,8 +2186,6 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
-	r.HandleFunc(options.BaseURL+"/secure/home", wrapper.HomePage).Methods("GET")
-
 	return r
 }
 
@@ -2082,34 +2193,34 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 var swaggerSpec = []string{
 
 	"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",
-	"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",
-	"IZ0hAAA=",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

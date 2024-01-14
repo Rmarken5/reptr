@@ -1,10 +1,9 @@
 package middlewares
 
 import (
-	"context"
 	"errors"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
-	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
 	"strings"
@@ -33,7 +32,7 @@ func Authenticate(logger zerolog.Logger, authenticator auth.Authentication) func
 			}
 
 			logger.Debug().Msgf("subject from authentication: %s", idToken.Subject)
-			*r = *r.WithContext(context.WithValue(r.Context(), models.SubjectKey, strings.TrimPrefix(idToken.Subject, "auth0|")))
+			*r = *r.WithContext(reptrCtx.AddSubject(r.Context(), strings.TrimPrefix(idToken.Subject, "auth0|")))
 
 			next.ServeHTTP(w, r)
 		})

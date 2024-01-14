@@ -35,6 +35,7 @@ type (
 		DeleteGroup(ctx context.Context, groupID string) error
 		GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
+		// AddUserToGroup(ctx context.Context, groupID string, username string) error
 	}
 	GroupDAO struct {
 		collection *mongo.Collection

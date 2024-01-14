@@ -8,7 +8,9 @@ import (
 	"net/http"
 )
 
-func Session(logger zerolog.Logger, store *sessions.CookieStore) func(next http.Handler) http.Handler {
+//go:generate mockgen -destination ./mocks/sessions_mock.go -package middlewares  github.com/gorilla/sessions Store
+
+func Session(logger zerolog.Logger, store sessions.Store) func(next http.Handler) http.Handler {
 	logger = logger.With().Str("middleware", "Session").Logger()
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +22,7 @@ func Session(logger zerolog.Logger, store *sessions.CookieStore) func(next http.
 				authToken, err := AuthFromSession(session.Values)
 				if err != nil {
 					logger.Error().Err(err).Msg("while getting auth token from session")
-					http.Error(w, "while getting auth token from session", http.StatusInternalServerError)
+					http.Error(w, "while getting auth token from session", http.StatusBadRequest)
 					return
 				}
 				logger.Debug().Msgf("got auth token from session")

@@ -1,7 +1,15 @@
 package components
 
-templ Home(username string){
+type (
+HomeData struct {
+    Username string
+    // Groups models.
+}
+)
+
+templ Home(homeData HomeData){
     <body>
-        <h1>Hello {username}</h1>
+        <h1>Hello {homeData.Username}</h1>
+        <a href="/page/create-group">Create Group</a>
     </body>
 }

@@ -7,7 +7,9 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
+	mocks "github.com/rmarken/reptr/service/internal/api/middlewares/mocks"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	mockAuth "github.com/rmarken/reptr/service/internal/logic/auth/mocks"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
@@ -26,7 +28,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	r := New(zerolog.Nop(), &decks.Logic{}, &provider.Logic{}, &auth.Authenticator{})
+	r := New(zerolog.Nop(), &decks.Logic{}, &provider.Logic{}, &auth.Authenticator{}, &sessions.CookieStore{})
 	assert.NotNil(t, r)
 }
 func TestGetGroups(t *testing.T) {
@@ -274,6 +276,7 @@ func TestReprtClient_Login(t *testing.T) {
 		haveEmail         string
 		havePassword      string
 		mockAuthenticator func(mock *mockAuth.MockAuthentication)
+		mockStore         func(mock *mocks.MockStore)
 		wantStatus        int
 		wantResponse      string
 	}{
@@ -300,8 +303,13 @@ func TestReprtClient_Login(t *testing.T) {
 					AccessTokenHash: "",
 				}, nil)
 			},
-			wantResponse: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature",
-			wantStatus:   http.StatusOK,
+			mockStore: func(mock *mocks.MockStore) {
+				session := sessions.NewSession(mock, uuid.NewString())
+				mock.EXPECT().Get(gomock.Any(), CookieSessionID).Return(session, nil)
+				mock.EXPECT().Save(gomock.Any(), gomock.Any(), session).Return(nil)
+			},
+			wantResponse: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkZha2VUZXN0IFVzZXIiLCJleHAiOjE2NDk5OTQ0MDB9.wrongsignature",
+			wantStatus:   http.StatusSeeOther,
 		},
 		"should return unauthorized when authenticator does not return token": {
 			haveEmail:    "someone@somewhere.com",
@@ -333,12 +341,19 @@ func TestReprtClient_Login(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockAuthenticator := mockAuth.NewMockAuthentication(ctrl)
+			mockStore := mocks.NewMockStore(ctrl)
 			if tc.mockAuthenticator != nil {
 				tc.mockAuthenticator(mockAuthenticator)
 			}
+
+			if tc.mockStore != nil {
+				tc.mockStore(mockStore)
+			}
+
 			reprt := ReprtClient{
 				logger:        zerolog.Nop(),
 				authenticator: mockAuthenticator,
+				store:         mockStore,
 			}
 			// Create a request object with necessary parameters
 			req, err := http.NewRequest(http.MethodPost, "/login", nil)
@@ -356,6 +371,8 @@ func TestReprtClient_Login(t *testing.T) {
 
 			// Check the status code of the response
 			assert.Equal(t, tc.wantStatus, rr.Code)
+			gotToken := rr.Header().Get("Authorization")
+			assert.Equal(t, tc.wantResponse, gotToken)
 			if rr.Code == http.StatusOK {
 				snaps.MatchSnapshot(t, rr.Body.String())
 				require.NoError(t, err)

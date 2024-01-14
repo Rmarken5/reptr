@@ -19,15 +19,3 @@ type (
 		Username string `bson:"username"`
 	}
 )
-
-// SubjectCtxKey to be used with auth provider values
-type subjectCtxKey struct {
-}
-type userNameCtxKey struct {
-}
-
-// SubjectKey use to get and set auth provider values on context
-var SubjectKey = subjectCtxKey{}
-
-// UserNameKey use to get and set username on context
-var UserNameKey = userNameCtxKey{}

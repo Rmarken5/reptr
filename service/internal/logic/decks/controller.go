@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
@@ -167,16 +168,25 @@ func (l *Logic) RemoveDownvoteDeck(ctx context.Context, deckID, userID string) e
 func (l *Logic) CreateGroup(ctx context.Context, groupName string) (string, error) {
 	logger := l.logger.With().Str("module", "CreateGroup").Logger()
 	logger.Info().Msgf("CreateGroup: %s", groupName)
+
+	username, ok := reptrCtx.Username(ctx)
+	if !ok {
+		logger.Error().Err(ErrEmptyUsername).Msgf("while getting username from ctx")
+		return "", ErrEmptyUsername
+	}
+
 	if groupName == "" {
 		logger.Error().Err(ErrInvalidGroupName).Msgf("groupName: %s", groupName)
 		return "", ErrInvalidGroupName
 	}
 	gpID, err := l.repo.InsertGroup(ctx, models.Group{
-		ID:        uuid.NewString(),
-		Name:      groupName,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		DeletedAt: nil,
+		ID:         uuid.NewString(),
+		Name:       groupName,
+		CreatedBy:  username,
+		Moderators: []string{username},
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		DeletedAt:  nil,
 	})
 	if err != nil {
 		l.logger.Error().Err(err).Msg("while inserting group")

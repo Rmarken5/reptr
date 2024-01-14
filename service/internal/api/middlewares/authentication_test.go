@@ -3,8 +3,8 @@ package middlewares
 import (
 	"errors"
 	"github.com/coreos/go-oidc/v3/oidc"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	auth "github.com/rmarken/reptr/service/internal/logic/auth/mocks"
-	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,7 +64,7 @@ func TestAuthenticate(t *testing.T) {
 			handler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(http.StatusOK)
 				writer.Write([]byte("called"))
-				subject = request.Context().Value(models.SubjectKey).(string)
+				subject, _ = reptrCtx.Subject(request.Context())
 			})
 
 			authHandler := Authenticate(zerolog.Nop(), mockAuth)(handler)

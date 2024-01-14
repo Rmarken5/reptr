@@ -8,4 +8,5 @@ var (
 	ErrEmptyGroupID        = errors.New("empty group ID")
 	ErrInvalidDeckName     = errors.New("invalid deck name")
 	ErrEmptyDeckID         = errors.New("empty deck ID")
+	ErrEmptyUsername       = errors.New("empty username")
 )

@@ -46,7 +46,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/RegistrationResponseBody'
-  /secure/home:
+  /page/home:
     get:
       operationId: homePage
       summary: serve home page
@@ -57,6 +57,17 @@ paths:
             text/html:
               schema:
                type: string
+  /page/create-group:
+    get:
+      operationId: createGroup
+      summary: serve create group page
+      description: returns html for creating a new group
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
   /secure/api/v1/groups:
     get:
       operationId: 'getGroups'

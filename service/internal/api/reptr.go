@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
@@ -14,6 +15,8 @@ import (
 	"github.com/rs/zerolog"
 	"net/http"
 )
+
+//go:generate mockgen -destination ./mocks/sessions_mock.go -package api  github.com/gorilla/sessions Store
 
 var _ api.ServerInterface = ReprtClient{}
 
@@ -322,7 +325,7 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
-		http.Redirect(w, r, "/secure/home", http.StatusSeeOther)
+		http.Redirect(w, r, "/page/home", http.StatusSeeOther)
 		return
 	}
 
@@ -342,12 +345,17 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 
 	var userName string
 	var ok bool
-	if userName, ok = r.Context().Value(models.UserNameKey).(string); !ok {
+	if userName, ok = reptrCtx.Username(r.Context()); !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Something went wrong with getting username"))
 		return
 	}
-	components.Home(userName).Render(r.Context(), w)
+
+	components.Home(components.HomeData{Username: userName}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
+	components.CreateGroup().Render(r.Context(), w)
 }
 
 func toStatus(err error) int {
