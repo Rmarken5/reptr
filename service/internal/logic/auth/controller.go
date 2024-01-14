@@ -33,12 +33,12 @@ type (
 		endpoint   string
 		logger     zerolog.Logger
 		httpClient http.Client
-		repo       database.ProviderUsersDataAccess
+		repo       database.Repository
 	}
 )
 
 // New instantiates the *Authenticator.
-func New(ctx context.Context, logger zerolog.Logger, repo database.ProviderUsersDataAccess, audience, endpoint, clientID, clientSecret, callbackURL string) (*Authenticator, error) {
+func New(ctx context.Context, logger zerolog.Logger, repo database.Repository, audience, endpoint, clientID, clientSecret, callbackURL string) (*Authenticator, error) {
 	log := logger.With().Str("module", "authenticator").Logger()
 	provider, err := oidc.NewProvider(
 		ctx,
@@ -125,6 +125,14 @@ func (a *Authenticator) RegisterUser(ctx context.Context, username, password str
 
 	log.Debug().Msgf("userID from registration: %s", registerUser.ID)
 	err = a.repo.InsertUserSubjectPair(ctx, username, registerUser.ID)
+	if err != nil {
+		return models.RegistrationUser{}, models.RegistrationError{}, err
+	}
+
+	_, err = a.repo.InsertUser(ctx, models.User{
+		Username:       username,
+		MemberOfGroups: []string{},
+	})
 	if err != nil {
 		return models.RegistrationUser{}, models.RegistrationError{}, err
 	}

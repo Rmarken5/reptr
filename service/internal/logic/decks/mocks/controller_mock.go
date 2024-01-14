@@ -143,6 +143,21 @@ func (mr *MockControllerMockRecorder) GetGroups(arg0, arg1, arg2, arg3, arg4 any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroups", reflect.TypeOf((*MockController)(nil).GetGroups), arg0, arg1, arg2, arg3, arg4)
 }
 
+// GetGroupsForUser mocks base method.
+func (m *MockController) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupsForUser", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].([]models.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupsForUser indicates an expected call of GetGroupsForUser.
+func (mr *MockControllerMockRecorder) GetGroupsForUser(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsForUser", reflect.TypeOf((*MockController)(nil).GetGroupsForUser), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
 // RemoveDownvoteDeck mocks base method.
 func (m *MockController) RemoveDownvoteDeck(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()

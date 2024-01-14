@@ -19,6 +19,7 @@ type (
 		CreateGroup(ctx context.Context, groupName string) (string, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
+		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
 		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
@@ -237,4 +238,22 @@ func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, li
 	}
 
 	return groupsWithDecks, nil
+}
+
+func (l *Logic) GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error) {
+	logger := l.logger.With().Str("method", "GetGroupsForUser").Logger()
+
+	logger.Info().Msgf("GetGroupsForUser called")
+
+	if to != nil && to.Before(from) {
+		return []models.Group(nil), ErrInvalidToBeforeFrom
+	}
+
+	groups, err := l.repo.GetGroupsForUser(ctx, username, from, to, limit, offset)
+	if err != nil && !errors.Is(err, database.ErrNoResults) {
+		logger.Error().Err(err).Msgf("while getting groups for user: %s", username)
+		return []models.Group(nil), err
+	}
+
+	return groups, nil
 }

@@ -15,7 +15,7 @@ type (
 		ExpiresAt   int    `json:"expiresAt"`
 	}
 	User struct {
-		ID       string `bson:"_id"`
-		Username string `bson:"username"`
+		Username       string   `bson:"_id"`
+		MemberOfGroups []string `bson:"member_of_groups"`
 	}
 )

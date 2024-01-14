@@ -160,7 +160,7 @@ func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) e
 
 func (g *GroupDAO) GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error) {
 	logger := g.log.With().Str("method", "deleteGroup").Logger()
-	match := bson.D{{"$match", bson.D{{"name", "test"}}}}
+	match := bson.D{{"$match", bson.D{{"name", groupName}}}}
 
 	filter := bson.A{
 		match,

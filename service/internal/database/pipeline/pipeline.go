@@ -15,7 +15,7 @@ const (
 
 func Paginate(from time.Time, to *time.Time, lim, os int) mongo.Pipeline {
 	pl := mongo.Pipeline{
-		match(from, to),
+		matchBetweenTimes(from, to),
 		sortBy(Asc),
 	}
 	if lim > 0 {
@@ -26,7 +26,7 @@ func Paginate(from time.Time, to *time.Time, lim, os int) mongo.Pipeline {
 	return pl
 }
 
-func match(from time.Time, to *time.Time) bson.D {
+func matchBetweenTimes(from time.Time, to *time.Time) bson.D {
 	span := bson.D{{"$gte", from}}
 	if to != nil {
 		span = append(span, bson.E{Key: "$lt", Value: *to})

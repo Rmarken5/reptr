@@ -55,6 +55,20 @@ func (mr *MockRepositoryMockRecorder) AddDeckToGroup(arg0, arg1, arg2 any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDeckToGroup", reflect.TypeOf((*MockRepository)(nil).AddDeckToGroup), arg0, arg1, arg2)
 }
 
+// AddUserAsMemberOfGroup mocks base method.
+func (m *MockRepository) AddUserAsMemberOfGroup(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserAsMemberOfGroup", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserAsMemberOfGroup indicates an expected call of AddUserAsMemberOfGroup.
+func (mr *MockRepositoryMockRecorder) AddUserAsMemberOfGroup(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserAsMemberOfGroup", reflect.TypeOf((*MockRepository)(nil).AddUserAsMemberOfGroup), arg0, arg1, arg2)
+}
+
 // AddUserToDownvote mocks base method.
 func (m *MockRepository) AddUserToDownvote(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -112,6 +126,21 @@ func (mr *MockRepositoryMockRecorder) GetGroupByName(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupByName", reflect.TypeOf((*MockRepository)(nil).GetGroupByName), arg0, arg1)
 }
 
+// GetGroupsForUser mocks base method.
+func (m *MockRepository) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupsForUser", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].([]models.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupsForUser indicates an expected call of GetGroupsForUser.
+func (mr *MockRepositoryMockRecorder) GetGroupsForUser(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsForUser", reflect.TypeOf((*MockRepository)(nil).GetGroupsForUser), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
 // GetGroupsWithDecks mocks base method.
 func (m *MockRepository) GetGroupsWithDecks(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()
@@ -125,6 +154,21 @@ func (m *MockRepository) GetGroupsWithDecks(arg0 context.Context, arg1 time.Time
 func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
+}
+
+// GetUserByUsername mocks base method.
+func (m *MockRepository) GetUserByUsername(arg0 context.Context, arg1 string) (models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByUsername", arg0, arg1)
+	ret0, _ := ret[0].(models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByUsername indicates an expected call of GetUserByUsername.
+func (mr *MockRepositoryMockRecorder) GetUserByUsername(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockRepository)(nil).GetUserByUsername), arg0, arg1)
 }
 
 // GetUserNameForSubject mocks base method.
@@ -199,6 +243,21 @@ func (m *MockRepository) InsertGroup(arg0 context.Context, arg1 models.Group) (s
 func (mr *MockRepositoryMockRecorder) InsertGroup(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertGroup", reflect.TypeOf((*MockRepository)(nil).InsertGroup), arg0, arg1)
+}
+
+// InsertUser mocks base method.
+func (m *MockRepository) InsertUser(arg0 context.Context, arg1 models.User) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertUser", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InsertUser indicates an expected call of InsertUser.
+func (mr *MockRepositoryMockRecorder) InsertUser(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUser", reflect.TypeOf((*MockRepository)(nil).InsertUser), arg0, arg1)
 }
 
 // InsertUserSubjectPair mocks base method.

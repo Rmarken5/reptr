@@ -59,7 +59,7 @@ func mustLoadMongoDBName(logger zerolog.Logger) string {
 	return dbName
 }
 
-func MustLoadAuth(ctx context.Context, logger zerolog.Logger, repo database.ProviderUsersDataAccess) *auth.Authenticator {
+func MustLoadAuth(ctx context.Context, logger zerolog.Logger, repo database.Repository) *auth.Authenticator {
 	audience := os.Getenv("AUTH0_AUDIENCE")
 	if audience == "" {
 		logger.Panic().Msg("unable to get value for audience")

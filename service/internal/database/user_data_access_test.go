@@ -82,7 +82,7 @@ func TestGetUserByID(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotUser, gotErr := dao.GetUserByID(context.Background(), tc.userID)
+			gotUser, gotErr := dao.GetUserByUsername(context.Background(), tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 			assert.Equal(t, tc.wantUser, gotUser)

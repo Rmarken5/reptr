@@ -14,6 +14,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/web/components"
 	"github.com/rs/zerolog"
 	"net/http"
+	"time"
 )
 
 //go:generate mockgen -destination ./mocks/sessions_mock.go -package api  github.com/gorilla/sessions Store
@@ -351,7 +352,25 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	components.Home(components.HomeData{Username: userName}).Render(r.Context(), w)
+	groups, err := rc.deckController.GetGroupsForUser(r.Context(), userName, time.Time{}, nil, 10, 0)
+	if err != nil {
+		http.Error(w, "while getting groups for user", toStatus(err))
+		return
+	}
+	homeGroups := make([]components.Group, len(groups))
+	for i, group := range groups {
+		homeGroups[i] = homeGroupFromModel(group)
+	}
+
+	components.Home(components.HomeData{Username: userName, Groups: homeGroups}).Render(r.Context(), w)
+}
+
+func homeGroupFromModel(group models.Group) components.Group {
+	return components.Group{
+		GroupName: group.Name,
+		NumDecks:  len(group.DeckIDs),
+		NumUsers:  0,
+	}
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {

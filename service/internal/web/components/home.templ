@@ -1,15 +1,35 @@
 package components
+import "strconv"
 
 type (
-HomeData struct {
-    Username string
-    // Groups models.
-}
+    HomeData struct {
+        Username string
+        Groups []Group
+    }
+
+    Group struct {
+        GroupName string
+        NumDecks int
+        NumUsers int
+    }
 )
 
 templ Home(homeData HomeData){
     <body>
         <h1>Hello {homeData.Username}</h1>
         <a href="/page/create-group">Create Group</a>
+        <section id="user-groups">
+            <h2>Your Groups</h2>
+            <table id="group-table">
+                <tr>
+                    <th>Group Name</th><th>Number of Decks</th><th>Users in Group</th>
+                </tr>
+                for _, group := range homeData.Groups {
+                    <tr>
+                        <td>{group.GroupName}</td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
+                    </tr>
+                }
+            </table>
+        </section>
     </body>
 }
