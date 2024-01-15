@@ -13,25 +13,23 @@ import (
 
 func TestGetUserByID(t *testing.T) {
 	var (
-		db       = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-		logger   = zerolog.Nop()
-		userID   = "1" // Set an appropriate user ID
-		haveUser = models.User{
-			ID:       userID,
-			Username: "testuser",
-			// Add other necessary user fields
+		db           = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+		logger       = zerolog.Nop()
+		haveUsername = "testuser"
+		haveUser     = models.User{
+			Username: haveUsername,
 		}
 	)
 	defer db.Close()
 
 	testCases := map[string]struct {
-		userID       string
+		haveUsername string
 		mockDatabase func(mongo *mtest.T)
 		wantUser     models.User
 		wantErr      error
 	}{
-		"should get user by ID successfully": {
-			userID: userID,
+		"should get user by haveUsername successfully": {
+			haveUsername: haveUsername,
 			mockDatabase: func(mt *mtest.T) {
 				b, err := bson.Marshal(&haveUser)
 				require.NoError(t, err)
@@ -48,7 +46,7 @@ func TestGetUserByID(t *testing.T) {
 			wantErr:  nil,
 		},
 		"should return error if user not found": {
-			userID: userID,
+			haveUsername: haveUsername,
 			mockDatabase: func(mt *mtest.T) {
 				// Set up mock response for no documents found
 				cursor := mtest.CreateCursorResponse(0, "dbName.collName", mtest.FirstBatch)
@@ -58,7 +56,7 @@ func TestGetUserByID(t *testing.T) {
 			wantErr:  ErrNoResults,
 		},
 		"should return error if FindOne operation fails": {
-			userID: userID,
+			haveUsername: haveUsername,
 			mockDatabase: func(mt *mtest.T) {
 				// Set up mock response for FindOne operation failure
 				mt.AddMockResponses(
@@ -82,7 +80,7 @@ func TestGetUserByID(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotUser, gotErr := dao.GetUserByUsername(context.Background(), tc.userID)
+			gotUser, gotErr := dao.GetUserByUsername(context.Background(), tc.haveUsername)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 			assert.Equal(t, tc.wantUser, gotUser)

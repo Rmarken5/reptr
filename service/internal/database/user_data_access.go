@@ -65,7 +65,7 @@ func (u *UserDAO) GetUserByUsername(ctx context.Context, username string) (model
 
 	one := u.collection.FindOne(ctx, bson.D{{"_id", username}})
 	if one.Err() != nil {
-		logger.Error().Err(one.Err()).Msgf("getting user by username %s", username)
+		logger.Error().Err(one.Err()).Msgf("getting user by haveUsername %s", username)
 		if errors.Is(one.Err(), mongo.ErrNoDocuments) {
 			return models.User{}, errors.Join(fmt.Errorf("error getting user: %w", one.Err()), ErrNoResults)
 		}
