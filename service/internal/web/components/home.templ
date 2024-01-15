@@ -1,5 +1,10 @@
 package components
+
+
 import "strconv"
+import "path"
+import "github.com/gosimple/slug"
+
 
 type (
     HomeData struct {
@@ -8,6 +13,7 @@ type (
     }
 
     Group struct {
+        ID string
         GroupName string
         NumDecks int
         NumUsers int
@@ -26,7 +32,7 @@ templ Home(homeData HomeData){
                 </tr>
                 for _, group := range homeData.Groups {
                     <tr>
-                        <td>{group.GroupName}</td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
+                        <td><a href={templ.SafeURL(path.Join("/page/group", slug.Make(group.ID)))}>{group.GroupName}</a></td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
                     </tr>
                 }
             </table>

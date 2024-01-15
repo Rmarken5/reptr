@@ -86,7 +86,7 @@ func (u *UserDAO) AddUserAsMemberOfGroup(ctx context.Context, username string, g
 	logger := u.log.With().Str("method", "AddUserAsMemberOfGroup").Logger()
 	logger.Info().Msgf("adding user %s as member of group %s", username, groupName)
 
-	_, err := u.collection.UpdateOne(ctx, bson.D{{"_id", username}}, bson.D{{"$push", bson.D{{"memberOfGroups", groupName}}}})
+	_, err := u.collection.UpdateOne(ctx, bson.D{{"_id", username}}, bson.D{{"$push", bson.D{{"member_of_groups", groupName}}}})
 	if err != nil {
 		err = errors.Join(err, ErrUpdate)
 		logger.Error().Err(err).Msgf("while adding user to group: %s - %s", username, groupName)

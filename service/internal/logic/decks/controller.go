@@ -186,6 +186,12 @@ func (l *Logic) CreateGroup(ctx context.Context, username, groupName string) (st
 		l.logger.Error().Err(err).Msg("while inserting group")
 		return "", err
 	}
+
+	err = l.repo.AddUserAsMemberOfGroup(ctx, username, groupName)
+	if err != nil {
+		l.logger.Error().Err(err).Msgf("while making user %s member of group %s", username, groupName)
+		return "", err
+	}
 	return gpID, nil
 }
 

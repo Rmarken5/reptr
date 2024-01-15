@@ -45,7 +45,8 @@ func main() {
 
 	pageRoute := router.PathPrefix("/page").Subrouter()
 	pageRoute.HandleFunc("/home", wrapper.HomePage)
-	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup)
+	pageRoute.HandleFunc("/create-group", wrapper.CreateGroupPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup).Methods(http.MethodPost)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

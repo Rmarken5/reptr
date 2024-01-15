@@ -370,16 +370,56 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 	components.Home(components.HomeData{Username: userName, Groups: homeGroups}).Render(r.Context(), w)
 }
 
+func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
+	logger := rc.logger.With().Str("method", "CreateGroup").Logger()
+	logger.Debug().Msg("create group called")
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Info().Msg("username is not on context")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	groupName := r.PostForm.Get("group-name")
+	if groupName == "" {
+		logger.Info().Msgf("create group attempt without groupName")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = rc.deckController.CreateGroup(r.Context(), username, groupName)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while calling CreateGroup")
+		w.WriteHeader(toStatus(err))
+	}
+
+	components.Form(components.Banner("Group Successfully Created"), components.CreateGroupForm()).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID string) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func homeGroupFromModel(group models.Group) components.Group {
 	return components.Group{
+		ID:        group.ID,
 		GroupName: group.Name,
 		NumDecks:  len(group.DeckIDs),
 		NumUsers:  0,
 	}
 }
 
-func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	components.CreateGroup().Render(r.Context(), w)
+func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
+	components.Form(nil, components.CreateGroupForm()).Render(r.Context(), w)
 }
 
 func toStatus(err error) int {

@@ -59,9 +59,34 @@ paths:
                type: string
   /page/create-group:
     get:
-      operationId: createGroup
+      operationId: createGroupPage
       summary: serve create group page
       description: returns html for creating a new group
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createGroup
+      summary: handles form submit of create group page
+      description: handles create group form request and responds with result
+      requestBody:
+        $ref: "#/components/requestBodies/CreateGroupRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/CreateGroupResponseBody'
+  /page/group/{groupID}:
+    get:
+      operationId: groupPage
+      summary: serve create group page
+      description: returns html for creating a new group
+      parameters:
+        - name: groupID
+          in: path
+          schema:
+            type: string
       responses:
         200:
           content:
@@ -236,6 +261,12 @@ components:
         text/html:
           schema:
             type: string
+    CreateGroupResponseBody:
+      description: Response containing create group page with status
+      content:
+        text/html:
+          schema:
+            type: string
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -297,6 +328,13 @@ components:
         application/x-www-form-urlencoded:
           schema:
             $ref: "#/components/schemas/Register"
+    CreateGroupRequestBody:
+      description: request body for create group
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/CreateGroup"
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -327,6 +365,12 @@ components:
         repassword:
           type: string
       required: [ username, password, repassword ]
+    CreateGroup:
+      type: object
+      properties:
+        groupName:
+          type: string
+      required: [ groupName]
     LoginResponseSchema:
       type: object
       properties:

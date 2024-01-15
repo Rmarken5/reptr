@@ -26,6 +26,11 @@ const (
 	Jwt_authScopes = "jwt_auth.Scopes"
 )
 
+// CreateGroup defines model for CreateGroup.
+type CreateGroup struct {
+	GroupName string `json:"groupName"`
+}
+
 // Deck defines model for Deck.
 type Deck struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -150,6 +155,9 @@ type GetGroupsParams struct {
 // LoginFormdataRequestBody defines body for Login for application/x-www-form-urlencoded ContentType.
 type LoginFormdataRequestBody = Login
 
+// CreateGroupFormdataRequestBody defines body for CreateGroup for application/x-www-form-urlencoded ContentType.
+type CreateGroupFormdataRequestBody = CreateGroup
+
 // RegisterFormdataRequestBody defines body for Register for application/x-www-form-urlencoded ContentType.
 type RegisterFormdataRequestBody = Register
 
@@ -240,8 +248,16 @@ type ClientInterface interface {
 
 	LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateGroup request
-	CreateGroup(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateGroupPage request
+	CreateGroupPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateGroupWithBody request with any body
+	CreateGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateGroupWithFormdataBody(ctx context.Context, body CreateGroupFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GroupPage request
+	GroupPage(ctx context.Context, groupID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// HomePage request
 	HomePage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -310,8 +326,44 @@ func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRe
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateGroup(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateGroupRequest(c.Server)
+func (c *Client) CreateGroupPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGroupPageRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateGroupWithFormdataBody(ctx context.Context, body CreateGroupFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGroupRequestWithFormdataBody(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GroupPage(ctx context.Context, groupID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGroupPageRequest(c.Server, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -521,8 +573,8 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 	return req, nil
 }
 
-// NewCreateGroupRequest generates requests for CreateGroup
-func NewCreateGroupRequest(server string) (*http.Request, error) {
+// NewCreateGroupPageRequest generates requests for CreateGroupPage
+func NewCreateGroupPageRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -531,6 +583,80 @@ func NewCreateGroupRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/page/create-group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateGroupRequestWithFormdataBody calls the generic CreateGroup builder with application/x-www-form-urlencoded body
+func NewCreateGroupRequestWithFormdataBody(server string, body CreateGroupFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewCreateGroupRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewCreateGroupRequestWithBody generates requests for CreateGroup with any type of body
+func NewCreateGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/create-group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGroupPageRequest generates requests for GroupPage
+func NewGroupPageRequest(server string, groupID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "groupID", runtime.ParamLocationPath, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/group/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -984,8 +1110,16 @@ type ClientWithResponsesInterface interface {
 
 	LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
 
-	// CreateGroupWithResponse request
-	CreateGroupWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error)
+	// CreateGroupPageWithResponse request
+	CreateGroupPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupPageResponse, error)
+
+	// CreateGroupWithBodyWithResponse request with any body
+	CreateGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error)
+
+	CreateGroupWithFormdataBodyWithResponse(ctx context.Context, body CreateGroupFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error)
+
+	// GroupPageWithResponse request
+	GroupPageWithResponse(ctx context.Context, groupID string, reqEditors ...RequestEditorFn) (*GroupPageResponse, error)
 
 	// HomePageWithResponse request
 	HomePageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HomePageResponse, error)
@@ -1061,6 +1195,27 @@ func (r LoginResponse) StatusCode() int {
 	return 0
 }
 
+type CreateGroupPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateGroupPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateGroupPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateGroupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1076,6 +1231,27 @@ func (r CreateGroupResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GroupPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GroupPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GroupPageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1291,13 +1467,39 @@ func (c *ClientWithResponses) LoginWithFormdataBodyWithResponse(ctx context.Cont
 	return ParseLoginResponse(rsp)
 }
 
-// CreateGroupWithResponse request returning *CreateGroupResponse
-func (c *ClientWithResponses) CreateGroupWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error) {
-	rsp, err := c.CreateGroup(ctx, reqEditors...)
+// CreateGroupPageWithResponse request returning *CreateGroupPageResponse
+func (c *ClientWithResponses) CreateGroupPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupPageResponse, error) {
+	rsp, err := c.CreateGroupPage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateGroupPageResponse(rsp)
+}
+
+// CreateGroupWithBodyWithResponse request with arbitrary body returning *CreateGroupResponse
+func (c *ClientWithResponses) CreateGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error) {
+	rsp, err := c.CreateGroupWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateGroupResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateGroupWithFormdataBodyWithResponse(ctx context.Context, body CreateGroupFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateGroupResponse, error) {
+	rsp, err := c.CreateGroupWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateGroupResponse(rsp)
+}
+
+// GroupPageWithResponse request returning *GroupPageResponse
+func (c *ClientWithResponses) GroupPageWithResponse(ctx context.Context, groupID string, reqEditors ...RequestEditorFn) (*GroupPageResponse, error) {
+	rsp, err := c.GroupPage(ctx, groupID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGroupPageResponse(rsp)
 }
 
 // HomePageWithResponse request returning *HomePageResponse
@@ -1438,6 +1640,22 @@ func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
 	return response, nil
 }
 
+// ParseCreateGroupPageResponse parses an HTTP response from a CreateGroupPageWithResponse call
+func ParseCreateGroupPageResponse(rsp *http.Response) (*CreateGroupPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateGroupPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseCreateGroupResponse parses an HTTP response from a CreateGroupWithResponse call
 func ParseCreateGroupResponse(rsp *http.Response) (*CreateGroupResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1447,6 +1665,22 @@ func ParseCreateGroupResponse(rsp *http.Response) (*CreateGroupResponse, error) 
 	}
 
 	response := &CreateGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGroupPageResponse parses an HTTP response from a GroupPageWithResponse call
+func ParseGroupPageResponse(rsp *http.Response) (*GroupPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GroupPageResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1712,7 +1946,13 @@ type ServerInterface interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	// serve create group page
 	// (GET /page/create-group)
+	CreateGroupPage(w http.ResponseWriter, r *http.Request)
+	// handles form submit of create group page
+	// (POST /page/create-group)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
+	// serve create group page
+	// (GET /page/group/{groupID})
+	GroupPage(w http.ResponseWriter, r *http.Request, groupID string)
 	// serve home page
 	// (GET /page/home)
 	HomePage(w http.ResponseWriter, r *http.Request)
@@ -1778,12 +2018,53 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// CreateGroupPage operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroupPage(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // CreateGroup operation middleware
 func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateGroup(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GroupPage operation middleware
+func (siw *ServerInterfaceWrapper) GroupPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "groupID" -------------
+	var groupID string
+
+	err = runtime.BindStyledParameter("simple", false, "groupID", mux.Vars(r)["groupID"], &groupID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GroupPage(w, r, groupID)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -2168,7 +2449,11 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/login", wrapper.Login).Methods("POST")
 
-	r.HandleFunc(options.BaseURL+"/page/create-group", wrapper.CreateGroup).Methods("GET")
+	r.HandleFunc(options.BaseURL+"/page/create-group", wrapper.CreateGroupPage).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/page/create-group", wrapper.CreateGroup).Methods("POST")
+
+	r.HandleFunc(options.BaseURL+"/page/group/{groupID}", wrapper.GroupPage).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/page/home", wrapper.HomePage).Methods("GET")
 
@@ -2192,35 +2477,37 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"oTJW5MrY5XeL765Serg7/DcAAP//W0Jo1KAmAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
