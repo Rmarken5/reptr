@@ -88,8 +88,8 @@ func (u *UserDAO) AddUserAsMemberOfGroup(ctx context.Context, username string, g
 
 	_, err := u.collection.UpdateOne(ctx, bson.D{{"_id", username}}, bson.D{{"$push", bson.D{{"memberOfGroups", groupName}}}})
 	if err != nil {
-		err = errors.Join(errors.New(fmt.Sprintf("while adding user to group: %s - %s", username, groupName)), err)
-		logger.Error().Err(err)
+		err = errors.Join(err, ErrUpdate)
+		logger.Error().Err(err).Msgf("while adding user to group: %s - %s", username, groupName)
 		return err
 	}
 	return nil
@@ -155,16 +155,15 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 	}
 
 	var groups []models.Group
-
 	err = cur.All(ctx, &groups)
-	logger.Error().Err(err).Msg("while unmarshalling into slice")
-
 	if err != nil {
-		return nil, err
+		logger.Error().Err(err).Msg("while unmarshalling into slice")
+		return nil, errors.Join(err, ErrAggregate)
 	}
+
 	if len(groups) == 0 {
+		logger.Info().Msgf("No groups for %s", username)
 		return nil, ErrNoResults
 	}
 	return groups, nil
-
 }
