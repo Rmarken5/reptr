@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
-	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
@@ -16,7 +15,7 @@ var _ Controller = &Logic{}
 
 type (
 	Controller interface {
-		CreateGroup(ctx context.Context, groupName string) (string, error)
+		CreateGroup(ctx context.Context, username, groupName string) (string, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
@@ -50,8 +49,8 @@ func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error)
 	logger.Info().Msgf("insertDeck: %s", deckName)
 
 	if deckName == "" {
-		logger.Error().Err(ErrInvalidGroupName).Msgf("deckName: %s", deckName)
-		return "", ErrInvalidDeckName
+		logger.Error().Err(ErrEmptyDeckName).Msgf("deckName: %s", deckName)
+		return "", ErrEmptyDeckName
 	}
 
 	id, err := l.repo.InsertDeck(ctx, models.Deck{
@@ -71,20 +70,15 @@ func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error)
 // From time is required. If to is not provided, it defaults to the EOD of from.
 func (l *Logic) GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error) {
 	logger := l.logger.With().Str("module", "getDecks").Logger()
-	if to == nil {
-		endOfDayFrom := time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, 0, from.Location())
-		to = &endOfDayFrom
-	}
-	logger.Info().Msgf("GetDecks between %s - %s with limit %d: starting at: %d ", from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
 
-	if to.Before(from) {
-		return nil, ErrInvalidToBeforeFrom
+	if to != nil && to.Before(from) {
+		return []models.DeckWithCards(nil), ErrInvalidToBeforeFrom
 	}
 
 	cards, err := l.repo.GetWithCards(ctx, from, to, limit, offset)
 	if err != nil {
 		logger.Error().Err(err).Msg("while getting cards")
-		return nil, err
+		return []models.DeckWithCards(nil), err
 	}
 
 	return cards, nil
@@ -166,18 +160,17 @@ func (l *Logic) RemoveDownvoteDeck(ctx context.Context, deckID, userID string) e
 	return nil
 }
 
-func (l *Logic) CreateGroup(ctx context.Context, groupName string) (string, error) {
+func (l *Logic) CreateGroup(ctx context.Context, username, groupName string) (string, error) {
 	logger := l.logger.With().Str("module", "CreateGroup").Logger()
 	logger.Info().Msgf("CreateGroup: %s", groupName)
 
-	username, ok := reptrCtx.Username(ctx)
-	if !ok {
-		logger.Error().Err(ErrEmptyUsername).Msgf("while getting username from ctx")
+	if username == "" {
+		logger.Error().Err(ErrEmptyUsername)
 		return "", ErrEmptyUsername
 	}
 
 	if groupName == "" {
-		logger.Error().Err(ErrInvalidGroupName).Msgf("groupName: %s", groupName)
+		logger.Error().Err(ErrInvalidGroupName)
 		return "", ErrInvalidGroupName
 	}
 	gpID, err := l.repo.InsertGroup(ctx, models.Group{
@@ -201,8 +194,8 @@ func (l *Logic) AddDeckToGroup(ctx context.Context, groupID, deckID string) erro
 	logger.Info().Msgf("Adding deck: %s to group: %s", deckID, groupID)
 
 	if groupID == "" {
-		logger.Error().Err(ErrEmptyDeckID).Msgf("group: %s", groupID)
-		return ErrEmptyDeckID
+		logger.Error().Err(ErrEmptyGroupID).Msgf("group: %s", groupID)
+		return ErrEmptyGroupID
 	}
 
 	if deckID == "" {
@@ -221,13 +214,8 @@ func (l *Logic) AddDeckToGroup(ctx context.Context, groupID, deckID string) erro
 
 func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error) {
 	logger := l.logger.With().Str("module", "GetGroups").Logger()
-	if to == nil {
-		endOfDayFrom := time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, 0, from.Location())
-		to = &endOfDayFrom
-	}
-	logger.Info().Msgf("GetGroups between %s - %s with limit %d: starting at: %d ", from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
 
-	if to.Before(from) {
+	if to != nil && to.Before(from) {
 		return []models.GroupWithDecks(nil), ErrInvalidToBeforeFrom
 	}
 
@@ -242,8 +230,12 @@ func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, li
 
 func (l *Logic) GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error) {
 	logger := l.logger.With().Str("method", "GetGroupsForUser").Logger()
-
 	logger.Info().Msgf("GetGroupsForUser called")
+
+	if username == "" {
+		logger.Error().Err(ErrEmptyUsername)
+		return []models.Group(nil), ErrEmptyUsername
+	}
 
 	if to != nil && to.Before(from) {
 		return []models.Group(nil), ErrInvalidToBeforeFrom

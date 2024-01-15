@@ -90,8 +90,13 @@ func decksFromDecks(fromService []models.Deck) []api.Deck {
 
 func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "AddGroup").Logger()
-
 	w.Header().Set("Content-Type", "application/json")
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		log.Error().Msg("username not on context while calling AddGroup")
+		http.Error(w, "username not on context", http.StatusBadRequest)
+	}
 
 	var groupName api.GroupName
 	err := json.NewDecoder(r.Body).Decode(&groupName)
@@ -109,7 +114,7 @@ func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	group, err := rc.deckController.CreateGroup(r.Context(), groupName.GroupName)
+	group, err := rc.deckController.CreateGroup(r.Context(), username, groupName.GroupName)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create group")
 		status := toStatus(err)

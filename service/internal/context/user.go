@@ -24,8 +24,11 @@ func AddSubject(parent context.Context, subject string) context.Context {
 }
 
 func Username(ctx context.Context) (string, bool) {
-	sub, ok := ctx.Value(usernameKey).(string)
-	return sub, ok
+	username, ok := ctx.Value(usernameKey).(string)
+	if username == "" {
+		return "", false
+	}
+	return username, ok
 }
 
 func AddUsername(parent context.Context, username string) context.Context {
