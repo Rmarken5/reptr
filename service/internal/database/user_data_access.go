@@ -82,14 +82,14 @@ func (u *UserDAO) GetUserByUsername(ctx context.Context, username string) (model
 	return usr, nil
 }
 
-func (u *UserDAO) AddUserAsMemberOfGroup(ctx context.Context, username string, groupName string) error {
+func (u *UserDAO) AddUserAsMemberOfGroup(ctx context.Context, username string, groupID string) error {
 	logger := u.log.With().Str("method", "AddUserAsMemberOfGroup").Logger()
-	logger.Info().Msgf("adding user %s as member of group %s", username, groupName)
+	logger.Info().Msgf("adding user %s as member of group %s", username, groupID)
 
-	_, err := u.collection.UpdateOne(ctx, bson.D{{"_id", username}}, bson.D{{"$push", bson.D{{"member_of_groups", groupName}}}})
+	_, err := u.collection.UpdateOne(ctx, bson.D{{"_id", username}}, bson.D{{"$push", bson.D{{"member_of_groups", groupID}}}})
 	if err != nil {
 		err = errors.Join(err, ErrUpdate)
-		logger.Error().Err(err).Msgf("while adding user to group: %s - %s", username, groupName)
+		logger.Error().Err(err).Msgf("while adding user to group: %s - %s", username, groupID)
 		return err
 	}
 	return nil
@@ -105,7 +105,7 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 			bson.D{
 				{"from", "groups"},
 				{"localField", "member_of_groups"},
-				{"foreignField", "name"},
+				{"foreignField", "_id"},
 				{"as", "groups"},
 			},
 		},

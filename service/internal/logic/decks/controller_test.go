@@ -413,38 +413,49 @@ func TestLogic_RemoveDownvoteDeck(t *testing.T) {
 
 func TestLogic_CreateGroup(t *testing.T) {
 	var (
-		haveErr = errors.New("db error")
+		haveErr     = errors.New("db error")
+		haveGroupID = uuid.NewString()
 	)
 
 	testCases := map[string]struct {
-		mockStore     func(mock *database.MockRepository)
-		haveGroupName string
-		haveUsername  string
-		wantErr       error
+		mockStore    func(mock *database.MockRepository)
+		haveGroupID  string
+		haveUsername string
+		wantErr      error
 	}{
 		"should return groupID when group is inserted": {
 			mockStore: func(mock *database.MockRepository) {
-				mock.EXPECT().InsertGroup(gomock.Any(), gomock.Any()).Return(uuid.NewString(), nil)
+				mock.EXPECT().InsertGroup(gomock.Any(), gomock.Any()).Return(haveGroupID, nil)
+				mock.EXPECT().AddUserAsMemberOfGroup(gomock.Any(), gomock.Any(), haveGroupID).Return(nil)
 			},
-			haveGroupName: uuid.NewString(),
-			haveUsername:  uuid.NewString(),
+			haveGroupID:  haveGroupID,
+			haveUsername: uuid.NewString(),
+		},
+		"should return error when adding group membership": {
+			mockStore: func(mock *database.MockRepository) {
+				mock.EXPECT().InsertGroup(gomock.Any(), gomock.Any()).Return(haveGroupID, nil)
+				mock.EXPECT().AddUserAsMemberOfGroup(gomock.Any(), gomock.Any(), haveGroupID).Return(haveErr)
+			},
+			haveGroupID:  haveGroupID,
+			haveUsername: uuid.NewString(),
+			wantErr:      haveErr,
 		},
 		"should return ErrEmptyUserName when username is not on context": {
 			haveUsername: "",
 			wantErr:      ErrEmptyUsername,
 		},
 		"should return ErrInvalidGroupName when groupName empty string": {
-			haveUsername:  uuid.NewString(),
-			haveGroupName: "",
-			wantErr:       ErrInvalidGroupName,
+			haveUsername: uuid.NewString(),
+			haveGroupID:  "",
+			wantErr:      ErrInvalidGroupName,
 		},
 		"should return err when database layer returns err": {
 			mockStore: func(mock *database.MockRepository) {
 				mock.EXPECT().InsertGroup(gomock.Any(), gomock.Any()).Return("", haveErr)
 			},
-			haveGroupName: uuid.NewString(),
-			haveUsername:  uuid.NewString(),
-			wantErr:       haveErr,
+			haveGroupID:  uuid.NewString(),
+			haveUsername: uuid.NewString(),
+			wantErr:      haveErr,
 		},
 	}
 
@@ -461,7 +472,7 @@ func TestLogic_CreateGroup(t *testing.T) {
 
 			logic := Logic{repo: mockDB, logger: zerolog.Nop()}
 
-			gotGroupID, err := logic.CreateGroup(context.Background(), tc.haveUsername, tc.haveGroupName)
+			gotGroupID, err := logic.CreateGroup(context.Background(), tc.haveUsername, tc.haveGroupID)
 
 			assert.ErrorIs(t, err, tc.wantErr)
 			if err != nil {
