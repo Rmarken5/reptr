@@ -76,8 +76,27 @@ func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Tim
 		},
 		}
 
+	getVotes := bson.D{
+		{"$addFields",
+			bson.D{
+				{"upvotes", bson.D{{"$size", "$user_upvotes"}}},
+				{"downvotes", bson.D{{"$size", "$user_downvotes"}}},
+			},
+		},
+	}
+	removeUserVotes := bson.D{
+		{"$project",
+			bson.D{
+				{"user_downvotes", 0},
+				{"user_upvotes", 0},
+			},
+		},
+	}
+
 	filter := append(
 		pipeline.Paginate(from, to, limit, offset),
+		getVotes,
+		removeUserVotes,
 		lookupCards,
 	)
 	logger.Debug().Msgf("%+v", filter)

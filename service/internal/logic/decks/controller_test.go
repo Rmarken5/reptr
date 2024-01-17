@@ -560,7 +560,7 @@ func TestLogic_GetGroups(t *testing.T) {
 					UpdatedAt:  timeNow,
 					DeletedAt:  nil,
 				},
-				Decks: []models.Deck{
+				Decks: []models.GetDeckResults{
 					{
 						ID:        deckOneID,
 						Name:      uuid.NewString(),

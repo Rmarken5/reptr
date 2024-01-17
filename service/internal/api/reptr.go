@@ -75,7 +75,7 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 	json.NewEncoder(w).Encode(g)
 }
 
-func decksFromDecks(fromService []models.Deck) []api.Deck {
+func decksFromDecks(fromService []models.GetDeckResults) []api.Deck {
 	apiDecks := make([]api.Deck, len(fromService))
 	for i, deck := range fromService {
 		apiDecks[i] = api.Deck{
@@ -362,6 +362,7 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "while getting groups for user", toStatus(err))
 		return
 	}
+
 	homeGroups := make([]components.Group, len(groups))
 	for i, group := range groups {
 		homeGroups[i] = homeGroupFromModel(group)
@@ -405,8 +406,16 @@ func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID string) {
-	//TODO implement me
-	panic("implement me")
+	logger := rc.logger.With().Str("method", "GroupPage").Logger()
+	logger.Info().Msgf("serving group page for: %s", groupID)
+
+	group, err := rc.deckController.GetGroupByID(r.Context(), groupID)
+	if err != nil {
+		http.Error(w, "while getting groups for user", toStatus(err))
+		return
+	}
+
+	components.Form(nil, components.GroupPage(groupPageFromModel(group))).Render(r.Context(), w)
 }
 
 func homeGroupFromModel(group models.Group) components.Group {
@@ -418,7 +427,34 @@ func homeGroupFromModel(group models.Group) components.Group {
 	}
 }
 
+func groupPageFromModel(group models.GroupWithDecks) components.GroupData {
+	return components.GroupData{
+		ID:        group.ID,
+		GroupName: group.Name,
+		Decks:     groupDecksFromDecks(group.Decks),
+		NumUsers:  "0",
+	}
+}
+
+func groupDecksFromDecks(fromService []models.GetDeckResults) []components.Deck {
+	apiDecks := make([]components.Deck, len(fromService))
+	for i, deck := range fromService {
+		apiDecks[i] = components.Deck{
+			ID:           deck.ID,
+			DeckName:     deck.Name,
+			NumUpvotes:   deck.Upvotes,
+			NumDownvotes: deck.Downvotes,
+			NumCards:     0,
+			CreatedAt:    deck.CreatedAt,
+			UpdatedAt:    deck.UpdatedAt,
+		}
+	}
+	return apiDecks
+}
+
 func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
+	logger := rc.logger.With().Str("method", "CreateGroupPage").Logger()
+	logger.Info().Msg("serving create group page")
 	components.Form(nil, components.CreateGroupForm()).Render(r.Context(), w)
 }
 

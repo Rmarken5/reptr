@@ -3,7 +3,6 @@ package components
 
 import "strconv"
 import "path"
-import "github.com/gosimple/slug"
 
 
 type (
@@ -32,7 +31,7 @@ templ Home(homeData HomeData){
                 </tr>
                 for _, group := range homeData.Groups {
                     <tr>
-                        <td><a href={templ.SafeURL(path.Join("/page/group", slug.Make(group.ID)))}>{group.GroupName}</a></td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
+                        <td><a href={templ.SafeURL(path.Join("/page/group", group.ID))}>{group.GroupName}</a></td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
                     </tr>
                 }
             </table>

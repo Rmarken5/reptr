@@ -111,19 +111,19 @@ func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockRepository)(nil).DeleteGroup), arg0, arg1)
 }
 
-// GetGroupByName mocks base method.
-func (m *MockRepository) GetGroupByName(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
+// GetGroupByID mocks base method.
+func (m *MockRepository) GetGroupByID(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGroupByName", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetGroupByID", arg0, arg1)
 	ret0, _ := ret[0].(models.GroupWithDecks)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetGroupByName indicates an expected call of GetGroupByName.
-func (mr *MockRepositoryMockRecorder) GetGroupByName(arg0, arg1 any) *gomock.Call {
+// GetGroupByID indicates an expected call of GetGroupByID.
+func (mr *MockRepositoryMockRecorder) GetGroupByID(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupByName", reflect.TypeOf((*MockRepository)(nil).GetGroupByName), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupByID", reflect.TypeOf((*MockRepository)(nil).GetGroupByID), arg0, arg1)
 }
 
 // GetGroupsForUser mocks base method.

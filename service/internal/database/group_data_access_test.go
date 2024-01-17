@@ -134,7 +134,7 @@ func TestGetGroupsWithDecks(t *testing.T) {
 					CreatedAt: time.Now().UTC().AddDate(0, 0, -7).Truncate(time.Millisecond),
 					UpdatedAt: time.Now().UTC().AddDate(0, 0, -5).Truncate(time.Millisecond),
 				},
-				Decks: []models.Deck{
+				Decks: []models.GetDeckResults{
 					{
 						ID:        "1",
 						Name:      "Deck 1",
@@ -371,7 +371,7 @@ func TestGetGroupByName(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotGroup, gotErr := dao.GetGroupByName(context.Background(), tc.groupName)
+			gotGroup, gotErr := dao.GetGroupByID(context.Background(), tc.groupName)
 
 			assert.ErrorIs(mt, gotErr, tc.wantErr)
 			assert.Equal(mt, tc.wantGroup, gotGroup)

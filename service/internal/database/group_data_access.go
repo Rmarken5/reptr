@@ -33,7 +33,7 @@ type (
 		UpdateGroup(ctx context.Context, group models.Group) error
 		GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		DeleteGroup(ctx context.Context, groupID string) error
-		GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error)
+		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		// AddUserToGroup(ctx context.Context, groupID string, haveUsername string) error
 	}
@@ -158,19 +158,72 @@ func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) e
 	return nil
 }
 
-func (g *GroupDAO) GetGroupByName(ctx context.Context, groupName string) (models.GroupWithDecks, error) {
-	logger := g.log.With().Str("method", "deleteGroup").Logger()
-	match := bson.D{{"$match", bson.D{{"name", groupName}}}}
+func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error) {
+	logger := g.log.With().Str("method", "GetGroupByID").Logger()
+	match := bson.D{{"$match", bson.D{{"_id", groupID}}}}
+
+	lookupDecks := bson.D{
+		{"$lookup",
+			bson.D{
+				{"from", "decks"},
+				{"localField", "deck_ids"},
+				{"foreignField", "_id"},
+				{"as", "decks"},
+			},
+		},
+	}
+	unwind := bson.D{
+		{"$unwind",
+			bson.D{
+				{"path", "$decks"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		},
+	}
+	getVoteCounts := bson.D{
+		{"$addFields",
+			bson.D{
+				{"decks.upvotes", bson.D{{"$size", "$decks.user_upvotes"}}},
+				{"decks.downvote", bson.D{{"$size", "$decks.user_downvotes"}}},
+			},
+		},
+	}
+	removeUserVotes := bson.D{
+		{"$project",
+			bson.D{
+				{"decks.user_upvotes", 0},
+				{"decks.user_downvotes", 0},
+			},
+		},
+	}
+	regroupDecks := bson.D{
+		{"$group",
+			bson.D{
+				{"_id", "$_id"},
+				{"name", bson.D{{"$first", "$name"}}},
+				{"created_by", bson.D{{"$first", "$created_by"}}},
+				{"decks", bson.D{{"$push", "$decks"}}},
+				{"moderators", bson.D{{"$first", "$moderators"}}},
+				{"created_at", bson.D{{"$first", "$created_at"}}},
+				{"updated_at", bson.D{{"$first", "$updated_at"}}},
+				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
+			},
+		},
+	}
 
 	filter := bson.A{
 		match,
-		deckFromGroupsLookup,
+		lookupDecks,
+		unwind,
+		getVoteCounts,
+		removeUserVotes,
+		regroupDecks,
 	}
 	logger.Debug().Msgf("%+v", filter)
 
 	cur, err := g.collection.Aggregate(ctx, filter)
 	if err != nil {
-		logger.Error().Err(err).Msgf("getting group by name %s", groupName)
+		logger.Error().Err(err).Msgf("getting group by id %s", groupID)
 		return models.GroupWithDecks{}, errors.Join(fmt.Errorf("error deleting group: %w", err), ErrAggregate)
 	}
 

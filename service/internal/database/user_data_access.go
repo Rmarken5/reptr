@@ -129,6 +129,7 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 	flattenGroup := bson.D{
 		{"$project",
 			bson.D{
+				{"_id", "$groups._id"},
 				{"name", "$groups.name"},
 				{"created_at", "$groups.created_at"},
 				{"updated_at", "$groups.updated_at"},

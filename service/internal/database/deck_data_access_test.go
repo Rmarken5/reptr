@@ -77,7 +77,7 @@ func TestDAO_GetWithCards(t *testing.T) {
 		db            = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 		haveWithCards = []models.DeckWithCards{
 			{
-				Deck: models.Deck{
+				GetDeckResults: models.GetDeckResults{
 					ID:        "1", // Populate with appropriate ID
 					Name:      "Sample Deck",
 					CreatedAt: time.Now().In(time.UTC).Truncate(time.Millisecond),

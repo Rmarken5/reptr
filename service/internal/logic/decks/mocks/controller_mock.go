@@ -128,6 +128,21 @@ func (mr *MockControllerMockRecorder) GetDecks(arg0, arg1, arg2, arg3, arg4 any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDecks", reflect.TypeOf((*MockController)(nil).GetDecks), arg0, arg1, arg2, arg3, arg4)
 }
 
+// GetGroupByID mocks base method.
+func (m *MockController) GetGroupByID(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupByID", arg0, arg1)
+	ret0, _ := ret[0].(models.GroupWithDecks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupByID indicates an expected call of GetGroupByID.
+func (mr *MockControllerMockRecorder) GetGroupByID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupByID", reflect.TypeOf((*MockController)(nil).GetGroupByID), arg0, arg1)
+}
+
 // GetGroups mocks base method.
 func (m *MockController) GetGroups(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()

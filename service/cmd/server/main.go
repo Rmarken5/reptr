@@ -47,6 +47,7 @@ func main() {
 	pageRoute.HandleFunc("/home", wrapper.HomePage)
 	pageRoute.HandleFunc("/create-group", wrapper.CreateGroupPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/group/{groupID}", wrapper.GroupPage).Methods(http.MethodGet)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

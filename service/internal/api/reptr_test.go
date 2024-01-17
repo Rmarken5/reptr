@@ -46,7 +46,7 @@ func TestGetGroups(t *testing.T) {
 				CreatedAt: now,
 				UpdatedAt: now,
 				DeletedAt: nil,
-			}, Decks: []models.Deck{
+			}, Decks: []models.GetDeckResults{
 				{ID: deckID, Name: deckName, CreatedAt: now, UpdatedAt: now},
 			}},
 		}

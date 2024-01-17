@@ -18,6 +18,8 @@ type (
 		CreateGroup(ctx context.Context, username, groupName string) (string, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
+
+		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
 		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
@@ -34,6 +36,19 @@ type (
 		repo   database.Repository
 	}
 )
+
+func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error) {
+
+	logger := l.logger.With().Str("module", "GetGroupByID").Logger()
+
+	group, err := l.repo.GetGroupByID(ctx, groupID)
+	if err != nil {
+		logger.Error().Err(err).Msg("while getting cards")
+		return models.GroupWithDecks{}, err
+	}
+
+	return group, nil
+}
 
 func New(logger zerolog.Logger, repo database.Repository) *Logic {
 	l := logger.With().Str("module", "deck logic").Logger()
