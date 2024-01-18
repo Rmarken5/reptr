@@ -295,7 +295,7 @@ func TestDeleteGroup(t *testing.T) {
 	}
 }
 
-func TestGetGroupByName(t *testing.T) {
+func TestGroupDAO_GetGroupByID(t *testing.T) {
 	var (
 		db           = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 		logger       = zerolog.Nop()

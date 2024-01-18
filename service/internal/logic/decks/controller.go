@@ -37,19 +37,6 @@ type (
 	}
 )
 
-func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error) {
-
-	logger := l.logger.With().Str("module", "GetGroupByID").Logger()
-
-	group, err := l.repo.GetGroupByID(ctx, groupID)
-	if err != nil {
-		logger.Error().Err(err).Msg("while getting cards")
-		return models.GroupWithDecks{}, err
-	}
-
-	return group, nil
-}
-
 func New(logger zerolog.Logger, repo database.Repository) *Logic {
 	l := logger.With().Str("module", "deck logic").Logger()
 	return &Logic{
@@ -269,4 +256,16 @@ func (l *Logic) GetGroupsForUser(ctx context.Context, username string, from time
 	}
 
 	return groups, nil
+}
+
+func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error) {
+	logger := l.logger.With().Str("module", "GetGroupByID").Logger()
+
+	group, err := l.repo.GetGroupByID(ctx, groupID)
+	if err != nil {
+		logger.Error().Err(err).Msg("while getting cards")
+		return models.GroupWithDecks{}, err
+	}
+
+	return group, nil
 }

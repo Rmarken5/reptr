@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
 	mocks "github.com/rmarken/reptr/service/internal/api/middlewares/mocks"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
+	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	mockAuth "github.com/rmarken/reptr/service/internal/logic/auth/mocks"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
@@ -23,6 +25,7 @@ import (
 	"golang.org/x/oauth2"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -400,4 +403,287 @@ func TestReprtClient_LoginPage(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rr.Code)
 		snaps.MatchSnapshot(t, rr.Body.String())
 	})
+}
+
+func TestReprtClient_GroupPage(t *testing.T) {
+	var (
+		timeNow   = time.Date(2024, 1, 17, 0, 0, 0, 0, time.UTC)
+		haveGroup = models.GroupWithDecks{
+			Group: models.Group{
+				ID:        "1234",
+				Name:      "name",
+				CreatedBy: "someone@somewher.com",
+				Moderators: []string{
+					"someone@somewher.com",
+				},
+				DeckIDs: []string{
+					"456",
+				},
+				CreatedAt: timeNow,
+				UpdatedAt: timeNow,
+				DeletedAt: nil,
+			},
+			Decks: []models.GetDeckResults{
+				{
+					ID:        "deckID",
+					Name:      "deckName",
+					Upvotes:   1,
+					Downvotes: 3,
+					CreatedAt: timeNow,
+					UpdatedAt: timeNow,
+				},
+			},
+		}
+	)
+	testCases := map[string]struct {
+		mockController func(mock *mockLogic.MockController)
+		wantGroups     models.GroupWithDecks
+		wantStatus     int
+	}{
+		"should load group page with group data": {
+			mockController: func(mock *mockLogic.MockController) {
+				mock.EXPECT().GetGroupByID(gomock.Any(), gomock.Any()).Return(haveGroup, nil)
+			},
+			wantGroups: haveGroup,
+			wantStatus: http.StatusOK,
+		},
+		"should return 404 when error from database returns not found": {
+			mockController: func(mock *mockLogic.MockController) {
+				mock.EXPECT().GetGroupByID(gomock.Any(), gomock.Any()).Return(models.GroupWithDecks{}, database.ErrNoResults)
+			},
+			wantGroups: models.GroupWithDecks{},
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mock := mockLogic.NewMockController(ctrl)
+			if tc.mockController != nil {
+				tc.mockController(mock)
+			}
+
+			reprt := ReprtClient{
+				deckController: mock,
+				logger:         zerolog.Nop(),
+			}
+			// Create a request object with necessary parameters
+			req, err := http.NewRequest(http.MethodGet, "/page/group/{groupID}", nil)
+			require.NoError(t, err)
+
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+
+			// Call the Login method with the mocked dependencies
+			reprt.GroupPage(rr, req, uuid.NewString())
+
+			// Check the status code of the response
+			assert.Equal(t, tc.wantStatus, rr.Code)
+			snaps.MatchSnapshot(t, rr.Body.String())
+		})
+	}
+}
+
+func TestReprtClient_HomePage(t *testing.T) {
+	var (
+		timeNow   = time.Date(2024, 1, 17, 0, 0, 0, 0, time.UTC)
+		haveGroup = []models.Group{
+			{
+				ID:        "1234",
+				Name:      "name",
+				CreatedBy: "someone@somewher.com",
+				Moderators: []string{
+					"someone@somewher.com",
+				},
+				DeckIDs: []string{
+					"456",
+				},
+				CreatedAt: timeNow,
+				UpdatedAt: timeNow,
+				DeletedAt: nil,
+			},
+			{
+				ID:        "5678",
+				Name:      "name-1",
+				CreatedBy: "someone@somewhere.com",
+				Moderators: []string{
+					"someone@somewhere.com",
+				},
+				DeckIDs: []string{
+					"456",
+					"789",
+				},
+				CreatedAt: timeNow,
+				UpdatedAt: timeNow,
+				DeletedAt: nil,
+			},
+		}
+	)
+	testCases := map[string]struct {
+		mockController func(mock *mockLogic.MockController)
+		wantGroups     models.Group
+		wantStatus     int
+		wantUserName   string
+	}{
+		"should load group page with group data": {
+			mockController: func(mock *mockLogic.MockController) {
+				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(haveGroup, nil)
+			},
+			wantUserName: "hello",
+			wantStatus:   http.StatusOK,
+		},
+		"should return 404 when error from database returns not found": {
+			mockController: func(mock *mockLogic.MockController) {
+				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, database.ErrNoResults)
+			},
+			wantUserName: "hello",
+			wantGroups:   models.Group{},
+			wantStatus:   http.StatusNotFound,
+		},
+		"should return internal error when username is not on context": {
+			wantUserName: "",
+			wantGroups:   models.Group{},
+			wantStatus:   http.StatusInternalServerError,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mock := mockLogic.NewMockController(ctrl)
+			if tc.mockController != nil {
+				tc.mockController(mock)
+			}
+
+			reprt := ReprtClient{
+				deckController: mock,
+				logger:         zerolog.Nop(),
+			}
+			// Create a request object with necessary parameters
+			req, err := http.NewRequest(http.MethodGet, "/page/home", nil)
+			require.NoError(t, err)
+
+			req = req.WithContext(reptrCtx.AddUsername(req.Context(), tc.wantUserName))
+
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+
+			// Call the Login method with the mocked dependencies
+			reprt.HomePage(rr, req)
+
+			// Check the status code of the response
+			assert.Equal(t, tc.wantStatus, rr.Code)
+			snaps.MatchSnapshot(t, rr.Body.String())
+		})
+	}
+}
+
+func TestReprtClient_CreateGroup(t *testing.T) {
+	var (
+		haveGroupID = "groupID"
+	)
+	testCases := map[string]struct {
+		mockController func(mock *mockLogic.MockController)
+		wantStatus     int
+		haveUserName   string
+		haveGroupName  string
+	}{
+		"should create group": {
+			mockController: func(mock *mockLogic.MockController) {
+				mock.EXPECT().CreateGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(haveGroupID, nil)
+			},
+			haveUserName:  "user",
+			haveGroupName: "world",
+			wantStatus:    http.StatusOK,
+		},
+		"should return internal error when username is not on context": {
+			haveUserName: "",
+			wantStatus:   http.StatusInternalServerError,
+		},
+		"should return 400 when group name is missing": {
+			haveUserName:  "user",
+			haveGroupName: "",
+			wantStatus:    http.StatusBadRequest,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mock := mockLogic.NewMockController(ctrl)
+			if tc.mockController != nil {
+				tc.mockController(mock)
+			}
+
+			reprt := ReprtClient{
+				deckController: mock,
+				logger:         zerolog.Nop(),
+			}
+			formValues := url.Values{}
+			formValues.Add("group-name", tc.haveGroupName)
+
+			// Create a request object with necessary parameters
+			req, err := http.NewRequest(http.MethodPost, "/page/create-group", nil)
+			require.NoError(t, err)
+
+			req.PostForm = formValues
+
+			req = req.WithContext(reptrCtx.AddUsername(req.Context(), tc.haveUserName))
+
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+
+			// Call the Login method with the mocked dependencies
+			reprt.CreateGroup(rr, req)
+
+			// Check the status code of the response
+			assert.Equal(t, tc.wantStatus, rr.Code)
+			snaps.MatchSnapshot(t, rr.Body.String())
+		})
+	}
+}
+
+func TestReprtClient_CreateGroupPage(t *testing.T) {
+	var ()
+	testCases := map[string]struct {
+		wantGroups   models.Group
+		wantStatus   int
+		wantUserName string
+	}{
+		"should load create group page": {
+			wantUserName: "hello",
+			wantStatus:   http.StatusOK,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+
+			reprt := ReprtClient{
+				logger: zerolog.Nop(),
+			}
+			// Create a request object with necessary parameters
+			req, err := http.NewRequest(http.MethodGet, "/page/group", nil)
+			require.NoError(t, err)
+
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+
+			// Call the Login method with the mocked dependencies
+			reprt.CreateGroupPage(rr, req)
+
+			// Check the status code of the response
+			assert.Equal(t, tc.wantStatus, rr.Code)
+			snaps.MatchSnapshot(t, rr.Body.String())
+		})
+	}
 }

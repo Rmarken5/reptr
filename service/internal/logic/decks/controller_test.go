@@ -741,3 +741,75 @@ func TestLogic_GetGroupsForUser(t *testing.T) {
 		})
 	}
 }
+
+func TestLogic_GetGroupByID(t *testing.T) {
+	var (
+		haveErr   = errors.New("db error")
+		timeNow   = time.Now().UTC()
+		haveGroup = models.GroupWithDecks{
+			Group: models.Group{
+				ID:         uuid.NewString(),
+				Name:       uuid.NewString(),
+				CreatedBy:  uuid.NewString(),
+				Moderators: []string{},
+				DeckIDs:    []string{},
+				CreatedAt:  timeNow,
+				UpdatedAt:  timeNow,
+				DeletedAt:  nil,
+			},
+			Decks: []models.GetDeckResults{
+				{
+					ID:        uuid.NewString(),
+					Name:      uuid.NewString(),
+					Upvotes:   1,
+					Downvotes: 3,
+					CreatedAt: timeNow,
+					UpdatedAt: timeNow,
+				},
+			},
+		}
+	)
+
+	testCases := map[string]struct {
+		mockStore   func(mock *database.MockRepository)
+		haveGroupID string
+		wantGroup   models.GroupWithDecks
+		wantErr     error
+	}{
+		"should return group when database returns group": {
+			mockStore: func(mock *database.MockRepository) {
+				mock.EXPECT().GetGroupByID(gomock.Any(), gomock.Any()).Return(haveGroup, nil)
+			},
+			haveGroupID: uuid.NewString(),
+			wantGroup:   haveGroup,
+		},
+		"should return the error the db returns": {
+			mockStore: func(mock *database.MockRepository) {
+				mock.EXPECT().GetGroupByID(gomock.Any(), gomock.Any()).Return(models.GroupWithDecks{}, haveErr)
+			},
+			haveGroupID: uuid.NewString(),
+			wantGroup:   models.GroupWithDecks{},
+			wantErr:     haveErr,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockDB := database.NewMockRepository(ctrl)
+
+			if tc.mockStore != nil {
+				tc.mockStore(mockDB)
+			}
+
+			logic := Logic{repo: mockDB, logger: zerolog.Nop()}
+
+			gotGroup, err := logic.GetGroupByID(context.Background(), tc.haveGroupID)
+
+			assert.ErrorIs(t, err, tc.wantErr)
+			assert.Equal(t, tc.wantGroup, gotGroup)
+		})
+	}
+}

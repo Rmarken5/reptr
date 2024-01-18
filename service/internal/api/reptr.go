@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
 	reptrCtx "github.com/rmarken/reptr/service/internal/context"
+	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
@@ -378,7 +379,7 @@ func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
 		logger.Info().Msg("username is not on context")
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -466,6 +467,8 @@ func toStatus(err error) int {
 		errors.Is(err, decks.ErrEmptyGroupID),
 		errors.Is(err, decks.ErrEmptyDeckID):
 		return http.StatusBadRequest
+	case errors.Is(err, database.ErrNoResults):
+		return http.StatusNotFound
 	default:
 		return http.StatusInternalServerError
 	}
