@@ -1,0 +1,31 @@
+package pages
+
+type (
+    CreateDeckPageData struct {
+        UsersGroups []CreateDeckGroupData
+    }
+    CreateDeckGroupData struct {
+        GroupID string
+        GroupName string
+    }
+)
+
+templ CreateDeckPage(deckPageData CreateDeckPageData) {
+    <body>
+        <form id="create-deck-form">
+            <section id="create-deck-section" hx-swap="beforeend">
+                <section id="deck-name-section">
+                    <label for="deck-name" id="deck-name-label">Deck Name: </label>
+                    <input id="deck-name" name="deck-name"/>
+                    <section id="card-section">
+                    </section>
+                </section>
+            </section>
+           <button type="submit">Create Deck</button>
+           <button
+           hx-target="#create-deck-section"
+           hx-get="/api/v1/card-input/{card-num}">Add Card</button>
+        </form>
+
+    </body>
+}

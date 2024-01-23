@@ -1,0 +1,71 @@
+
+[TestReprtClient_RegistrationPage/return_registration_page - 1]
+<body><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+---
+
+[TestReprtClient_Register/should_return_return_login_page_on_successful_registration - 1]
+<body><p>Registration Successful</p><form action="/login" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><input type="submit" value="Login"></form></body>
+---
+
+[TestReprtClient_Register/should_return_bad_request_when_validator_returns_registration_error - 1]
+<body><p>invalid_registration</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+---
+
+[TestReprtClient_Register/should_return_bad_request_when_validator_returns_error - 1]
+while registering
+
+---
+
+[TestReprtClient_Register/should_return_bad_request_when_user_doesn't_provide_email - 1]
+<body><p>Must provide email</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+---
+
+[TestReprtClient_Register/should_return_bad_request_when_user_doesn't_provide_password - 1]
+<body><p>Must provide password</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+---
+
+[TestReprtClient_Register/should_return_bad_request_when_passwords_don't_match - 1]
+<body><p>Passwords do not match</p><form action="/register" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><label for="repassword">Confirm Password: </label> <input type="password" id="repassword" name="repassword"><br><input type="submit" value="Register"> <a href="/login">or login</a></form></body>
+---
+
+[TestReprtClient_LoginPage/return_login_page - 1]
+<body><form action="/login" method="POST"><label for="email">Email: </label> <input type="text" id="email" name="email"><br><label for="password">Password: </label> <input type="password" id="password" name="password"><br><input type="submit" value="Login"></form></body>
+---
+
+[TestReprtClient_GroupPage/should_load_group_page_with_group_data - 1]
+<body><h1>Group name</h1><a href="/page/create-deck">Create Deck</a><section id="group-decks"><h2>Decks in Group</h2><table id="deck-table"><tr><th>Deck Name</th><th>Number of Cards</th><th>Upvotes</th><th>Downvotes</th></tr><tr><td><a href="/page/deck/deckID">deckName</a></td><td>0</td><td>1</td><td>3</td></tr></table></section></body>
+---
+
+[TestReprtClient_GroupPage/should_return_404_when_error_from_database_returns_not_found - 1]
+while getting groups for user
+
+---
+
+[TestReprtClient_HomePage/should_return_internal_error_when_username_is_not_on_context - 1]
+Something went wrong with getting username
+---
+
+[TestReprtClient_HomePage/should_load_group_page_with_group_data - 1]
+<body><h1>Hello hello</h1><a href="/page/create-group">Create Group</a><section id="user-groups"><h2>Your Groups</h2><table id="group-table"><tr><th>Group Name</th><th>Number of Decks</th><th>Users in Group</th></tr><tr><td><a href="/page/group/1234">name</a></td><td>1</td><td>0</td></tr><tr><td><a href="/page/group/5678">name-1</a></td><td>2</td><td>0</td></tr></table></section></body>
+---
+
+[TestReprtClient_HomePage/should_return_404_when_error_from_database_returns_not_found - 1]
+while getting groups for user
+
+---
+
+[TestReprtClient_CreateGroup/should_return_internal_error_when_username_is_not_on_context - 1]
+
+---
+
+[TestReprtClient_CreateGroup/should_return_400_when_group_name_is_missing - 1]
+
+---
+
+[TestReprtClient_CreateGroup/should_create_group - 1]
+<p>Group Successfully Created</p><body><h1>Create Group</h1><section id="create-group-section"><form id="create-group-form" action="/page/create-group" method="POST"><label for="group-name">Group Name: </label> <input type="text" id="group-name-input" name="group-name"> <button type="submit">Create Group</button></form></section><a href="/page/home">Back to home</a></body>
+---
+
+[TestReprtClient_CreateGroupPage/should_load_create_group_page - 1]
+<body><h1>Create Group</h1><section id="create-group-section"><form id="create-group-form" action="/page/create-group" method="POST"><label for="group-name">Group Name: </label> <input type="text" id="group-name-input" name="group-name"> <button type="submit">Create Group</button></form></section><a href="/page/home">Back to home</a></body>
+---

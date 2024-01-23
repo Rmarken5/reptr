@@ -1,0 +1,10 @@
+package pages
+
+templ Page(content templ.Component) {
+    <html>
+       <head>
+            <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+       </head>
+       @content
+    </html>
+}

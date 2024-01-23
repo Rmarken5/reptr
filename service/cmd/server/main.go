@@ -60,6 +60,7 @@ func main() {
 	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
 	secureRoute.HandleFunc("/api/v1/groups", wrapper.GetGroups).Methods(http.MethodGet)
+	secureRoute.HandleFunc("/api/v1/card-input/{card-num}", wrapper.GetCardInput).Methods(http.MethodGet)
 
 	secureRoute.Use(
 		middlewares.Authenticate(log, authenticator),

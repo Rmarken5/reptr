@@ -77,6 +77,26 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/CreateGroupResponseBody'
+  /page/create-deck:
+    get:
+      operationId: createDeckPage
+      summary: serve create deck page
+      description: returns html for creating a new deck
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createDeck
+      summary: handles form submit of create deck page
+      description: handles create deck form request and responds with result
+      requestBody:
+        $ref: "#/components/requestBodies/CreateDeckRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/CreateDeckResponseBody'
   /page/group/{groupID}:
     get:
       operationId: groupPage
@@ -242,6 +262,19 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
+  /secure/api/v1/card-input/{card-num}:
+    get:
+      operationId: getCardInput
+      summary: request get retrieve new card section for input
+      description: returns HTML section for form input for adding new cards
+      parameters:
+        - name: card-num
+          in: path
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/GetCardInputSectionBody'
 components:
   securitySchemes:
     jwt_auth:
@@ -267,6 +300,18 @@ components:
         text/html:
           schema:
             type: string
+    GetCardInputSectionBody:
+      description: Response card input section
+      content:
+        text/html:
+          schema:
+            type: string
+    CreateDeckResponseBody:
+      description: Response containing create group page with status
+      content:
+        text/html:
+          schema:
+            type: string
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -287,6 +332,7 @@ components:
         'text/plain':
           schema:
             $ref: "#/components/schemas/DocumentID"
+
     NotFound:
       description: Response for if/when a resource is not found
       content:
@@ -335,6 +381,13 @@ components:
         application/x-www-form-urlencoded:
           schema:
             $ref: "#/components/schemas/CreateGroup"
+    CreateDeckRequestBody:
+      description: request body for create group
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/CreateDeck"
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -371,6 +424,16 @@ components:
         groupName:
           type: string
       required: [ groupName]
+    CreateDeck:
+      type: object
+      properties:
+        deckName:
+          type: string
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+      required: [ groupName ]
     LoginResponseSchema:
       type: object
       properties:

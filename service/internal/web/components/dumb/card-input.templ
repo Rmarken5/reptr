@@ -1,0 +1,10 @@
+package dumb
+
+templ CardInput(cardNum string) {
+    <section id={"card-section-" + cardNum}>
+        <label for={"front-" + cardNum}>Front: </label>
+        <input id={"front-" + cardNum} name={"front-" + cardNum} />
+        <label for={"back-" + cardNum}>Back: </label>
+        <input id={"back-" + cardNum} name={"back-" + cardNum} />
+    </section>
+}
