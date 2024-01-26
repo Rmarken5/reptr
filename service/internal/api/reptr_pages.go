@@ -3,15 +3,19 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/rmarken/reptr/api"
 	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/models"
+	"github.com/rmarken/reptr/service/internal/web/components/dumb"
 	"github.com/rmarken/reptr/service/internal/web/components/pages"
 	"net/http"
 	"time"
 )
+
+const hxTriggerHeaderKey = "HX-Trigger"
 
 func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
@@ -276,13 +280,120 @@ func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc ReprtClient) CreateDeckPage(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	logger := rc.logger.With().Str("method", "CreateDeckPage").Logger()
+	logger.Info().Msg("serving create deck page")
+	pages.Form(nil, pages.Page(pages.CreateDeckPage(pages.CreateDeckPageData{
+		UsersGroups: nil,
+	}))).Render(r.Context(), w)
+
 }
 
 func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	logger := rc.logger.With().Str("method", "CreateDeck").Logger()
+	logger.Info().Msg("serving creating deck")
+
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	deckName := r.PostForm.Get("deck-name")
+	if deckName == "" {
+		logger.Info().Msgf("create deck attempt without deckName")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	deckID, err := rc.deckController.CreateDeck(r.Context(), deckName)
+	if err != nil {
+		http.Error(w, "while creating deck", toStatus(err))
+	}
+
+	dumb.DeckHeader(dumb.DeckHeaderData{
+		DeckID:   deckID,
+		DeckName: deckName,
+	}).Render(r.Context(), w)
+
+}
+
+func (rc ReprtClient) GetCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "GetCardsForDeckPage").Logger()
+	logger.Info().Msgf("getting cards for deck: %s", deckID)
+
+	if deckID == "" {
+		logger.Info().Msgf("get cards without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	cards, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
+		http.Error(w, "while cards for deck", toStatus(err))
+		return
+	}
+	viewCards := make([]dumb.CardDisplay, len(cards))
+	for i, card := range cards {
+		viewCards[i] = dumb.CardDisplay{
+			Front: card.Front,
+			Back:  card.Back,
+		}
+	}
+	dumb.GroupCardDisplay(dumb.GroupCardDisplayPageData{Cards: viewCards}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "CreateCardForDeck").Logger()
+	logger.Info().Msg("creating card")
+
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if deckID == "" {
+		logger.Info().Msgf("create deck attempt without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	cardFront := r.PostForm.Get("card-front")
+	if cardFront == "" {
+		logger.Info().Msgf("create deck attempt without card front")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	cardBack := r.PostForm.Get("card-back")
+	if cardBack == "" {
+		logger.Info().Msgf("create deck attempt without card back")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	timeNow := time.Now().UTC()
+	err = rc.deckController.AddCardToDeck(r.Context(), deckID, models.Card{
+		ID:        uuid.NewString(),
+		Front:     cardFront,
+		Back:      cardBack,
+		Kind:      models.BasicCard,
+		DeckID:    deckID,
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msgf("while creating a card for deck %s", deckID)
+		http.Error(w, "while creating card", toStatus(err))
+		return
+	}
+
+	w.Header().Set(hxTriggerHeaderKey, "newCard")
+	w.WriteHeader(http.StatusCreated)
+
 }
 
 func toStatus(err error) int {

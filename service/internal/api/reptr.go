@@ -199,6 +199,5 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 func (rc ReprtClient) GetCardInput(w http.ResponseWriter, r *http.Request, cardNum int) {
 	logger := rc.logger.With().Str("method", "GetCardInput").Logger()
 	logger.Info().Msgf("serving card input section")
-	logger.Debug().Msgf("vals: ", r.URL.)
 	dumb.CardInput(strconv.Itoa(0)).Render(r.Context(), w)
 }

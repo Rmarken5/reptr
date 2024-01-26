@@ -97,6 +97,40 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/CreateDeckResponseBody'
+  /page/create-card/{deck_id}:
+    get:
+      operationId: getCardsForDeckPage
+      summary: card content for deck page
+      description: event driven response for card html
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createCardForDeck
+      summary: handles form submit of create card on create deck page
+      description: handles form submit of create card on create deck page
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateCardRequestBody"
+      responses:
+        200:
+          headers:
+            HX-Trigger:
+              schema:
+                type: string
+          $ref: '#/components/responses/CreateCardResponseBody'
   /page/group/{groupID}:
     get:
       operationId: groupPage
@@ -312,6 +346,12 @@ components:
         text/html:
           schema:
             type: string
+    CreateCardResponseBody:
+      description: Response containing HX-Trigger
+      content:
+        text/html:
+          schema:
+            type: string
     GetGroups:
       description: Successful response object for GetGroups
       content:
@@ -382,12 +422,17 @@ components:
           schema:
             $ref: "#/components/schemas/CreateGroup"
     CreateDeckRequestBody:
-      description: request body for create group
-      required: true
+      description: request body for adding deck
       content:
-        application/x-www-form-urlencoded:
+        'application/json':
           schema:
-            $ref: "#/components/schemas/CreateDeck"
+            $ref: '#/components/schemas/DeckName'
+    CreateCardRequestBody:
+      description: request body for creating card from deck page
+      content:
+        'application/x-www-form-urlencoded':
+          schema:
+            $ref: '#/components/schemas/CardRequest'
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -486,6 +531,15 @@ components:
         deck_name:
           type: string
       required: [ deck_name ]
+    CardRequest:
+      type: object
+      properties:
+        deck-id:
+          type: string
+        card-front:
+          type: string
+        card-back:
+          type: string
     DeckWithCards:
       allOf:
         - $ref: '#/components/schemas/Deck'
@@ -536,6 +590,3 @@ components:
           type: string
           description: A detailed message describing the reason for the internal server error.
           example: An unexpected error occurred on the server while processing the request.
-
-
-

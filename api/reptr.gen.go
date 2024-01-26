@@ -26,19 +26,11 @@ const (
 	Jwt_authScopes = "jwt_auth.Scopes"
 )
 
-// Card defines model for Card.
-type Card struct {
-	Back      *string    `json:"back,omitempty"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	Front     *string    `json:"front,omitempty"`
-	Id        *string    `json:"id,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-}
-
-// CreateDeck defines model for CreateDeck.
-type CreateDeck struct {
-	Cards    *[]Card `json:"cards,omitempty"`
-	DeckName *string `json:"deckName,omitempty"`
+// CardRequest defines model for CardRequest.
+type CardRequest struct {
+	CardBack  *string `json:"card-back,omitempty"`
+	CardFront *string `json:"card-front,omitempty"`
+	DeckId    *string `json:"deck-id,omitempty"`
 }
 
 // CreateGroup defines model for CreateGroup.
@@ -137,6 +129,9 @@ type AddDeckRequest = DeckName
 // AddGroupRequest defines model for AddGroupRequest.
 type AddGroupRequest = GroupName
 
+// CreateDeckRequestBody defines model for CreateDeckRequestBody.
+type CreateDeckRequestBody = DeckName
+
 // GetDecksForUserParams defines parameters for GetDecksForUser.
 type GetDecksForUserParams struct {
 	// From date to start lookup from
@@ -170,8 +165,11 @@ type GetGroupsParams struct {
 // LoginFormdataRequestBody defines body for Login for application/x-www-form-urlencoded ContentType.
 type LoginFormdataRequestBody = Login
 
-// CreateDeckFormdataRequestBody defines body for CreateDeck for application/x-www-form-urlencoded ContentType.
-type CreateDeckFormdataRequestBody = CreateDeck
+// CreateCardForDeckFormdataRequestBody defines body for CreateCardForDeck for application/x-www-form-urlencoded ContentType.
+type CreateCardForDeckFormdataRequestBody = CardRequest
+
+// CreateDeckJSONRequestBody defines body for CreateDeck for application/json ContentType.
+type CreateDeckJSONRequestBody = DeckName
 
 // CreateGroupFormdataRequestBody defines body for CreateGroup for application/x-www-form-urlencoded ContentType.
 type CreateGroupFormdataRequestBody = CreateGroup
@@ -266,13 +264,21 @@ type ClientInterface interface {
 
 	LoginWithFormdataBody(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetCardsForDeckPage request
+	GetCardsForDeckPage(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateCardForDeckWithBody request with any body
+	CreateCardForDeckWithBody(ctx context.Context, deckId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateCardForDeckWithFormdataBody(ctx context.Context, deckId string, body CreateCardForDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateDeckPage request
 	CreateDeckPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateDeckWithBody request with any body
 	CreateDeckWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateDeckWithFormdataBody(ctx context.Context, body CreateDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDeck(ctx context.Context, body CreateDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateGroupPage request
 	CreateGroupPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -355,6 +361,42 @@ func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRe
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetCardsForDeckPage(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCardsForDeckPageRequest(c.Server, deckId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateCardForDeckWithBody(ctx context.Context, deckId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCardForDeckRequestWithBody(c.Server, deckId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateCardForDeckWithFormdataBody(ctx context.Context, deckId string, body CreateCardForDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCardForDeckRequestWithFormdataBody(c.Server, deckId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CreateDeckPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateDeckPageRequest(c.Server)
 	if err != nil {
@@ -379,8 +421,8 @@ func (c *Client) CreateDeckWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDeckWithFormdataBody(ctx context.Context, body CreateDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDeckRequestWithFormdataBody(c.Server, body)
+func (c *Client) CreateDeck(ctx context.Context, body CreateDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDeckRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -650,6 +692,87 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 	return req, nil
 }
 
+// NewGetCardsForDeckPageRequest generates requests for GetCardsForDeckPage
+func NewGetCardsForDeckPageRequest(server string, deckId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deck_id", runtime.ParamLocationPath, deckId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/create-card/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateCardForDeckRequestWithFormdataBody calls the generic CreateCardForDeck builder with application/x-www-form-urlencoded body
+func NewCreateCardForDeckRequestWithFormdataBody(server string, deckId string, body CreateCardForDeckFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewCreateCardForDeckRequestWithBody(server, deckId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewCreateCardForDeckRequestWithBody generates requests for CreateCardForDeck with any type of body
+func NewCreateCardForDeckRequestWithBody(server string, deckId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deck_id", runtime.ParamLocationPath, deckId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/create-card/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewCreateDeckPageRequest generates requests for CreateDeckPage
 func NewCreateDeckPageRequest(server string) (*http.Request, error) {
 	var err error
@@ -677,15 +800,15 @@ func NewCreateDeckPageRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateDeckRequestWithFormdataBody calls the generic CreateDeck builder with application/x-www-form-urlencoded body
-func NewCreateDeckRequestWithFormdataBody(server string, body CreateDeckFormdataRequestBody) (*http.Request, error) {
+// NewCreateDeckRequest calls the generic CreateDeck builder with application/json body
+func NewCreateDeckRequest(server string, body CreateDeckJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
-	bodyStr, err := runtime.MarshalForm(body, nil)
+	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
-	bodyReader = strings.NewReader(bodyStr.Encode())
-	return NewCreateDeckRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDeckRequestWithBody(server, "application/json", bodyReader)
 }
 
 // NewCreateDeckRequestWithBody generates requests for CreateDeck with any type of body
@@ -1288,13 +1411,21 @@ type ClientWithResponsesInterface interface {
 
 	LoginWithFormdataBodyWithResponse(ctx context.Context, body LoginFormdataRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
 
+	// GetCardsForDeckPageWithResponse request
+	GetCardsForDeckPageWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCardsForDeckPageResponse, error)
+
+	// CreateCardForDeckWithBodyWithResponse request with any body
+	CreateCardForDeckWithBodyWithResponse(ctx context.Context, deckId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCardForDeckResponse, error)
+
+	CreateCardForDeckWithFormdataBodyWithResponse(ctx context.Context, deckId string, body CreateCardForDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateCardForDeckResponse, error)
+
 	// CreateDeckPageWithResponse request
 	CreateDeckPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateDeckPageResponse, error)
 
 	// CreateDeckWithBodyWithResponse request with any body
 	CreateDeckWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDeckResponse, error)
 
-	CreateDeckWithFormdataBodyWithResponse(ctx context.Context, body CreateDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateDeckResponse, error)
+	CreateDeckWithResponse(ctx context.Context, body CreateDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeckResponse, error)
 
 	// CreateGroupPageWithResponse request
 	CreateGroupPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateGroupPageResponse, error)
@@ -1378,6 +1509,48 @@ func (r LoginResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r LoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetCardsForDeckPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCardsForDeckPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCardsForDeckPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateCardForDeckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateCardForDeckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateCardForDeckResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1719,6 +1892,32 @@ func (c *ClientWithResponses) LoginWithFormdataBodyWithResponse(ctx context.Cont
 	return ParseLoginResponse(rsp)
 }
 
+// GetCardsForDeckPageWithResponse request returning *GetCardsForDeckPageResponse
+func (c *ClientWithResponses) GetCardsForDeckPageWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCardsForDeckPageResponse, error) {
+	rsp, err := c.GetCardsForDeckPage(ctx, deckId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCardsForDeckPageResponse(rsp)
+}
+
+// CreateCardForDeckWithBodyWithResponse request with arbitrary body returning *CreateCardForDeckResponse
+func (c *ClientWithResponses) CreateCardForDeckWithBodyWithResponse(ctx context.Context, deckId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCardForDeckResponse, error) {
+	rsp, err := c.CreateCardForDeckWithBody(ctx, deckId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCardForDeckResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateCardForDeckWithFormdataBodyWithResponse(ctx context.Context, deckId string, body CreateCardForDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateCardForDeckResponse, error) {
+	rsp, err := c.CreateCardForDeckWithFormdataBody(ctx, deckId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCardForDeckResponse(rsp)
+}
+
 // CreateDeckPageWithResponse request returning *CreateDeckPageResponse
 func (c *ClientWithResponses) CreateDeckPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateDeckPageResponse, error) {
 	rsp, err := c.CreateDeckPage(ctx, reqEditors...)
@@ -1737,8 +1936,8 @@ func (c *ClientWithResponses) CreateDeckWithBodyWithResponse(ctx context.Context
 	return ParseCreateDeckResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateDeckWithFormdataBodyWithResponse(ctx context.Context, body CreateDeckFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateDeckResponse, error) {
-	rsp, err := c.CreateDeckWithFormdataBody(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateDeckWithResponse(ctx context.Context, body CreateDeckJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDeckResponse, error) {
+	rsp, err := c.CreateDeck(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1922,6 +2121,38 @@ func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
 		}
 		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseGetCardsForDeckPageResponse parses an HTTP response from a GetCardsForDeckPageWithResponse call
+func ParseGetCardsForDeckPageResponse(rsp *http.Response) (*GetCardsForDeckPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCardsForDeckPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseCreateCardForDeckResponse parses an HTTP response from a CreateCardForDeckWithResponse call
+func ParseCreateCardForDeckResponse(rsp *http.Response) (*CreateCardForDeckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateCardForDeckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil
@@ -2279,6 +2510,12 @@ type ServerInterface interface {
 	// handles login
 	// (POST /login)
 	Login(w http.ResponseWriter, r *http.Request)
+	// card content for deck page
+	// (GET /page/create-card/{deck_id})
+	GetCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckId string)
+	// handles form submit of create card on create deck page
+	// (POST /page/create-card/{deck_id})
+	CreateCardForDeck(w http.ResponseWriter, r *http.Request, deckId string)
 	// serve create deck page
 	// (GET /page/create-deck)
 	CreateDeckPage(w http.ResponseWriter, r *http.Request)
@@ -2353,6 +2590,58 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Login(w, r)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetCardsForDeckPage operation middleware
+func (siw *ServerInterfaceWrapper) GetCardsForDeckPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "deck_id" -------------
+	var deckId string
+
+	err = runtime.BindStyledParameter("simple", false, "deck_id", mux.Vars(r)["deck_id"], &deckId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deck_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCardsForDeckPage(w, r, deckId)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// CreateCardForDeck operation middleware
+func (siw *ServerInterfaceWrapper) CreateCardForDeck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "deck_id" -------------
+	var deckId string
+
+	err = runtime.BindStyledParameter("simple", false, "deck_id", mux.Vars(r)["deck_id"], &deckId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deck_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCardForDeck(w, r, deckId)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -2849,6 +3138,10 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/login", wrapper.Login).Methods("POST")
 
+	r.HandleFunc(options.BaseURL+"/page/create-card/{deck_id}", wrapper.GetCardsForDeckPage).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/page/create-card/{deck_id}", wrapper.CreateCardForDeck).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/page/create-deck", wrapper.CreateDeckPage).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/page/create-deck", wrapper.CreateDeck).Methods("POST")
@@ -2883,40 +3176,42 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -20,6 +20,7 @@ type (
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
+		GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
 		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
@@ -54,12 +55,12 @@ func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error)
 		logger.Error().Err(ErrEmptyDeckName).Msgf("deckName: %s", deckName)
 		return "", ErrEmptyDeckName
 	}
-
+	timeNow := time.Now().UTC()
 	id, err := l.repo.InsertDeck(ctx, models.Deck{
 		ID:        uuid.NewString(),
 		Name:      deckName,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
 	})
 	if err != nil {
 		l.logger.Error().Err(err).Msg("while inserting deck")
@@ -175,13 +176,14 @@ func (l *Logic) CreateGroup(ctx context.Context, username, groupName string) (st
 		logger.Error().Err(ErrInvalidGroupName)
 		return "", ErrInvalidGroupName
 	}
+	timeNow := time.Now().UTC()
 	gpID, err := l.repo.InsertGroup(ctx, models.Group{
 		ID:         uuid.NewString(),
 		Name:       groupName,
 		CreatedBy:  username,
 		Moderators: []string{username},
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		CreatedAt:  timeNow,
+		UpdatedAt:  timeNow,
 		DeletedAt:  nil,
 	})
 	if err != nil {
@@ -263,9 +265,21 @@ func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupW
 
 	group, err := l.repo.GetGroupByID(ctx, groupID)
 	if err != nil {
-		logger.Error().Err(err).Msg("while getting cards")
+		logger.Error().Err(err).Msg("while getting group")
 		return models.GroupWithDecks{}, err
 	}
 
 	return group, nil
+}
+
+func (l *Logic) GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error) {
+	logger := l.logger.With().Str("method", "GetCardsByDeckID").Logger()
+
+	cards, err := l.repo.GetCardsByDeckID(ctx, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msg("while getting cards")
+		return []models.Card(nil), err
+	}
+
+	return cards, nil
 }

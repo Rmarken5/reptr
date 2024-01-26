@@ -113,6 +113,21 @@ func (mr *MockControllerMockRecorder) DownvoteDeck(arg0, arg1, arg2 any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownvoteDeck", reflect.TypeOf((*MockController)(nil).DownvoteDeck), arg0, arg1, arg2)
 }
 
+// GetCardsByDeckID mocks base method.
+func (m *MockController) GetCardsByDeckID(arg0 context.Context, arg1 string) ([]models.Card, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCardsByDeckID", arg0, arg1)
+	ret0, _ := ret[0].([]models.Card)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCardsByDeckID indicates an expected call of GetCardsByDeckID.
+func (mr *MockControllerMockRecorder) GetCardsByDeckID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCardsByDeckID", reflect.TypeOf((*MockController)(nil).GetCardsByDeckID), arg0, arg1)
+}
+
 // GetDecks mocks base method.
 func (m *MockController) GetDecks(arg0 context.Context, arg1 time.Time, arg2 *time.Time, arg3, arg4 int) ([]models.DeckWithCards, error) {
 	m.ctrl.T.Helper()

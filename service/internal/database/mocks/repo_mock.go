@@ -111,6 +111,21 @@ func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockRepository)(nil).DeleteGroup), arg0, arg1)
 }
 
+// GetCardsByDeckID mocks base method.
+func (m *MockRepository) GetCardsByDeckID(arg0 context.Context, arg1 string) ([]models.Card, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCardsByDeckID", arg0, arg1)
+	ret0, _ := ret[0].([]models.Card)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCardsByDeckID indicates an expected call of GetCardsByDeckID.
+func (mr *MockRepositoryMockRecorder) GetCardsByDeckID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCardsByDeckID", reflect.TypeOf((*MockRepository)(nil).GetCardsByDeckID), arg0, arg1)
+}
+
 // GetGroupByID mocks base method.
 func (m *MockRepository) GetGroupByID(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()

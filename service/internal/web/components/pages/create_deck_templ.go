@@ -33,7 +33,7 @@ func CreateDeckPage(deckPageData CreateDeckPageData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form id=\"create-deck-form\"><section id=\"deck-name-section\"><label for=\"deck-name\" id=\"deck-name-label\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form id=\"create-deck-form\" hx-swap=\"outerhtml\" hx-post=\"/page/create-deck\"><section id=\"create-deck-section\"><label for=\"deck-name\" id=\"deck-name-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,25 +42,27 @@ func CreateDeckPage(deckPageData CreateDeckPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label> <input id=\"deck-name\" name=\"deck-name\"><section id=\"card-section\"></section></section><button typ=\"submit\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label> <input id=\"deck-name\" name=\"deck-name\"> <button type=\"submit\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var3 := `Add Card`
+		templ_7745c5c3_Var3 := `Create Deck`
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</button> <button>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</button></section><!--")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var4 := `Create Deck`
+		templ_7745c5c3_Var4 := ` <button
+           hx-target="#create-deck-section"
+           hx-get={"/api/v1/card-input/" + deckPageData.NewDeckID} >Add Card</button> `
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</button></form></body>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("--></form></body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

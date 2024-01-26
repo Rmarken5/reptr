@@ -139,14 +139,15 @@ func TestLogic_GetDecks(t *testing.T) {
 
 func TestLogic_AddCardToDeck(t *testing.T) {
 	ctx := context.Background()
+	timeNow := time.Now().UTC()
 	deckID := "your_deck_id"
 	testCard := models.Card{
 		ID:        "your_card_id",
 		Front:     "Front content",
 		Back:      "Back content",
 		Kind:      1, // Adjust according to your model
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
 	}
 
 	testCases := map[string]struct {
@@ -190,13 +191,14 @@ func TestLogic_AddCardToDeck(t *testing.T) {
 
 func TestLogic_UpdateCard(t *testing.T) {
 	ctx := context.Background()
+	timeNow := time.Now().UTC()
 	testCard := models.Card{
 		ID:        "your_card_id",
 		Front:     "Updated front content",
 		Back:      "Updated back content",
 		Kind:      2, // Updated kind value, adjust as per your model
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
 	}
 
 	testCases := map[string]struct {

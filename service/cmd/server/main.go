@@ -48,6 +48,10 @@ func main() {
 	pageRoute.HandleFunc("/create-group", wrapper.CreateGroupPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/group/{groupID}", wrapper.GroupPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeck).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/create-card/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/create-card/{deck_id}", wrapper.GetCardsForDeckPage).Methods(http.MethodGet)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),
@@ -55,7 +59,6 @@ func main() {
 		middlewares.ExchangeSubjectForUser(log, p))
 
 	secureRoute := router.PathPrefix("/secure").Subrouter()
-	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/deck", wrapper.AddDeck).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group", wrapper.AddGroup).Methods(http.MethodPost)
 	secureRoute.HandleFunc("/api/v1/group/{group_id}/deck/{deck_id}", wrapper.AddDeckToGroup).Methods("PUT")
