@@ -1,6 +1,9 @@
 package dumb
 
-import "strconv"
+import (
+"strconv"
+
+)
 
 type (
     GroupCardDisplayPageData struct {
@@ -13,12 +16,12 @@ type (
 )
 
 templ GroupCardDisplay(data GroupCardDisplayPageData){
-    <section >
+    <section>
         for i, card := range data.Cards {
-            <section style="display:block;" id={"card-"+strconv.Itoa(i)}>
-                <section id={"front-"+ strconv.Itoa(i)}>{card.Front}</section>
-                <section id={"back-"+ strconv.Itoa(i)}>{card.Back}</section>
-            </section>
+           <section style="display:block;" id={"card-"+strconv.Itoa(i)}>
+             <section style="display:inline;" id={"front-"+ strconv.Itoa(i)}>{card.Front}</section>
+             <section style="display:inline;" id={"back-"+ strconv.Itoa(i)}>{card.Back}</section>
+           </section>
         }
     </section>
 }

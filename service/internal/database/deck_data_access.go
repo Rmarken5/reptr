@@ -12,12 +12,13 @@ import (
 	"time"
 )
 
-var _ DeckDataAccess = &DAO{}
+var _ DeckDataAccess = &DeckDAO{}
 
 type (
 	DeckDataAccess interface {
 		InsertDeck(ctx context.Context, deck models.Deck) (string, error)
 		GetWithCards(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
+		GetDeckWithCardsByID(ctx context.Context, deckID string) (models.DeckWithCards, error)
 		AddUserToUpvote(ctx context.Context, deckID, userID string) error
 		RemoveUserFromUpvote(ctx context.Context, deckID, userID string) error
 		AddUserToDownvote(ctx context.Context, deckID, userID string) error
@@ -205,4 +206,45 @@ func (d *DeckDAO) RemoveUserFromDownvote(ctx context.Context, deckID, userID str
 	}
 
 	return nil
+}
+
+func (d *DeckDAO) GetDeckWithCardsByID(ctx context.Context, deckID string) (models.DeckWithCards, error) {
+	logger := d.log.With().Str("method", "updateCards").Logger()
+	match := bson.D{{"$match", bson.D{{"_id", deckID}}}}
+	lookupCards :=
+		bson.D{{"$lookup",
+			bson.D{
+				{"from", "cards"},
+				{"localField", "_id"},
+				{"foreignField", "deck_id"},
+				{"as", "cards"},
+			},
+		},
+		}
+
+	p := bson.A{
+		match,
+		lookupCards,
+	}
+
+	c, err := d.collection.Aggregate(ctx, p)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting cards on deckID of %s", deckID)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return models.DeckWithCards{}, ErrNoResults
+		}
+		return models.DeckWithCards{}, err
+	}
+	var decks []models.DeckWithCards
+	err = c.All(ctx, &decks)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting deck from cursor for deckID: %s", deckID)
+		return models.DeckWithCards{}, err
+	}
+
+	if len(decks) == 0 {
+		return models.DeckWithCards{}, ErrNoResults
+	}
+
+	return decks[0], nil
 }

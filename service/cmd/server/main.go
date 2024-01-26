@@ -50,8 +50,9 @@ func main() {
 	pageRoute.HandleFunc("/group/{groupID}", wrapper.GroupPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeckPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeck).Methods(http.MethodPost)
-	pageRoute.HandleFunc("/create-card/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
-	pageRoute.HandleFunc("/create-card/{deck_id}", wrapper.GetCardsForDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.GetCreateCardsForDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/add-card/{deck_id}", wrapper.GetCardsForDeck).Methods(http.MethodGet)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

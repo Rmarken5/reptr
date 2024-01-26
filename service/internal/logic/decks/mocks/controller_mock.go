@@ -114,10 +114,10 @@ func (mr *MockControllerMockRecorder) DownvoteDeck(arg0, arg1, arg2 any) *gomock
 }
 
 // GetCardsByDeckID mocks base method.
-func (m *MockController) GetCardsByDeckID(arg0 context.Context, arg1 string) ([]models.Card, error) {
+func (m *MockController) GetCardsByDeckID(arg0 context.Context, arg1 string) (models.DeckWithCards, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCardsByDeckID", arg0, arg1)
-	ret0, _ := ret[0].([]models.Card)
+	ret0, _ := ret[0].(models.DeckWithCards)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

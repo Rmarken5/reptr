@@ -38,7 +38,7 @@ templ GroupPage(groupData GroupData){
                 </tr>
                 for _, deck := range groupData.Decks {
                     <tr>
-                        <td><a href={templ.SafeURL(path.Join("/page/deck", deck.ID))}>{deck.DeckName}</a></td><td>{strconv.Itoa(deck.NumCards)}</td><td>{strconv.Itoa(deck.NumUpvotes)}</td><td>{strconv.Itoa(deck.NumDownvotes)}</td>
+                        <td><a href={templ.SafeURL(path.Join("/page/create-cards/", deck.ID))}>{deck.DeckName}</a></td><td>{strconv.Itoa(deck.NumCards)}</td><td>{strconv.Itoa(deck.NumUpvotes)}</td><td>{strconv.Itoa(deck.NumDownvotes)}</td>
                     </tr>
                 }
             </table>

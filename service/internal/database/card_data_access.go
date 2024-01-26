@@ -16,7 +16,6 @@ type (
 	CardDataAccess interface {
 		InsertCards(ctx context.Context, card []models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
-		GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error)
 	}
 	CardDAO struct {
 		collection *mongo.Collection
@@ -67,26 +66,4 @@ func (d *CardDAO) UpdateCard(ctx context.Context, card models.Card) error {
 	logger.Info().Msgf("Updated: %+v", u)
 
 	return nil
-}
-
-func (d *CardDAO) GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error) {
-	logger := d.log.With().Str("method", "updateCards").Logger()
-	filter := bson.D{{"deck_id", deckID}}
-
-	c, err := d.collection.Find(ctx, filter)
-	if err != nil {
-		logger.Error().Err(err).Msgf("while getting cards on deckID of %s", deckID)
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return []models.Card(nil), ErrNoResults
-		}
-		return []models.Card(nil), err
-	}
-	var cards []models.Card
-	err = c.All(ctx, &cards)
-	if err != nil {
-		logger.Error().Err(err).Msgf("while getting cards from cursor for deckID: %s", deckID)
-		return []models.Card(nil), err
-	}
-
-	return cards, nil
 }

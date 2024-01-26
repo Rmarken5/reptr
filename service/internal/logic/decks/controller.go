@@ -20,7 +20,7 @@ type (
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
-		GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error)
+		GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
 		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
@@ -272,14 +272,14 @@ func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupW
 	return group, nil
 }
 
-func (l *Logic) GetCardsByDeckID(ctx context.Context, deckID string) ([]models.Card, error) {
-	logger := l.logger.With().Str("method", "GetCardsByDeckID").Logger()
+func (l *Logic) GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error) {
+	logger := l.logger.With().Str("method", "GetDeckWithCardsByID").Logger()
 
-	cards, err := l.repo.GetCardsByDeckID(ctx, deckID)
+	deck, err := l.repo.GetDeckWithCardsByID(ctx, deckID)
 	if err != nil {
 		logger.Error().Err(err).Msg("while getting cards")
-		return []models.Card(nil), err
+		return models.DeckWithCards{}, err
 	}
 
-	return cards, nil
+	return deck, nil
 }

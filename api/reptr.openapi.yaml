@@ -97,11 +97,11 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/CreateDeckResponseBody'
-  /page/create-card/{deck_id}:
+  /page/create-cards/{deck_id}:
     get:
-      operationId: getCardsForDeckPage
-      summary: card content for deck page
-      description: event driven response for card html
+      operationId: getCreateCardsForDeckPage
+      summary: create cards for deck page
+      description: page with form for creating cards on deck
       parameters:
         - name: deck_id
           in: path
@@ -131,6 +131,22 @@ paths:
               schema:
                 type: string
           $ref: '#/components/responses/CreateCardResponseBody'
+  /page/add-card/{deck_id}:
+    get:
+      operationId: getCardsForDeck
+      summary: card content for deck page
+      description: event driven response for card html
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
   /page/group/{groupID}:
     get:
       operationId: groupPage

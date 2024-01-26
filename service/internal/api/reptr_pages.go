@@ -311,15 +311,41 @@ func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "while creating deck", toStatus(err))
 	}
 
-	dumb.DeckHeader(dumb.DeckHeaderData{
-		DeckID:   deckID,
-		DeckName: deckName,
-	}).Render(r.Context(), w)
-
+	http.Redirect(w, r, fmt.Sprintf("/page/create-cards/%s", deckID), http.StatusSeeOther)
 }
 
-func (rc ReprtClient) GetCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckID string) {
-	logger := rc.logger.With().Str("method", "GetCardsForDeckPage").Logger()
+func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "GetCreateCardsForDeckPage").Logger()
+	logger.Info().Msg("serving creating deck")
+
+	if deckID == "" {
+		logger.Info().Msgf("get cards without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
+		http.Error(w, "while cards for deck", toStatus(err))
+		return
+	}
+	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
+	for i, card := range deck.Cards {
+		viewCards[i] = dumb.CardDisplay{
+			Front: card.Front,
+			Back:  card.Back,
+		}
+	}
+	pages.Page(pages.Form(nil, pages.DeckCreateCardForm(pages.DeckCreateCardData{
+		DeckID:   deck.ID,
+		DeckName: deck.Name,
+		Cards:    viewCards,
+	}))).Render(r.Context(), w)
+
+}
+func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "GetCardsForDeck").Logger()
 	logger.Info().Msgf("getting cards for deck: %s", deckID)
 
 	if deckID == "" {
@@ -328,14 +354,14 @@ func (rc ReprtClient) GetCardsForDeckPage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	cards, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
+	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
 		http.Error(w, "while cards for deck", toStatus(err))
 		return
 	}
-	viewCards := make([]dumb.CardDisplay, len(cards))
-	for i, card := range cards {
+	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
+	for i, card := range deck.Cards {
 		viewCards[i] = dumb.CardDisplay{
 			Front: card.Front,
 			Back:  card.Back,
