@@ -12,24 +12,41 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
-const (
-	osPort = "PORT"
+var (
+	config cmd.Config
+	log    zerolog.Logger
 )
+
+func init() {
+	log = zerolog.New(os.Stdout).With().Str("program", "reptr server").Logger()
+	env := os.Getenv("ENV")
+	if env == "local" {
+		log.Info().Msg("loading from config")
+		path, err := filepath.Abs("./config.yaml")
+		if err != nil {
+			log.Panic().Err(err).Msg("while getting abs path")
+		}
+		config = cmd.LoadConfigFromFile(log, path)
+		return
+	}
+	log.Info().Msg("loading from env")
+	config = cmd.LoadConfFromEnv(log)
+}
 
 func main() {
 	ctx := context.Background()
-	log := zerolog.New(os.Stdout).With().Str("program", "reptr server").Logger()
 
-	db := cmd.MustConnectMongo(ctx, log)
+	db := cmd.MustConnectMongo(ctx, log, config)
 	defer db.Client().Disconnect(ctx)
 	repo := cmd.MustLoadRepo(log, db)
 	l := cmd.MustLoadLogic(log, repo)
 
-	authenticator := cmd.MustLoadAuth(ctx, log, repo)
+	authenticator := cmd.MustLoadAuth(ctx, log, config, repo)
 	p := cmd.MustLoadProvider(log, repo)
-	store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	store := sessions.NewCookieStore([]byte(config.SessionKey))
 	serverImpl := api.New(log, l, p, authenticator, store)
 
 	router := mux.NewRouter()
@@ -42,6 +59,9 @@ func main() {
 	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
+
+	styleRouter := router.PathPrefix("/styles").Subrouter()
+	styleRouter.HandleFunc("/{path}/{style_name}", wrapper.ServeStyles).Methods(http.MethodGet)
 
 	pageRoute := router.PathPrefix("/page").Subrouter()
 	pageRoute.HandleFunc("/home", wrapper.HomePage)
@@ -72,17 +92,9 @@ func main() {
 
 	s := &http.Server{
 		Handler: router,
-		Addr:    net.JoinHostPort("0.0.0.0", mustGetPort(log)),
+		Addr:    net.JoinHostPort("0.0.0.0", config.PORT),
 	}
 
 	log.Fatal().Err(s.ListenAndServe())
 
-}
-
-func mustGetPort(logger zerolog.Logger) string {
-	port := os.Getenv(osPort)
-	if port == "" {
-		logger.Panic().Msgf("unable to get port")
-	}
-	return port
 }

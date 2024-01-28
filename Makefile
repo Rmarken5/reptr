@@ -35,3 +35,7 @@ gen:
 	find . -name "*_mock.go" -type f -delete
 	go generate ./...
 	templ generate
+
+.PHONY: local
+local:
+	ENV="local" go run ./service/cmd/server

@@ -326,6 +326,9 @@ type ClientInterface interface {
 
 	// GetGroups request
 	GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ServeStyles request
+	ServeStyles(ctx context.Context, path string, styleName string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) LoginPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -630,6 +633,18 @@ func (c *Client) AddDeckToGroup(ctx context.Context, groupId string, deckId stri
 
 func (c *Client) GetGroups(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGroupsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ServeStyles(ctx context.Context, path string, styleName string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewServeStylesRequest(c.Server, path, styleName)
 	if err != nil {
 		return nil, err
 	}
@@ -1409,6 +1424,47 @@ func NewGetGroupsRequest(server string, params *GetGroupsParams) (*http.Request,
 	return req, nil
 }
 
+// NewServeStylesRequest generates requests for ServeStyles
+func NewServeStylesRequest(server string, path string, styleName string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "path", runtime.ParamLocationPath, path)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "style_name", runtime.ParamLocationPath, styleName)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/styles/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -1522,6 +1578,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetGroupsWithResponse request
 	GetGroupsWithResponse(ctx context.Context, params *GetGroupsParams, reqEditors ...RequestEditorFn) (*GetGroupsResponse, error)
+
+	// ServeStylesWithResponse request
+	ServeStylesWithResponse(ctx context.Context, path string, styleName string, reqEditors ...RequestEditorFn) (*ServeStylesResponse, error)
 }
 
 type LoginPageResponse struct {
@@ -1939,6 +1998,27 @@ func (r GetGroupsResponse) StatusCode() int {
 	return 0
 }
 
+type ServeStylesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r ServeStylesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ServeStylesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // LoginPageWithResponse request returning *LoginPageResponse
 func (c *ClientWithResponses) LoginPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LoginPageResponse, error) {
 	rsp, err := c.LoginPage(ctx, reqEditors...)
@@ -2164,6 +2244,15 @@ func (c *ClientWithResponses) GetGroupsWithResponse(ctx context.Context, params 
 		return nil, err
 	}
 	return ParseGetGroupsResponse(rsp)
+}
+
+// ServeStylesWithResponse request returning *ServeStylesResponse
+func (c *ClientWithResponses) ServeStylesWithResponse(ctx context.Context, path string, styleName string, reqEditors ...RequestEditorFn) (*ServeStylesResponse, error) {
+	rsp, err := c.ServeStyles(ctx, path, styleName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseServeStylesResponse(rsp)
 }
 
 // ParseLoginPageResponse parses an HTTP response from a LoginPageWithResponse call
@@ -2600,6 +2689,22 @@ func ParseGetGroupsResponse(rsp *http.Response) (*GetGroupsResponse, error) {
 	return response, nil
 }
 
+// ParseServeStylesResponse parses an HTTP response from a ServeStylesWithResponse call
+func ParseServeStylesResponse(rsp *http.Response) (*ServeStylesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ServeStylesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// serve login page
@@ -2659,6 +2764,9 @@ type ServerInterface interface {
 	// Get Groups
 	// (GET /secure/api/v1/groups)
 	GetGroups(w http.ResponseWriter, r *http.Request, params GetGroupsParams)
+	// serve css
+	// (GET /styles/{path}/{style_name})
+	ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -3148,6 +3256,41 @@ func (siw *ServerInterfaceWrapper) GetGroups(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// ServeStyles operation middleware
+func (siw *ServerInterfaceWrapper) ServeStyles(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "path" -------------
+	var path string
+
+	err = runtime.BindStyledParameter("simple", false, "path", mux.Vars(r)["path"], &path)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "style_name" -------------
+	var styleName string
+
+	err = runtime.BindStyledParameter("simple", false, "style_name", mux.Vars(r)["style_name"], &styleName)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "style_name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ServeStyles(w, r, path, styleName)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -3299,49 +3442,52 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/secure/api/v1/groups", wrapper.GetGroups).Methods("GET")
 
+	r.HandleFunc(options.BaseURL+"/styles/{path}/{style_name}", wrapper.ServeStyles).Methods("GET")
+
 	return r
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"nKV0c735fwAAAP//Vx1nXqUxAAA=",
+	"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",
+	"2OkPkx/OUrq52fw3AAD//60OxZMCMwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

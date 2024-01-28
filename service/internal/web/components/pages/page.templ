@@ -1,10 +1,15 @@
 package pages
 
-templ Page(content templ.Component) {
+templ Page(content templ.Component, styles []string) {
     <html>
        <head>
             <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+            for _, style := range styles {
+                <link rel="stylesheet" href={style}/>
+            }
        </head>
-       @content
+       <body class="w-16 md:w-32 lg:w-48">
+        @content
+       </body>
     </html>
 }

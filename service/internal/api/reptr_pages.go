@@ -12,15 +12,35 @@ import (
 	"github.com/rmarken/reptr/service/internal/web/components/dumb"
 	"github.com/rmarken/reptr/service/internal/web/components/pages"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
 const hxTriggerHeaderKey = "HX-Trigger"
 
+var tailwindArr = []string{"/styles/pages/tailwind-output.css"}
+
+func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string) {
+	log := rc.logger.With().Str("method", "ServeStyles").Logger()
+	log.Info().Msgf("serving  %s %s", path, styleName)
+
+	absolutePath, err := filepath.Abs(fmt.Sprintf("./service/internal/web/styles/%s/%s", path, styleName))
+	file, err := os.ReadFile(absolutePath)
+	if err != nil {
+		log.Error().Err(err).Msgf("while reading: %s", absolutePath)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/css")
+	w.Write(file)
+}
+
 func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
 	log.Info().Msgf("serving registration page")
-	err := pages.Page(pages.Register(nil)).Render(r.Context(), w)
+	err := pages.Page(pages.Register(nil), tailwindArr).Render(r.Context(), w)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -53,7 +73,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 
 	if password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		err := pages.Page(pages.Register(pages.Banner("Must provide password"))).Render(r.Context(), w)
+		err := pages.Page(pages.Register(pages.Banner("Must provide password")), tailwindArr).Render(r.Context(), w)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -80,7 +100,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 
 	if !registrationError.IsZero() {
 		w.WriteHeader(registrationError.StatusCode)
-		err := pages.Page(pages.Register(pages.Banner(registrationError.Description))).Render(r.Context(), w)
+		err := pages.Page(pages.Register(pages.Banner(registrationError.Description)), tailwindArr).Render(r.Context(), w)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -89,7 +109,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Msgf("user is registered: %+v", user)
 	w.WriteHeader(http.StatusCreated)
-	err = pages.Login(pages.Banner("Registration Successful")).Render(r.Context(), w)
+	err = pages.Page(pages.Form(pages.Banner("Registration Successful"), pages.Login()), tailwindArr).Render(r.Context(), w)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -99,7 +119,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "LoginPage").Logger()
 	log.Info().Msgf("serving login page")
-	err := pages.Page(pages.Login(nil)).Render(r.Context(), w)
+	err := pages.Page(pages.Form(nil, pages.Login()), tailwindArr).Render(r.Context(), w)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -189,7 +209,7 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		homeGroups[i] = homeGroupFromModel(group)
 	}
 
-	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups})).Render(r.Context(), w)
+	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups}), tailwindArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +243,7 @@ func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(toStatus(err))
 	}
 
-	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm())).Render(r.Context(), w)
+	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), tailwindArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -235,8 +255,7 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 		http.Error(w, "while getting groups for user", toStatus(err))
 		return
 	}
-
-	pages.Form(nil, pages.Page(pages.GroupPage(groupPageFromModel(group)))).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), tailwindArr).Render(r.Context(), w)
 }
 
 func homeGroupFromModel(group models.Group) pages.Group {
@@ -276,15 +295,15 @@ func groupDecksFromDecks(fromService []models.GetDeckResults) []pages.Deck {
 func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateGroupPage").Logger()
 	logger.Info().Msg("serving create group page")
-	pages.Form(nil, pages.Page(pages.CreateGroupForm())).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.CreateGroupForm()), tailwindArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateDeckPage(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateDeckPage").Logger()
 	logger.Info().Msg("serving create deck page")
-	pages.Form(nil, pages.Page(pages.CreateDeckPage(pages.CreateDeckPageData{
+	pages.Page(pages.Form(nil, pages.CreateDeckPage(pages.CreateDeckPageData{
 		UsersGroups: nil,
-	}))).Render(r.Context(), w)
+	})), tailwindArr).Render(r.Context(), w)
 
 }
 
@@ -341,7 +360,7 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 		DeckID:   deck.ID,
 		DeckName: deck.Name,
 		Cards:    viewCards,
-	}))).Render(r.Context(), w)
+	})), tailwindArr).Render(r.Context(), w)
 
 }
 func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckID string) {

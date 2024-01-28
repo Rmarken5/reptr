@@ -45,6 +45,7 @@ func New(ctx context.Context, logger zerolog.Logger, repo database.Repository, a
 		endpoint,
 	)
 	if err != nil {
+		log.Error().Err(err).Msg("while creating oidc provider")
 		return nil, err
 	}
 

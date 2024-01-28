@@ -14,6 +14,7 @@ type (
 )
 
 templ DeckCreateCardForm(createCardData DeckCreateCardData) {
+<body>
     <h2>Create Cards for {createCardData.DeckName}</h2>
 
     <section id="card-section" hx-get={"/page/add-card/" + createCardData.DeckID} hx-trigger="newCard from:body" >
@@ -34,5 +35,6 @@ templ DeckCreateCardForm(createCardData DeckCreateCardData) {
                     <button type="submit">Create Card</button>
                 </section>
     </form>
-
+    <a href="/page/home">Back to Home</a>
+</body>
 }
