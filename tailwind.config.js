@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    content: [
+        "./service/internal/web/components/**/*.templ"
+    ],
     theme: {
         extend: {},
         container: {
@@ -9,7 +12,7 @@ module.exports = {
                 sm: '2rem',
                 lg: '4rem',
                 xl: '5rem',
-                '2xl': '6rem',
+                '2xl': '5rem',
             },
         },
 
