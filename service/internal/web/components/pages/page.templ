@@ -8,8 +8,8 @@ templ Page(content templ.Component, styles []string) {
                 <link rel="stylesheet" href={style}/>
             }
        </head>
-       <body>
-           <section class="flex h-screen flex-col justify-center padding bg-amber-200">
+       <body class="min-h-screen flex flex-col justify-center content-center">
+           <section class="container">
                 @content
             </section>
        </body>

@@ -119,6 +119,7 @@ func TestDAO_GetWithCards(t *testing.T) {
 			mockDatabase: func(mt *mtest.T) {
 				docs := make([]bson.D, 0)
 				for _, wc := range haveWithCards {
+					wc := wc
 					b, err := bson.Marshal(&wc)
 					require.NoError(mt, err)
 
@@ -411,6 +412,107 @@ func TestDAO_RemoveUserFromDownvote(t *testing.T) {
 			gotErr := dao.RemoveUserFromDownvote(context.Background(), tc.deckID, tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
+		})
+	}
+}
+
+func TestDeckDAO_GetDeckWithCardsByID(t *testing.T) {
+	var (
+		db            = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+		haveWithCards = models.DeckWithCards{
+			GetDeckResults: models.GetDeckResults{
+				ID:        "1", // Populate with appropriate ID
+				Name:      "Sample Deck",
+				CreatedAt: time.Now().In(time.UTC).Truncate(time.Millisecond),
+			},
+			Cards: []models.Card{
+				{
+					ID:        "1", // Populate with appropriate ID
+					Front:     "Front Text",
+					Back:      "Back Text",
+					Kind:      1,   // Set appropriate Type
+					DeckID:    "1", // Match the Deck ID above
+					CreatedAt: time.Now().In(time.UTC).Truncate(time.Millisecond),
+					UpdatedAt: time.Now().In(time.UTC).Truncate(time.Millisecond),
+				},
+			},
+		}
+	)
+	defer db.Close()
+
+	testCases := map[string]struct {
+		// Inputs
+		deckID string
+		// Mocks or setup for MongoDB
+		mockDatabase func(mongo *mtest.T)
+		// Expected Results
+		wantErr  error
+		wantDeck models.DeckWithCards
+	}{
+		"should  get decks for deck id": {
+			deckID: "1", // Set deck ID
+			mockDatabase: func(mt *mtest.T) {
+
+				b, err := bson.Marshal(&haveWithCards)
+				require.NoError(mt, err)
+
+				var res bson.D
+				err = bson.Unmarshal(b, &res)
+				require.NoError(mt, err)
+
+				cursor := mtest.CreateCursorResponse(0, fmt.Sprintf("%s.%s", "dbName", "collName"), mtest.FirstBatch, res)
+				// Simulate scenario where user is successfully removed from downvote list
+				// Set up the mock response accordingly
+				mt.AddMockResponses(cursor)
+			},
+			wantDeck: haveWithCards,
+			wantErr:  nil,
+		},
+		"should return error if aggregation fails": {
+			mockDatabase: func(mt *mtest.T) {
+				mt.AddMockResponses(
+					bson.D{
+						{Key: "ok", Value: -1},
+					},
+				)
+			},
+			wantDeck: models.DeckWithCards{},
+			wantErr:  ErrAggregate,
+		},
+		"should return no results error": {
+			deckID: "1", // Set deck ID
+			mockDatabase: func(mt *mtest.T) {
+
+				b, err := bson.Marshal(&haveWithCards)
+				require.NoError(mt, err)
+
+				var res bson.D
+				err = bson.Unmarshal(b, &res)
+				require.NoError(mt, err)
+
+				cursor := mtest.CreateCursorResponse(0, fmt.Sprintf("%s.%s", "dbName", "collName"), mtest.FirstBatch)
+				// Simulate scenario where user is successfully removed from downvote list
+				// Set up the mock response accordingly
+				mt.AddMockResponses(cursor)
+			},
+			wantDeck: models.DeckWithCards{},
+			wantErr:  ErrNoResults,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		db.Run(name, func(mt *mtest.T) {
+			dao := DeckDAO{collection: mt.Coll, log: zerolog.Nop()}
+			if tc.mockDatabase != nil {
+				tc.mockDatabase(mt)
+			}
+
+			gotDeck, gotErr := dao.GetDeckWithCardsByID(context.Background(), tc.deckID)
+
+			assert.Equal(mt, tc.wantDeck, gotDeck)
+			assert.ErrorIs(mt, gotErr, tc.wantErr)
 		})
 	}
 }

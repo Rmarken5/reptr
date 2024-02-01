@@ -50,7 +50,7 @@ func Page(content templ.Component, styles []string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</head><body><section class=\"flex h-screen flex-col justify-center padding bg-amber-200\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</head><body class=\"min-h-screen flex flex-col justify-center content-center\"><section class=\"container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -233,7 +233,7 @@ func (d *DeckDAO) GetDeckWithCardsByID(ctx context.Context, deckID string) (mode
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return models.DeckWithCards{}, ErrNoResults
 		}
-		return models.DeckWithCards{}, err
+		return models.DeckWithCards{}, errors.Join(err, ErrAggregate)
 	}
 	var decks []models.DeckWithCards
 	err = c.All(ctx, &decks)

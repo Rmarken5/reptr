@@ -23,25 +23,7 @@ func Login() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section class=\"flex-row text-center\"><form action=\"/login\" method=\"POST\"><label for=\"email\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Var2 := `Email: `
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label> <input type=\"text\" id=\"email\" name=\"email\"><br><label for=\"password\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Var3 := `Password: `
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label> <input type=\"password\" id=\"password\" name=\"password\"><br><input type=\"submit\" value=\"Login\"></form></section>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section class=\"container mx-auto\"><form action=\"/login\" method=\"POST\"><section class=\"flex flex-col justify-center content-center\"><section class=\"mb-4 min-w-94\"><input class=\"block p-4 w-full border border-gray-300 rounded-lg\" type=\"text\" id=\"email\" name=\"email\" placeholder=\"Email\"><br></section><section class=\"mb-4 min-w-94\"><input class=\"block p-4 w-full border border-gray-300 rounded-lg\" type=\"password\" id=\"password\" name=\"password\" placeholder=\"Password\"><br></section><input type=\"submit\" value=\"Login\"></section></form></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

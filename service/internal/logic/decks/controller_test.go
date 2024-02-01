@@ -815,3 +815,65 @@ func TestLogic_GetGroupByID(t *testing.T) {
 		})
 	}
 }
+
+func TestLogic_GetCardsByDeckID(t *testing.T) {
+	var (
+		haveErr    = errors.New("db error")
+		timeNow    = time.Now().UTC().Truncate(time.Millisecond)
+		haveDeckID = uuid.NewString()
+		haveDeck   = models.DeckWithCards{
+			GetDeckResults: models.GetDeckResults{
+				ID:        haveDeckID,
+				Name:      uuid.NewString(),
+				Upvotes:   0,
+				Downvotes: 0,
+				CreatedAt: timeNow,
+				UpdatedAt: timeNow,
+			},
+			Cards: nil,
+		}
+	)
+
+	testCases := map[string]struct {
+		mockStore  func(mock *database.MockRepository)
+		haveDeckID string
+		wantDeck   models.DeckWithCards
+		wantErr    error
+	}{
+		"should return deck when database returns deck": {
+			mockStore: func(mock *database.MockRepository) {
+				mock.EXPECT().GetDeckWithCardsByID(gomock.Any(), gomock.Any()).Return(haveDeck, nil)
+			},
+			haveDeckID: uuid.NewString(),
+			wantDeck:   haveDeck,
+		},
+		"should return the error the db returns": {
+			mockStore: func(mock *database.MockRepository) {
+				mock.EXPECT().GetDeckWithCardsByID(gomock.Any(), gomock.Any()).Return(models.DeckWithCards{}, haveErr)
+			},
+			haveDeckID: uuid.NewString(),
+			wantDeck:   models.DeckWithCards{},
+			wantErr:    haveErr,
+		},
+	}
+
+	for name, tc := range testCases {
+		name := name
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockDB := database.NewMockRepository(ctrl)
+
+			if tc.mockStore != nil {
+				tc.mockStore(mockDB)
+			}
+
+			logic := Logic{repo: mockDB, logger: zerolog.Nop()}
+
+			gotDeck, err := logic.GetCardsByDeckID(context.Background(), tc.haveDeckID)
+
+			assert.Equal(t, tc.wantDeck, gotDeck)
+			assert.ErrorIs(t, err, tc.wantErr)
+		})
+	}
+}
