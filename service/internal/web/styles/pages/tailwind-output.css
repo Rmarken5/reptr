@@ -769,6 +769,10 @@ select {
   display: block;
 }
 
+.inline {
+  display: inline;
+}
+
 .flex {
   display: flex;
 }
@@ -783,6 +787,10 @@ select {
 
 .min-h-screen {
   min-height: 100vh;
+}
+
+.w-3\/4 {
+  width: 75%;
 }
 
 .w-full {
@@ -801,6 +809,10 @@ select {
   justify-content: center;
 }
 
+.justify-around {
+  justify-content: space-around;
+}
+
 .rounded-lg {
   border-radius: 0.5rem;
 }
@@ -816,4 +828,10 @@ select {
 
 .p-4 {
   padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .sm\:w-2\/3 {
+    width: 66.666667%;
+  }
 }

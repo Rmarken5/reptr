@@ -1,0 +1,18 @@
+package dumb
+
+
+templ FrontCardDisplay(data CardFront) {
+    <section id="card-content" class="flex flex-col justify-content align-center">
+        <textarea id="card-front" rows="4" class="" disabled placeholder={data.Front}></textarea>
+        <section class="flex justify-around">
+        <!-- Make a component out of this section and for the back of the card and have them swap each other out -->
+        <button hx-get={"/page/back-of-card/"+data.CardID} hx-target="#card-content">Answer</button>
+        <section class="inline">
+            <span>{"Upvotes: " + data.Upvotes}</span>
+            <span>{"Downvotes: " + data.Downvotes}</span>
+        </section>
+        if data.NextCardID != "" {
+            <button hx-get={"/page/back-of-card/"+data.NextCardID}  hx-target="#card-content">Skip</button>
+        }
+     </section>
+}
