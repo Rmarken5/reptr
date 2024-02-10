@@ -111,6 +111,21 @@ func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockRepository)(nil).DeleteGroup), arg0, arg1)
 }
 
+// GetBackOfCardByID mocks base method.
+func (m *MockRepository) GetBackOfCardByID(arg0 context.Context, arg1, arg2 string) (models.BackOfCard, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBackOfCardByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.BackOfCard)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBackOfCardByID indicates an expected call of GetBackOfCardByID.
+func (mr *MockRepositoryMockRecorder) GetBackOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetBackOfCardByID), arg0, arg1, arg2)
+}
+
 // GetDeckWithCardsByID mocks base method.
 func (m *MockRepository) GetDeckWithCardsByID(arg0 context.Context, arg1 string) (models.DeckWithCards, error) {
 	m.ctrl.T.Helper()
@@ -124,6 +139,21 @@ func (m *MockRepository) GetDeckWithCardsByID(arg0 context.Context, arg1 string)
 func (mr *MockRepositoryMockRecorder) GetDeckWithCardsByID(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeckWithCardsByID", reflect.TypeOf((*MockRepository)(nil).GetDeckWithCardsByID), arg0, arg1)
+}
+
+// GetFrontOfCardByID mocks base method.
+func (m *MockRepository) GetFrontOfCardByID(arg0 context.Context, arg1, arg2 string) (models.FrontOfCard, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFrontOfCardByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.FrontOfCard)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFrontOfCardByID indicates an expected call of GetFrontOfCardByID.
+func (mr *MockRepositoryMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfCardByID), arg0, arg1, arg2)
 }
 
 // GetGroupByID mocks base method.

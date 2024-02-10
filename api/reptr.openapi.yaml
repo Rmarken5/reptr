@@ -163,6 +163,62 @@ paths:
             text/html:
               schema:
                 type: string
+  /page/front-of-card/{deck_id}/{card_id}:
+    get:
+      operationId: frontOfCard
+      summary: fetches front of card component
+      description: returns html for displaying front of card
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+              type: string
+        - name: card_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/back-of-card/{deck_id}/{card_id}:
+    get:
+      operationId: backOfCard
+      summary: fetches back of card component
+      description: returns html for displaying back of card
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+        - name: card_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/view-deck/{deck_id}:
+    get:
+      operationId: viewDeck
+      summary: fetches view deck page
+      description: fetches HTML that represents a deck viewer
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
   /styles/{path}/{style_name}:
     get:
       operationId: serveStyles

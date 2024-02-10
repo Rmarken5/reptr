@@ -26,4 +26,11 @@ type (
 		GetDeckResults `bson:",inline"`
 		Cards          []Card
 	}
+
+	DeckSession struct {
+		ID            string `bson:"_id"`
+		DeckName      string `bson:"deck_name"`
+		CurrentCardID string `bson:"current_card_id"`
+		IsFront       bool   `bson:"is_front"`
+	}
 )

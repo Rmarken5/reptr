@@ -221,10 +221,12 @@ func (d *DeckDAO) GetDeckWithCardsByID(ctx context.Context, deckID string) (mode
 			},
 		},
 		}
+	sort := bson.D{{"$sort", bson.D{{"cards.created_at", 1}}}}
 
 	p := bson.A{
 		match,
 		lookupCards,
+		sort,
 	}
 
 	c, err := d.collection.Aggregate(ctx, p)

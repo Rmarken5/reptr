@@ -16,6 +16,7 @@ type (
 		GroupDataAccess
 		ProviderUsersDataAccess
 		UserDataAccess
+		SessionDataAccess
 	}
 	DAO struct {
 		CardDataAccess
@@ -23,6 +24,7 @@ type (
 		GroupDataAccess
 		ProviderUsersDataAccess
 		UserDataAccess
+		SessionDataAccess
 	}
 )
 
@@ -34,5 +36,6 @@ func NewRepository(logger zerolog.Logger, db *mongo.Database) *DAO {
 		NewGroupDataAccess(db, l),
 		NewProviderUsersDataAccess(db, l),
 		NewUserDataAccess(db, l),
+		NewSessionDataAccess(db, l),
 	}
 }

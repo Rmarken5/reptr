@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -388,7 +390,82 @@ func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, de
 	}
 	dumb.GroupCardDisplay(dumb.GroupCardDisplayPageData{Cards: viewCards}).Render(r.Context(), w)
 }
+func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
+	logger.Info().Msg("creating card")
 
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if deckID == "" {
+		logger.Info().Msgf("create deck attempt without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Error().Msgf("username is not on context")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	content, err := rc.getCardViewerContent(r.Context(), username, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting card content %s", deckID)
+		http.Error(w, "while cards for deck", toStatus(err))
+		return
+	}
+
+	pages.Page(pages.DeckViewerPage(content), tailwindArr).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID string) (pages.DeckViewPageData, error) {
+	s, err := rc.sessionController.GetSessionForUserAndDeckID(ctx, username, deckID)
+	if err != nil {
+		return pages.DeckViewPageData{}, err
+	}
+	if s.IsFront {
+		f, err := rc.deckController.GetFrontOfCardByID(ctx, deckID, s.CurrentCardID)
+		if err != nil {
+			return pages.DeckViewPageData{}, err
+		}
+		return pages.DeckViewPageData{
+			DeckName: s.DeckName,
+			DeckID:   deckID,
+			Content: dumb.FrontCardDisplay(dumb.CardFront{
+				CardType:       "",
+				CardID:         s.CurrentCardID,
+				Front:          f.Content,
+				Upvotes:        strconv.Itoa(f.Upvotes),
+				Downvotes:      strconv.Itoa(f.Downvotes),
+				PreviousCardID: f.PreviousCard,
+				NextCardID:     f.NextCard,
+			}),
+		}, err
+	}
+
+	b, err := rc.deckController.GetBackOfCardByID(ctx, deckID, s.CurrentCardID)
+	if err != nil {
+		return pages.DeckViewPageData{}, err
+	}
+	return pages.DeckViewPageData{
+		DeckName: s.DeckName,
+		DeckID:   deckID,
+		Content: dumb.BackOfCardDisplay(dumb.CardBack{
+			CardID:      s.CurrentCardID,
+			BackContent: b.Answer,
+			NextCardID:  b.NextCard,
+			IsUpvoted:   b.IsUpvotedByUser,
+			IsDownvoted: b.IsDownvotedByUser,
+		}),
+	}, err
+
+}
 func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "CreateCardForDeck").Logger()
 	logger.Info().Msg("creating card")
@@ -438,7 +515,71 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 
 	w.Header().Set(hxTriggerHeaderKey, "newCard")
 	w.WriteHeader(http.StatusCreated)
+}
 
+func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID, cardID string) {
+	logger := rc.logger.With().Str("method", "BackOfCard").Logger()
+	logger.Info().Msgf("getting back of card with ID: %s", cardID)
+
+	if deckID == "" {
+		logger.Info().Msgf("get back of card without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if cardID == "" {
+		logger.Info().Msgf("get back of card without cardID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	backOfCard, err := rc.deckController.GetBackOfCardByID(r.Context(), deckID, cardID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", cardID)
+		http.Error(w, "while getting back of card", toStatus(err))
+		return
+	}
+
+	dumb.BackOfCardDisplay(dumb.CardBack{
+		CardID:      backOfCard.CardID,
+		BackContent: backOfCard.Answer,
+		NextCardID:  backOfCard.NextCard,
+		IsUpvoted:   backOfCard.IsUpvotedByUser,
+		IsDownvoted: backOfCard.IsDownvotedByUser,
+	}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID, cardID string) {
+	logger := rc.logger.With().Str("method", "FrontOfCard").Logger()
+	logger.Info().Msgf("getting front of card with ID: %s", cardID)
+
+	if deckID == "" {
+		logger.Info().Msgf("get front of card without deckID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if cardID == "" {
+		logger.Info().Msgf("get front of card without cardID")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, cardID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", cardID)
+		http.Error(w, "while getting back of card", toStatus(err))
+		return
+	}
+
+	dumb.FrontCardDisplay(dumb.CardFront{
+		CardID:     frontOfCard.CardID,
+		Front:      frontOfCard.Content,
+		NextCardID: frontOfCard.NextCard,
+		Downvotes:  strconv.Itoa(frontOfCard.Downvotes),
+		Upvotes:    strconv.Itoa(frontOfCard.Upvotes),
+		CardType:   "",
+	}).Render(r.Context(), w)
 }
 
 func toStatus(err error) int {

@@ -18,12 +18,13 @@ type (
 		CreateGroup(ctx context.Context, username, groupName string) (string, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
-
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
 		CreateDeck(ctx context.Context, deckName string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
+		GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error)
+		GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 		UpvoteDeck(ctx context.Context, deckID, userID string) error
@@ -37,6 +38,22 @@ type (
 		repo   database.Repository
 	}
 )
+
+func (l *Logic) GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error) {
+	logger := l.logger.With().Str("method", "GetFrontOfCardByID").Logger()
+	logger.Info().Msgf("get front of card for cardID: %s", cardID)
+
+	return l.repo.GetFrontOfCardByID(ctx, deckID, cardID)
+
+}
+
+func (l *Logic) GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error) {
+	logger := l.logger.With().Str("method", "GetBackOfCardByID").Logger()
+	logger.Info().Msgf("get back of card for cardID: %s", cardID)
+
+	return l.repo.GetBackOfCardByID(ctx, deckID, cardID)
+
+}
 
 func New(logger zerolog.Logger, repo database.Repository) *Logic {
 	l := logger.With().Str("module", "deck logic").Logger()

@@ -5,6 +5,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
+	"github.com/rmarken/reptr/service/internal/logic/decks/session"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -97,6 +98,10 @@ func LoadConfFromEnv(logger zerolog.Logger) Config {
 
 func MustLoadLogic(logger zerolog.Logger, repo database.Repository) *decks.Logic {
 	return decks.New(logger, repo)
+}
+
+func MustLoadSessionLogic(logger zerolog.Logger, deckController decks.Controller, repo database.Repository) *session.Logic {
+	return session.NewLogic(logger, deckController, repo)
 }
 
 func MustLoadProvider(logger zerolog.Logger, repo database.Repository) *provider.Logic {
