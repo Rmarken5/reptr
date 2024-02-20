@@ -2,36 +2,49 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/gorilla/sessions"
 	"github.com/rmarken/reptr/api"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
+	"github.com/rmarken/reptr/service/internal/logic/decks/session"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
-	"github.com/rmarken/reptr/service/internal/web/components"
+	"github.com/rmarken/reptr/service/internal/web/components/dumb"
 	"github.com/rs/zerolog"
 	"net/http"
+	"strconv"
 )
+
+//go:generate mockgen -destination ./mocks/sessions_mock.go -package api  github.com/gorilla/sessions Store
 
 var _ api.ServerInterface = ReprtClient{}
 
-const IDToken = "id_token"
+const (
+	IDToken         = "id_token"
+	SessionTokenKey = "token"
+	CookieSessionID = "reptr-session-id"
+)
 
 type ReprtClient struct {
 	logger             zerolog.Logger
 	deckController     decks.Controller
 	providerController provider.Controller
+	sessionController  session.Controller
 	authenticator      auth.Authentication
+	store              sessions.Store
 }
 
-func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication, sessionController session.Controller, store sessions.Store) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
 		logger:             logger,
 		deckController:     deckController,
 		providerController: providerController,
 		authenticator:      authentication,
+		sessionController:  sessionController,
+		store:              store,
 	}
 }
 
@@ -64,7 +77,7 @@ func (rc ReprtClient) GetGroups(w http.ResponseWriter, r *http.Request, params a
 	json.NewEncoder(w).Encode(g)
 }
 
-func decksFromDecks(fromService []models.Deck) []api.Deck {
+func decksFromDecks(fromService []models.GetDeckResults) []api.Deck {
 	apiDecks := make([]api.Deck, len(fromService))
 	for i, deck := range fromService {
 		apiDecks[i] = api.Deck{
@@ -79,8 +92,13 @@ func decksFromDecks(fromService []models.Deck) []api.Deck {
 
 func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "AddGroup").Logger()
-
 	w.Header().Set("Content-Type", "application/json")
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		log.Error().Msg("username not on context while calling AddGroup")
+		http.Error(w, "username not on context", http.StatusBadRequest)
+	}
 
 	var groupName api.GroupName
 	err := json.NewDecoder(r.Body).Decode(&groupName)
@@ -98,7 +116,7 @@ func (rc ReprtClient) AddGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	group, err := rc.deckController.CreateGroup(r.Context(), groupName.GroupName)
+	group, err := rc.deckController.CreateGroup(r.Context(), username, groupName.GroupName)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create group")
 		status := toStatus(err)
@@ -121,6 +139,13 @@ func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		log.Info().Msgf("create deck attempt without username")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	var deckName api.DeckName
 	err := json.NewDecoder(r.Body).Decode(&deckName)
 	if err != nil {
@@ -137,7 +162,7 @@ func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	deck, err := rc.deckController.CreateDeck(r.Context(), deckName.DeckName)
+	deck, err := rc.deckController.CreateDeck(r.Context(), deckName.DeckName, username)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create deck")
 		status := toStatus(err)
@@ -180,159 +205,9 @@ func (rc ReprtClient) AddDeckToGroup(w http.ResponseWriter, r *http.Request, gro
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(groupId))
 }
-func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
-	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
-	log.Info().Msgf("serving registration page")
-	err := components.Register(nil).Render(r.Context(), w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-}
 
-func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
-	log := rc.logger.With().Str("method", "register").Logger()
-	log.Info().Msgf("calling register")
-
-	err := r.ParseForm()
-	if err != nil {
-		log.Error().Err(err).Msg("unable to parse form")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	email := r.PostForm.Get("email")
-	password := r.PostForm.Get("password")
-	repassword := r.PostForm.Get("repassword")
-
-	if email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		err := components.Register(components.Banner("Must provide email")).Render(r.Context(), w)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-
-	if password == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		err := components.Register(components.Banner("Must provide password")).Render(r.Context(), w)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-
-	//TODO: check password strength
-
-	if password != repassword {
-		w.WriteHeader(http.StatusBadRequest)
-		err := components.Register(components.Banner("Passwords do not match")).Render(r.Context(), w)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-
-	user, registrationError, err := rc.authenticator.RegisterUser(r.Context(), email, password)
-	if err != nil {
-		log.Error().Err(err).Msg("while registering")
-		http.Error(w, "while registering", http.StatusInternalServerError)
-		return
-	}
-
-	if !registrationError.IsZero() {
-		w.WriteHeader(registrationError.StatusCode)
-		err := components.Register(components.Banner(registrationError.Description)).Render(r.Context(), w)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-
-	log.Info().Msgf("user is registered: %+v", user)
-	w.WriteHeader(http.StatusCreated)
-	err = components.Login(components.Banner("Registration Successful")).Render(r.Context(), w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-}
-
-func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
-	log := rc.logger.With().Str("method", "LoginPage").Logger()
-	log.Info().Msgf("serving login page")
-	err := components.Login(nil).Render(r.Context(), w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-}
-
-func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
-	logger := rc.logger.With().Str("method", "Login").Logger()
-	logger.Debug().Msg("login called")
-
-	err := r.ParseForm()
-	if err != nil {
-		logger.Error().Err(err).Msg("unable to parse form")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	email := r.PostForm.Get("email")
-	if email == "" {
-		logger.Info().Msgf("login attempt without email")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	password := r.PostForm.Get("password")
-	if password == "" {
-		logger.Info().Msgf("login attempt without password - email: %s", email)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), email, password)
-	if err != nil {
-		logger.Error().Err(err).Msgf("error authenticating %s: %v", email, err)
-		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
-		return
-	}
-
-	if tokenString, ok := token.Extra(IDToken).(string); ok {
-		idToken, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
-		if err != nil {
-			http.Error(w, "unable to verify token", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Authorization", "Bearer "+tokenString)
-		w.WriteHeader(http.StatusOK)
-		components.Home(idToken.Subject).Render(r.Context(), w)
-
-		return
-	}
-
-	logger.Error().Msgf("Bad request - token doesn't contain %s", IDToken)
-	http.Error(w, fmt.Sprintf("Bad request - token doesn't contain %s", IDToken), http.StatusInternalServerError)
-	return
-}
-
-func (rc ReprtClient) GetDecksForUser(w http.ResponseWriter, r *http.Request, params api.GetDecksForUserParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func toStatus(err error) int {
-	switch {
-	case errors.Is(err, decks.ErrInvalidToBeforeFrom),
-		errors.Is(err, decks.ErrInvalidGroupName),
-		errors.Is(err, decks.ErrInvalidDeckName),
-		errors.Is(err, decks.ErrEmptyGroupID),
-		errors.Is(err, decks.ErrEmptyDeckID):
-		return http.StatusBadRequest
-	default:
-		return http.StatusInternalServerError
-	}
+func (rc ReprtClient) GetCardInput(w http.ResponseWriter, r *http.Request, cardNum int) {
+	logger := rc.logger.With().Str("method", "GetCardInput").Logger()
+	logger.Info().Msgf("serving card input section")
+	dumb.CardInput(strconv.Itoa(0)).Render(r.Context(), w)
 }

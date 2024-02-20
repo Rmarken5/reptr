@@ -15,19 +15,7 @@ type (
 		ExpiresAt   int    `json:"expiresAt"`
 	}
 	User struct {
-		ID       string `bson:"_id"`
-		Username string `bson:"username"`
+		Username       string   `bson:"_id"`
+		MemberOfGroups []string `bson:"member_of_groups"`
 	}
 )
-
-// SubjectCtxKey to be used with auth provider values
-type subjectCtxKey struct {
-}
-type userNameCtxKey struct {
-}
-
-// SubjectKey use to get and set auth provider values on context
-var SubjectKey = subjectCtxKey{}
-
-// UserNameKey use to get and set username on context
-var UserNameKey = userNameCtxKey{}

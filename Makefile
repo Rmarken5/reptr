@@ -30,8 +30,18 @@ test-update:
 cover:
 	export UPDATE_SNAPS=false && go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
 
+
+.PHONY: tailwind
+tailwind:
+	tailwindcss -i ./service/internal/web/styles/pages/tailwind-input.css -o ./service/internal/web/styles/pages/tailwind-output.css
+
 .PHONY: gen
 gen:
 	find . -name "*_mock.go" -type f -delete
 	go generate ./...
 	templ generate
+	make tailwind
+
+.PHONY: local
+local: gen
+	ENV="local" go run ./service/cmd/server

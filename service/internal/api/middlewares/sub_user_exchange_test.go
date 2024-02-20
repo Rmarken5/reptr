@@ -1,13 +1,12 @@
 package middlewares
 
 import (
-	"context"
 	"errors"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
+	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	auth "github.com/rmarken/reptr/service/internal/logic/auth/mocks"
 	mocks "github.com/rmarken/reptr/service/internal/logic/provider/mocks"
-	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +87,7 @@ func TestExchangeSubjectForUser(t *testing.T) {
 			handler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(http.StatusOK)
 				writer.Write([]byte("called"))
-				gotUserName = request.Context().Value(models.UserNameKey).(string)
+				gotUserName, _ = reptrCtx.Username(request.Context())
 			})
 			ex := ExchangeSubjectForUser(zerolog.Nop(), mock)(handler)
 			a := Authenticate(zerolog.Nop(), mockAuth)
@@ -101,7 +100,7 @@ func TestExchangeSubjectForUser(t *testing.T) {
 			require.NoError(t, err)
 
 			req.Header.Set("Authorization", token)
-			ctx := context.WithValue(req.Context(), models.SubjectKey, tc.haveSubject)
+			ctx := reptrCtx.AddSubject(req.Context(), tc.haveSubject)
 
 			res, err := ts.Client().Do(req.WithContext(ctx))
 			require.NoError(t, err)

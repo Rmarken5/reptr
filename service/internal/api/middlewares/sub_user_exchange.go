@@ -1,9 +1,8 @@
 package middlewares
 
 import (
-	"context"
+	rptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
-	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"net/http"
 )
@@ -13,7 +12,7 @@ func ExchangeSubjectForUser(logger zerolog.Logger, logic provider.Controller) fu
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			subject, ok := r.Context().Value(models.SubjectKey).(string)
+			subject, ok := rptrCtx.Subject(r.Context())
 			if !ok {
 				logger.Error().Msgf("subject not on context")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -33,7 +32,7 @@ func ExchangeSubjectForUser(logger zerolog.Logger, logic provider.Controller) fu
 				return
 			}
 			logger.Debug().Msgf("username from repo: %s", userName)
-			r = r.WithContext(context.WithValue(r.Context(), models.UserNameKey, userName))
+			r = r.WithContext(rptrCtx.AddUsername(r.Context(), userName))
 			next.ServeHTTP(w, r)
 		})
 	}

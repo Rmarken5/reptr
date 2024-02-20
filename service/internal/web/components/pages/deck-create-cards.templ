@@ -1,0 +1,40 @@
+package pages
+
+import (
+    "strconv"
+    "github.com/rmarken/reptr/service/internal/web/components/dumb"
+)
+
+type (
+    DeckCreateCardData struct {
+        DeckID string
+        DeckName string
+        Cards []dumb.CardDisplay
+    }
+)
+
+templ DeckCreateCardForm(createCardData DeckCreateCardData) {
+<body>
+    <h2>Create Cards for {createCardData.DeckName}</h2>
+
+    <section id="card-section" hx-get={"/page/add-card/" + createCardData.DeckID} hx-trigger="newCard from:body" >
+         for i, card := range createCardData.Cards {
+                    <section style="display:block;" id={"card-"+strconv.Itoa(i)}>
+                        <section style="display:inline;" id={"front-"+ strconv.Itoa(i)}>{card.Front}</section>
+                        <section style="display:inline;" id={"back-"+ strconv.Itoa(i)}>{card.Back}</section>
+                    </section>
+                }
+    </section>
+
+    <form id="create-card-form" hx-post={"/page/create-cards/"+ createCardData.DeckID} hx-target="#card-section">
+                <section id="create-card">
+                    <label for="card-front" id="deck-front-label">Card Front: </label>
+                    <input type="text" id="card-front" name="card-front"/>
+                    <label for="card-back" id="deck-back-label">Card Back: </label>
+                    <textarea id="card-back" name="card-back" rows="2" cols="50"/>
+                    <button type="submit">Create Card</button>
+                </section>
+    </form>
+    <a href="/page/home">Back to Home</a>
+</body>
+}

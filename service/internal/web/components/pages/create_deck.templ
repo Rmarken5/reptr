@@ -1,0 +1,14 @@
+package pages
+
+templ CreateDeckPage(groupID string) {
+    <body>
+        <form id="create-deck-form" hx-swap="outerhtml" hx-post={"/page/create-deck/"+groupID}>
+            <section id="create-deck-section" >
+                <label for="deck-name" id="deck-name-label">Deck Name: </label>
+                <input id="deck-name" name="deck-name"/>
+                <button type="submit">Create Deck</button>
+            </section>
+        </form>
+        <a href="/page/home">Back to Home</a>
+    </body>
+}

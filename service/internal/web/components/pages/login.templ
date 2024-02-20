@@ -1,0 +1,18 @@
+package pages
+
+templ Login() {
+
+    <section class="container mx-auto">
+        <form action="/login" method="POST" >
+            <section class="flex flex-col justify-center content-center">
+                <section class="mb-4 min-w-94">
+                    <input class="block p-4 w-full border border-gray-300 rounded-lg" type="text" id="email" name="email" placeholder="Email"/><br/>
+                </section>
+                 <section class="mb-4 min-w-94">
+                    <input class="block p-4 w-full border border-gray-300 rounded-lg" type="password" id="password" name="password" placeholder="Password"/><br/>
+                </section>
+                <input type="submit" value="Login"/>
+            </section>
+        </form>
+    </section>
+}

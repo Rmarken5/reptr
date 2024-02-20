@@ -46,6 +46,229 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/RegistrationResponseBody'
+  /page/home:
+    get:
+      operationId: homePage
+      summary: serve home page
+      description: returns html page for home
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+               type: string
+  /page/create-group:
+    get:
+      operationId: createGroupPage
+      summary: serve create group page
+      description: returns html for creating a new group
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createGroup
+      summary: handles form submit of create group page
+      description: handles create group form request and responds with result
+      requestBody:
+        $ref: "#/components/requestBodies/CreateGroupRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/CreateGroupResponseBody'
+  /page/create-deck/{group_id}:
+    get:
+      operationId: createDeckPage
+      summary: serve create deck page
+      description: returns html for creating a new deck
+      parameters:
+        - name: group_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createDeck
+      summary: handles form submit of create deck page
+      description: handles create deck form request and responds with result
+      parameters:
+        - name: group_id
+          in: path
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateDeckRequestBody"
+      responses:
+        200:
+          $ref: '#/components/responses/CreateDeckResponseBody'
+  /page/create-cards/{deck_id}:
+    get:
+      operationId: getCreateCardsForDeckPage
+      summary: create cards for deck page
+      description: page with form for creating cards on deck
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: createCardForDeck
+      summary: handles form submit of create card on create deck page
+      description: handles form submit of create card on create deck page
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateCardRequestBody"
+      responses:
+        200:
+          headers:
+            HX-Trigger:
+              schema:
+                type: string
+          $ref: '#/components/responses/CreateCardResponseBody'
+  /page/add-card/{deck_id}:
+    get:
+      operationId: getCardsForDeck
+      summary: card content for deck page
+      description: event driven response for card html
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/group/{groupID}:
+    get:
+      operationId: groupPage
+      summary: serve create group page
+      description: returns html for creating a new group
+      parameters:
+        - name: groupID
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/front-of-card/{deck_id}/{card_id}:
+    get:
+      operationId: frontOfCard
+      summary: fetches front of card component
+      description: returns html for displaying front of card
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+              type: string
+        - name: card_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/back-of-card/{deck_id}/{card_id}:
+    get:
+      operationId: backOfCard
+      summary: fetches back of card component
+      description: returns html for displaying back of card
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+        - name: card_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/vote-card/{card_id}/{direction}:
+    put:
+      operationId: voteCard
+      summary: Handles card voting from User
+      description: Changes card vote from User. Returns new vote section.
+      parameters:
+        - name: card_id
+          in: path
+          schema:
+            type: string
+        - name: direction
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/view-deck/{deck_id}:
+    get:
+      operationId: viewDeck
+      summary: fetches view deck page
+      description: fetches HTML that represents a deck viewer
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /styles/{path}/{style_name}:
+    get:
+      operationId: serveStyles
+      summary: serve css
+      description: acts as a handler for css stylesheets
+      parameters:
+        - name: style_name
+          in: path
+          schema:
+            type: string
+        - name: path
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/css:
+              schema:
+                type: string
   /secure/api/v1/groups:
     get:
       operationId: 'getGroups'
@@ -195,6 +418,19 @@ paths:
           $ref: '#/components/responses/ConflictError'
         500:
           $ref: '#/components/responses/InternalServerError'
+  /secure/api/v1/card-input/{card-num}:
+    get:
+      operationId: getCardInput
+      summary: request get retrieve new card section for input
+      description: returns HTML section for form input for adding new cards
+      parameters:
+        - name: card-num
+          in: path
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/GetCardInputSectionBody'
 components:
   securitySchemes:
     jwt_auth:
@@ -210,6 +446,30 @@ components:
             $ref: '#/components/schemas/LoginResponseSchema'
     RegistrationResponseBody:
       description: Response that home page if successful
+      content:
+        text/html:
+          schema:
+            type: string
+    CreateGroupResponseBody:
+      description: Response containing create group page with status
+      content:
+        text/html:
+          schema:
+            type: string
+    GetCardInputSectionBody:
+      description: Response card input section
+      content:
+        text/html:
+          schema:
+            type: string
+    CreateDeckResponseBody:
+      description: Response containing create group page with status
+      content:
+        text/html:
+          schema:
+            type: string
+    CreateCardResponseBody:
+      description: Response containing HX-Trigger
       content:
         text/html:
           schema:
@@ -234,6 +494,7 @@ components:
         'text/plain':
           schema:
             $ref: "#/components/schemas/DocumentID"
+
     NotFound:
       description: Response for if/when a resource is not found
       content:
@@ -275,6 +536,25 @@ components:
         application/x-www-form-urlencoded:
           schema:
             $ref: "#/components/schemas/Register"
+    CreateGroupRequestBody:
+      description: request body for create group
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/CreateGroup"
+    CreateDeckRequestBody:
+      description: request body for adding deck
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/DeckName'
+    CreateCardRequestBody:
+      description: request body for creating card from deck page
+      content:
+        'application/x-www-form-urlencoded':
+          schema:
+            $ref: '#/components/schemas/CardRequest'
     AddGroupRequest:
       description: request body for adding group
       content:
@@ -305,6 +585,22 @@ components:
         repassword:
           type: string
       required: [ username, password, repassword ]
+    CreateGroup:
+      type: object
+      properties:
+        groupName:
+          type: string
+      required: [ groupName]
+    CreateDeck:
+      type: object
+      properties:
+        deckName:
+          type: string
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+      required: [ groupName ]
     LoginResponseSchema:
       type: object
       properties:
@@ -357,6 +653,15 @@ components:
         deck_name:
           type: string
       required: [ deck_name ]
+    CardRequest:
+      type: object
+      properties:
+        deck-id:
+          type: string
+        card-front:
+          type: string
+        card-back:
+          type: string
     DeckWithCards:
       allOf:
         - $ref: '#/components/schemas/Deck'
@@ -407,6 +712,3 @@ components:
           type: string
           description: A detailed message describing the reason for the internal server error.
           example: An unexpected error occurred on the server while processing the request.
-
-
-

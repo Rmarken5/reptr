@@ -23,6 +23,7 @@ FROM alpine:latest
 # Set the working directory in the final image
 WORKDIR /app
 
+COPY ../service/internal/web/styles ./service/internal/web/styles
 # Copy the built binary from the previous stage
 COPY --from=build /app/reptr .
 
