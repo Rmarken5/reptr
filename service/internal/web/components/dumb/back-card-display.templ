@@ -1,18 +1,18 @@
 package dumb
 
+import "path"
 
 templ BackOfCardDisplay(data CardBack) {
     <section id="card-content" class="flex flex-col justify-content align-center">
         <textarea id="card-back" rows="4" class="" disabled placeholder={data.BackContent}></textarea>
         <section class="flex justify-around">
-            <!-- Make a component out of this section and for the back of the card and have them swap each other out -->
-            <button hx-get={"/page/front-of-card/"+data.CardID} hx-target="#card-content">Front</button>
+            <button hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID)))} hx-target="#card-content">Front</button>
              if data.NextCardID != "" {
-                <button hx-get={"/page/front-of-card/"+data.NextCardID}  hx-target="#card-content">Next</button>
+                <button hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID)))}  hx-target="#card-content">Next</button>
              }
-            <section class="inline">
-                <button class={data.UpvoteClass()}>Upvote</button>
-                <button class={data.DownvoteClass()}>Downvote</button>
+            <section id="vote-section" class="inline">
+                <button hx-post="" class={data.UpvoteClass()}>Upvote</button>
+                <button hx-post="" class={data.DownvoteClass()}>Downvote</button>
             </section>
         </section>
     </section>

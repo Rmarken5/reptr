@@ -1,0 +1,8 @@
+package dumb
+
+templ VoteSection(data VoteSectionData) {
+    <section id="vote-section" class="inline" >
+        <button hx-post="" class={data.UpvoteClass()}>Upvote</button>
+        <button hx-post="" class={data.DownvoteClass()}>Downvote</button>
+    </section>
+}

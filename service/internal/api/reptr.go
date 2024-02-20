@@ -139,6 +139,13 @@ func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		log.Info().Msgf("create deck attempt without username")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	var deckName api.DeckName
 	err := json.NewDecoder(r.Body).Decode(&deckName)
 	if err != nil {
@@ -155,7 +162,7 @@ func (rc ReprtClient) AddDeck(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	deck, err := rc.deckController.CreateDeck(r.Context(), deckName.DeckName)
+	deck, err := rc.deckController.CreateDeck(r.Context(), deckName.DeckName, username)
 	if err != nil {
 		log.Error().Err(err).Msg("while trying create deck")
 		status := toStatus(err)

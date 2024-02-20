@@ -21,16 +21,18 @@ type (
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error)
 		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
-		CreateDeck(ctx context.Context, deckName string) (string, error)
+		CreateDeck(ctx context.Context, deckName, username string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
-		GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error)
-		GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error)
+		GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
+		GetBackOfCardByID(ctx context.Context, deckID, cardID, username string) (models.BackOfCard, error)
 		AddCardToDeck(ctx context.Context, deckID string, card models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 		UpvoteDeck(ctx context.Context, deckID, userID string) error
 		RemoveUpvoteDeck(ctx context.Context, deckID, userID string) error
 		DownvoteDeck(ctx context.Context, deckID, userID string) error
 		RemoveDownvoteDeck(ctx context.Context, deckID, userID string) error
+
+		VoteCard(ctx context.Context, vote models.Vote, cardID, userID string) error
 	}
 
 	Logic struct {
@@ -39,19 +41,19 @@ type (
 	}
 )
 
-func (l *Logic) GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error) {
+func (l *Logic) GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error) {
 	logger := l.logger.With().Str("method", "GetFrontOfCardByID").Logger()
 	logger.Info().Msgf("get front of card for cardID: %s", cardID)
 
-	return l.repo.GetFrontOfCardByID(ctx, deckID, cardID)
+	return l.repo.GetFrontOfCardByID(ctx, deckID, cardID, username)
 
 }
 
-func (l *Logic) GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error) {
+func (l *Logic) GetBackOfCardByID(ctx context.Context, deckID, cardID, username string) (models.BackOfCard, error) {
 	logger := l.logger.With().Str("method", "GetBackOfCardByID").Logger()
 	logger.Info().Msgf("get back of card for cardID: %s", cardID)
 
-	return l.repo.GetBackOfCardByID(ctx, deckID, cardID)
+	return l.repo.GetBackOfCardByID(ctx, deckID, cardID, username)
 
 }
 
@@ -64,7 +66,7 @@ func New(logger zerolog.Logger, repo database.Repository) *Logic {
 }
 
 // CreateDeck attempts to insert [models.Deck] into mongo. If repo returns an error, the error is logged and returned.
-func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error) {
+func (l *Logic) CreateDeck(ctx context.Context, deckName, username string) (string, error) {
 	logger := l.logger.With().Str("module", "CreateDeck").Logger()
 	logger.Info().Msgf("insertDeck: %s", deckName)
 
@@ -74,10 +76,13 @@ func (l *Logic) CreateDeck(ctx context.Context, deckName string) (string, error)
 	}
 	timeNow := time.Now().UTC()
 	id, err := l.repo.InsertDeck(ctx, models.Deck{
-		ID:        uuid.NewString(),
-		Name:      deckName,
-		CreatedAt: timeNow,
-		UpdatedAt: timeNow,
+		ID:           uuid.NewString(),
+		Name:         deckName,
+		UserUpvote:   []string{},
+		UserDownvote: []string{},
+		CreatedAt:    timeNow,
+		CreatedBy:    username,
+		UpdatedAt:    timeNow,
 	})
 	if err != nil {
 		l.logger.Error().Err(err).Msg("while inserting deck")
@@ -136,7 +141,7 @@ func (l *Logic) UpvoteDeck(ctx context.Context, deckID, userID string) error {
 	logger := l.logger.With().Str("module", "UpvoteDeck").Logger()
 	logger.Info().Msgf("Upvote deck %s for %s", deckID, userID)
 
-	err := l.repo.AddUserToUpvote(ctx, deckID, userID)
+	err := l.repo.AddUserToUpvoteForDeck(ctx, deckID, userID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while upvoting deck")
 		return err
@@ -148,7 +153,7 @@ func (l *Logic) RemoveUpvoteDeck(ctx context.Context, deckID, userID string) err
 	logger := l.logger.With().Str("module", "RemoveUpvoteDeck").Logger()
 	logger.Info().Msgf("remove upvote: deck %s for %s", deckID, userID)
 
-	err := l.repo.RemoveUserFromUpvote(ctx, deckID, userID)
+	err := l.repo.RemoveUserFromUpvoteForDeck(ctx, deckID, userID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while removing upvote")
 		return err
@@ -160,7 +165,7 @@ func (l *Logic) DownvoteDeck(ctx context.Context, deckID, userID string) error {
 	logger := l.logger.With().Str("module", "DownvoteDeck").Logger()
 	logger.Info().Msgf("downvote deck: %s for %s", deckID, userID)
 
-	err := l.repo.AddUserToDownvote(ctx, deckID, userID)
+	err := l.repo.AddUserToDownvoteForDeck(ctx, deckID, userID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while adding downvote")
 		return err
@@ -172,7 +177,7 @@ func (l *Logic) RemoveDownvoteDeck(ctx context.Context, deckID, userID string) e
 	logger := l.logger.With().Str("module", "RemoveDownvoteDeck").Logger()
 	logger.Info().Msgf("remove downvote deck: %s for %s", deckID, userID)
 
-	err := l.repo.RemoveUserFromDownvote(ctx, deckID, userID)
+	err := l.repo.RemoveUserFromDownvoteForDeck(ctx, deckID, userID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while removing downvote")
 		return err
@@ -198,6 +203,7 @@ func (l *Logic) CreateGroup(ctx context.Context, username, groupName string) (st
 		ID:         uuid.NewString(),
 		Name:       groupName,
 		CreatedBy:  username,
+		DeckIDs:    []string{},
 		Moderators: []string{username},
 		CreatedAt:  timeNow,
 		UpdatedAt:  timeNow,
@@ -299,4 +305,21 @@ func (l *Logic) GetCardsByDeckID(ctx context.Context, deckID string) (models.Dec
 	}
 
 	return deck, nil
+}
+
+func (l *Logic) VoteCard(ctx context.Context, vote models.Vote, cardID, userID string) error {
+	logger := l.logger.With().Str("method", "VoteCard").Logger()
+	switch vote {
+	case models.Upvote:
+		return l.repo.AddUserToUpvoteForCard(ctx, cardID, userID)
+	case models.Downvote:
+		return l.repo.AddUserToDownvoteForCard(ctx, cardID, userID)
+	case models.RemoveUpvote:
+		return l.repo.RemoveUserFromUpvoteForCard(ctx, cardID, userID)
+	case models.RemoveDownvote:
+		return l.repo.RemoveUserFromDownvoteForCard(ctx, cardID, userID)
+	default:
+		logger.Error().Str("unable to process vote: %s", vote.String())
+		return errors.New("cannot process vote")
+	}
 }

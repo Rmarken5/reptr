@@ -7,7 +7,7 @@ import (
 
 //go:generate mockgen -destination ./mocks/repo_mock.go -package database . Repository
 
-var _ Repository = new(DAO)
+var _ Repository = new(DataAccessObject)
 
 type (
 	Repository interface {
@@ -18,19 +18,19 @@ type (
 		UserDataAccess
 		SessionDataAccess
 	}
-	DAO struct {
-		CardDataAccess
-		DeckDataAccess
-		GroupDataAccess
-		ProviderUsersDataAccess
-		UserDataAccess
-		SessionDataAccess
+	DataAccessObject struct {
+		*CardDAO
+		*DeckDAO
+		*GroupDAO
+		*ProviderUsersDAO
+		*UserDAO
+		*SessionDAO
 	}
 )
 
-func NewRepository(logger zerolog.Logger, db *mongo.Database) *DAO {
+func NewRepository(logger zerolog.Logger, db *mongo.Database) *DataAccessObject {
 	l := logger.With().Str("module", "Repository").Logger()
-	return &DAO{
+	return &DataAccessObject{
 		NewCardDataAccess(db, l),
 		NewDeckDataAccess(db, l),
 		NewGroupDataAccess(db, l),

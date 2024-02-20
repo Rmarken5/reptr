@@ -16,8 +16,12 @@ type (
 	CardDataAccess interface {
 		InsertCards(ctx context.Context, card []models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
-		GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error)
-		GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error)
+		GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
+		GetBackOfCardByID(ctx context.Context, deckID, cardID, username string) (models.BackOfCard, error)
+		AddUserToUpvoteForCard(ctx context.Context, primaryKey, userID string) error
+		RemoveUserFromUpvoteForCard(ctx context.Context, primaryKey, userID string) error
+		AddUserToDownvoteForCard(ctx context.Context, primaryKey, userID string) error
+		RemoveUserFromDownvoteForCard(ctx context.Context, primaryKey, userID string) error
 	}
 	CardDAO struct {
 		collection *mongo.Collection
@@ -70,12 +74,12 @@ func (d *CardDAO) UpdateCard(ctx context.Context, card models.Card) error {
 	return nil
 }
 
-func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID string) (models.FrontOfCard, error) {
+func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error) {
 	logger := d.log.With().Str("method", "GetFrontOfCardByID").Logger()
 	logger.Info().Msgf("getting front of card by id: %s", cardID)
 
 	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"deck_id", "a415cedb-a732-45cc-a429-1bd3203cd23d"}}}},
+		bson.D{{"$match", bson.D{{"deck_id", deckID}}}},
 		bson.D{
 			{"$setWindowFields",
 				bson.D{
@@ -128,7 +132,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID string)
 				},
 			},
 		},
-		bson.D{{"$match", bson.D{{"_id", "93dc5755-ce3e-40bc-b974-78f0288419d1"}}}},
+		bson.D{{"$match", bson.D{{"_id", cardID}}}},
 		bson.D{
 			{"$set",
 				bson.D{
@@ -166,7 +170,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID string)
 										bson.D{
 											{"$in",
 												bson.A{
-													"marken.ryan@gmail.com",
+													username,
 													"$user_upvotes",
 												},
 											},
@@ -186,7 +190,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID string)
 										bson.D{
 											{"$in",
 												bson.A{
-													"marken.ryan@gmail.com",
+													username,
 													"$user_downvotes",
 												},
 											},
@@ -236,7 +240,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID string)
 
 }
 
-func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID string) (models.BackOfCard, error) {
+func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, username string) (models.BackOfCard, error) {
 	logger := d.log.With().Str("method", "GetBackOfCardByID").Logger()
 	logger.Info().Msgf("getting back of card by id: %s", cardID)
 
@@ -332,7 +336,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID string) 
 										bson.D{
 											{"$in",
 												bson.A{
-													"marken.ryan@gmail.com",
+													username,
 													"$user_upvotes",
 												},
 											},
@@ -352,7 +356,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID string) 
 										bson.D{
 											{"$in",
 												bson.A{
-													"marken.ryan@gmail.com",
+													username,
 													"$user_downvotes",
 												},
 											},
@@ -400,4 +404,92 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID string) 
 	}
 
 	return res[0], nil
+}
+
+func (d *CardDAO) AddUserToUpvoteForCard(ctx context.Context, cardID, userID string) error {
+	logger := d.log.With().Str("method", "AddUserToUpvoteForCard").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: cardID}}
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"user_upvotes", userID},
+		}},
+		{"$pull", bson.D{
+			{"user_downvotes", userID},
+		}},
+	}
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Join(fmt.Errorf("error adding user to upvote: %w", err), ErrUpdate)
+	}
+
+	return nil
+}
+
+func (d *CardDAO) RemoveUserFromUpvoteForCard(ctx context.Context, cardID, userID string) error {
+	logger := d.log.With().Str("method", "RemoveUserFromUpvoteForCard").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: cardID}}
+	update := bson.D{
+		{"$pull", bson.D{
+			{"user_upvotes", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Join(fmt.Errorf("error removing user from upvote: %w", err), ErrUpdate)
+	}
+
+	return nil
+}
+
+func (d *CardDAO) AddUserToDownvoteForCard(ctx context.Context, cardID, userID string) error {
+	logger := d.log.With().Str("method", "AddUserToDownvoteForCard").Logger()
+	logger.Info().Msgf("adding downvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: cardID}}
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"user_downvotes", userID},
+		}},
+		{"$pull", bson.D{
+			{"user_upvotes", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Join(fmt.Errorf("error adding user to downvote: %w", err), ErrUpdate)
+	}
+
+	return nil
+}
+
+func (d *CardDAO) RemoveUserFromDownvoteForCard(ctx context.Context, cardID, userID string) error {
+	logger := d.log.With().Str("method", "RemoveUserFromDownvoteForCard").Logger()
+	logger.Info().Msgf("adding upvote for user: %s", userID)
+
+	filter := bson.D{{Key: "_id", Value: cardID}}
+	update := bson.D{
+		{"$pull", bson.D{
+			{"user_upvotes", userID},
+		}},
+	}
+
+	logger.Debug().Msgf("%+v", filter)
+
+	_, err := d.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Join(fmt.Errorf("error removing user from downvote: %w", err), ErrUpdate)
+	}
+
+	return nil
 }

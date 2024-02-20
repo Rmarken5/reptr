@@ -32,7 +32,6 @@ type (
 		InsertGroup(ctx context.Context, group models.Group) (string, error)
 		UpdateGroup(ctx context.Context, group models.Group) error
 		GetGroupsWithDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
-
 		DeleteGroup(ctx context.Context, groupID string) error
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		AddDeckToGroup(ctx context.Context, groupID, deckID string) error
@@ -184,8 +183,34 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 	getVoteCounts := bson.D{
 		{"$addFields",
 			bson.D{
-				{"decks.upvotes", bson.D{{"$size", "$decks.user_upvotes"}}},
-				{"decks.downvote", bson.D{{"$size", "$decks.user_downvotes"}}},
+				{"decks.upvotes",
+					bson.D{
+						{"$size",
+							bson.D{
+								{"$ifNull",
+									bson.A{
+										"$decks.user_upvotes",
+										bson.A{},
+									},
+								},
+							},
+						},
+					},
+				},
+				{"decks.downvote",
+					bson.D{
+						{"$size",
+							bson.D{
+								{"$ifNull",
+									bson.A{
+										"$decks.user_downvotes",
+										bson.A{},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

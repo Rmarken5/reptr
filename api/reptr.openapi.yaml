@@ -77,11 +77,16 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/CreateGroupResponseBody'
-  /page/create-deck:
+  /page/create-deck/{group_id}:
     get:
       operationId: createDeckPage
       summary: serve create deck page
       description: returns html for creating a new deck
+      parameters:
+        - name: group_id
+          in: path
+          schema:
+            type: string
       responses:
         200:
           content:
@@ -92,6 +97,11 @@ paths:
       operationId: createDeck
       summary: handles form submit of create deck page
       description: handles create deck form request and responds with result
+      parameters:
+        - name: group_id
+          in: path
+          schema:
+            type: string
       requestBody:
         $ref: "#/components/requestBodies/CreateDeckRequestBody"
       responses:
@@ -194,6 +204,26 @@ paths:
           schema:
             type: string
         - name: card_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
+  /page/vote-card/{card_id}/{direction}:
+    put:
+      operationId: voteCard
+      summary: Handles card voting from User
+      description: Changes card vote from User. Returns new vote section.
+      parameters:
+        - name: card_id
+          in: path
+          schema:
+            type: string
+        - name: direction
           in: path
           schema:
             type: string

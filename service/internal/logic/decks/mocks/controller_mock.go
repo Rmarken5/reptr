@@ -70,18 +70,18 @@ func (mr *MockControllerMockRecorder) AddDeckToGroup(arg0, arg1, arg2 any) *gomo
 }
 
 // CreateDeck mocks base method.
-func (m *MockController) CreateDeck(arg0 context.Context, arg1 string) (string, error) {
+func (m *MockController) CreateDeck(arg0 context.Context, arg1, arg2 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDeck", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateDeck", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateDeck indicates an expected call of CreateDeck.
-func (mr *MockControllerMockRecorder) CreateDeck(arg0, arg1 any) *gomock.Call {
+func (mr *MockControllerMockRecorder) CreateDeck(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeck", reflect.TypeOf((*MockController)(nil).CreateDeck), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeck", reflect.TypeOf((*MockController)(nil).CreateDeck), arg0, arg1, arg2)
 }
 
 // CreateGroup mocks base method.
@@ -114,18 +114,18 @@ func (mr *MockControllerMockRecorder) DownvoteDeck(arg0, arg1, arg2 any) *gomock
 }
 
 // GetBackOfCardByID mocks base method.
-func (m *MockController) GetBackOfCardByID(arg0 context.Context, arg1, arg2 string) (models.BackOfCard, error) {
+func (m *MockController) GetBackOfCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.BackOfCard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBackOfCardByID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetBackOfCardByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(models.BackOfCard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBackOfCardByID indicates an expected call of GetBackOfCardByID.
-func (mr *MockControllerMockRecorder) GetBackOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockControllerMockRecorder) GetBackOfCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackOfCardByID", reflect.TypeOf((*MockController)(nil).GetBackOfCardByID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackOfCardByID", reflect.TypeOf((*MockController)(nil).GetBackOfCardByID), arg0, arg1, arg2, arg3)
 }
 
 // GetCardsByDeckID mocks base method.
@@ -159,18 +159,18 @@ func (mr *MockControllerMockRecorder) GetDecks(arg0, arg1, arg2, arg3, arg4 any)
 }
 
 // GetFrontOfCardByID mocks base method.
-func (m *MockController) GetFrontOfCardByID(arg0 context.Context, arg1, arg2 string) (models.FrontOfCard, error) {
+func (m *MockController) GetFrontOfCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.FrontOfCard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFrontOfCardByID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetFrontOfCardByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(models.FrontOfCard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFrontOfCardByID indicates an expected call of GetFrontOfCardByID.
-func (mr *MockControllerMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockControllerMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockController)(nil).GetFrontOfCardByID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockController)(nil).GetFrontOfCardByID), arg0, arg1, arg2, arg3)
 }
 
 // GetGroupByID mocks base method.

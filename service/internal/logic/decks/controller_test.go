@@ -63,7 +63,7 @@ func TestLogic_CreateDeck(t *testing.T) {
 			}
 			logic := Logic{repo: mockRepo, logger: zerolog.Nop()}
 
-			gotDeckID, gotErr := logic.CreateDeck(ctx, tc.haveDeckName)
+			gotDeckID, gotErr := logic.CreateDeck(ctx, tc.haveDeckName, uuid.NewString())
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 			assert.Equal(t, tc.wantDeckID, gotDeckID)
 		})
@@ -250,13 +250,13 @@ func TestLogic_UpvoteDeck(t *testing.T) {
 	}{
 		"should upvote deck successfully": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().AddUserToUpvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockRepo.EXPECT().AddUserToUpvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			wantErr: nil,
 		},
 		"should return error if upvoting deck fails": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().AddUserToUpvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
+				mockRepo.EXPECT().AddUserToUpvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
 			},
 			wantErr: dbErrors.ErrInsert,
 		},
@@ -293,13 +293,13 @@ func TestLogic_RemoveUpvoteDeck(t *testing.T) {
 	}{
 		"should remove upvote from deck successfully": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().RemoveUserFromUpvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockRepo.EXPECT().RemoveUserFromUpvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			wantErr: nil,
 		},
 		"should return error if removing upvote fails": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().RemoveUserFromUpvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
+				mockRepo.EXPECT().RemoveUserFromUpvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
 			},
 			wantErr: dbErrors.ErrInsert,
 		},
@@ -336,13 +336,13 @@ func TestLogic_DownvoteDeck(t *testing.T) {
 	}{
 		"should add downvote to deck successfully": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().AddUserToDownvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockRepo.EXPECT().AddUserToDownvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			wantErr: nil,
 		},
 		"should return error if adding downvote fails": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().AddUserToDownvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
+				mockRepo.EXPECT().AddUserToDownvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
 			},
 			wantErr: dbErrors.ErrInsert,
 		},
@@ -380,13 +380,13 @@ func TestLogic_RemoveDownvoteDeck(t *testing.T) {
 	}{
 		"should remove downvote from deck successfully": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().RemoveUserFromDownvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockRepo.EXPECT().RemoveUserFromDownvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			wantErr: nil,
 		},
 		"should return error if removing downvote fails": {
 			mockRepositoryResponse: func(mockRepo *database.MockRepository) {
-				mockRepo.EXPECT().RemoveUserFromDownvote(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
+				mockRepo.EXPECT().RemoveUserFromDownvoteForDeck(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.Join(errors.New("error inserting"), dbErrors.ErrInsert))
 			},
 			wantErr: dbErrors.ErrInsert,
 		},

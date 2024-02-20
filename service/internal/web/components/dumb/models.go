@@ -2,6 +2,7 @@ package dumb
 
 type (
 	CardFront struct {
+		DeckID         string
 		CardType       string
 		CardID         string
 		Front          string
@@ -12,11 +13,18 @@ type (
 	}
 
 	CardBack struct {
+		DeckID      string
 		CardID      string
 		BackContent string
 		NextCardID  string
 		IsUpvoted   bool
 		IsDownvoted bool
+	}
+
+	VoteSectionData struct {
+		CardID        string
+		UpvoteClass   string
+		DownvoteClass string
 	}
 )
 

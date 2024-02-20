@@ -108,7 +108,7 @@ func MustLoadProvider(logger zerolog.Logger, repo database.Repository) *provider
 	return provider.New(logger, repo)
 }
 
-func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DAO {
+func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DataAccessObject {
 	return database.NewRepository(logger, db)
 }
 func MustConnectMongo(ctx context.Context, logger zerolog.Logger, config Config) *mongo.Database {

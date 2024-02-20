@@ -1,6 +1,7 @@
 package pages
 
-import ( "strconv"
+import (
+        "strconv"
         "path"
         "time"
 )
@@ -29,7 +30,7 @@ type (
 templ GroupPage(groupData GroupData){
     <body>
         <h1>Group {groupData.GroupName}</h1>
-        <a href="/page/create-deck">Create Deck</a>
+        <a href={templ.SafeURL(path.Join("/page/create-deck/", groupData.ID))}>Create Deck</a>
         <section id="group-decks">
             <h2>Decks in Group</h2>
             <table id="deck-table">
@@ -38,7 +39,12 @@ templ GroupPage(groupData GroupData){
                 </tr>
                 for _, deck := range groupData.Decks {
                     <tr>
-                        <td><a href={templ.SafeURL(path.Join("/page/create-cards/", deck.ID))}>{deck.DeckName}</a></td><td>{strconv.Itoa(deck.NumCards)}</td><td>{strconv.Itoa(deck.NumUpvotes)}</td><td>{strconv.Itoa(deck.NumDownvotes)}</td>
+                        <td>{deck.DeckName}</td>
+                        <td><a href={templ.SafeURL(path.Join("/page/view-deck/", deck.ID))}>View Deck</a></td>
+                        <td><a href={templ.SafeURL(path.Join("/page/create-cards/", deck.ID))}>Create Cards</a></td>
+                        <td>{strconv.Itoa(deck.NumCards)}</td>
+                        <td>{strconv.Itoa(deck.NumUpvotes)}</td>
+                        <td>{strconv.Itoa(deck.NumDownvotes)}</td>
                     </tr>
                 }
             </table>

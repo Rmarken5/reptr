@@ -10,17 +10,7 @@ import "context"
 import "io"
 import "bytes"
 
-type (
-	CreateDeckPageData struct {
-		UsersGroups []CreateDeckGroupData
-	}
-	CreateDeckGroupData struct {
-		GroupID   string
-		GroupName string
-	}
-)
-
-func CreateDeckPage(deckPageData CreateDeckPageData) templ.Component {
+func CreateDeckPage(groupID string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -33,7 +23,15 @@ func CreateDeckPage(deckPageData CreateDeckPageData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form id=\"create-deck-form\" hx-swap=\"outerhtml\" hx-post=\"/page/create-deck\"><section id=\"create-deck-section\"><label for=\"deck-name\" id=\"deck-name-label\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form id=\"create-deck-form\" hx-swap=\"outerhtml\" hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString("/page/create-deck/" + groupID))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><section id=\"create-deck-section\"><label for=\"deck-name\" id=\"deck-name-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

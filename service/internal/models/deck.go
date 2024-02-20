@@ -8,9 +8,10 @@ type (
 	Deck struct {
 		ID           string    `bson:"_id"`
 		Name         string    `bson:"name"`
-		UserUpvote   []string  `bson:"user_upvote"`
-		UserDownvote []string  `bson:"user_downvote"`
+		UserUpvote   []string  `bson:"user_upvotes"`
+		UserDownvote []string  `bson:"user_downvotes"`
 		CreatedAt    time.Time `bson:"created_at"`
+		CreatedBy    string    `bson:"created_by"`
 		UpdatedAt    time.Time `bson:"updated_at"`
 	}
 

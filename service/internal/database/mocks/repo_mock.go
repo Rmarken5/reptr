@@ -69,32 +69,74 @@ func (mr *MockRepositoryMockRecorder) AddUserAsMemberOfGroup(arg0, arg1, arg2 an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserAsMemberOfGroup", reflect.TypeOf((*MockRepository)(nil).AddUserAsMemberOfGroup), arg0, arg1, arg2)
 }
 
-// AddUserToDownvote mocks base method.
-func (m *MockRepository) AddUserToDownvote(arg0 context.Context, arg1, arg2 string) error {
+// AddUserToDownvoteForCard mocks base method.
+func (m *MockRepository) AddUserToDownvoteForCard(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddUserToDownvote", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddUserToDownvoteForCard", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AddUserToDownvote indicates an expected call of AddUserToDownvote.
-func (mr *MockRepositoryMockRecorder) AddUserToDownvote(arg0, arg1, arg2 any) *gomock.Call {
+// AddUserToDownvoteForCard indicates an expected call of AddUserToDownvoteForCard.
+func (mr *MockRepositoryMockRecorder) AddUserToDownvoteForCard(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToDownvote", reflect.TypeOf((*MockRepository)(nil).AddUserToDownvote), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToDownvoteForCard", reflect.TypeOf((*MockRepository)(nil).AddUserToDownvoteForCard), arg0, arg1, arg2)
 }
 
-// AddUserToUpvote mocks base method.
-func (m *MockRepository) AddUserToUpvote(arg0 context.Context, arg1, arg2 string) error {
+// AddUserToDownvoteForDeck mocks base method.
+func (m *MockRepository) AddUserToDownvoteForDeck(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddUserToUpvote", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddUserToDownvoteForDeck", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AddUserToUpvote indicates an expected call of AddUserToUpvote.
-func (mr *MockRepositoryMockRecorder) AddUserToUpvote(arg0, arg1, arg2 any) *gomock.Call {
+// AddUserToDownvoteForDeck indicates an expected call of AddUserToDownvoteForDeck.
+func (mr *MockRepositoryMockRecorder) AddUserToDownvoteForDeck(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToUpvote", reflect.TypeOf((*MockRepository)(nil).AddUserToUpvote), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToDownvoteForDeck", reflect.TypeOf((*MockRepository)(nil).AddUserToDownvoteForDeck), arg0, arg1, arg2)
+}
+
+// AddUserToUpvoteForCard mocks base method.
+func (m *MockRepository) AddUserToUpvoteForCard(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserToUpvoteForCard", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserToUpvoteForCard indicates an expected call of AddUserToUpvoteForCard.
+func (mr *MockRepositoryMockRecorder) AddUserToUpvoteForCard(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToUpvoteForCard", reflect.TypeOf((*MockRepository)(nil).AddUserToUpvoteForCard), arg0, arg1, arg2)
+}
+
+// AddUserToUpvoteForDeck mocks base method.
+func (m *MockRepository) AddUserToUpvoteForDeck(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserToUpvoteForDeck", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserToUpvoteForDeck indicates an expected call of AddUserToUpvoteForDeck.
+func (mr *MockRepositoryMockRecorder) AddUserToUpvoteForDeck(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToUpvoteForDeck", reflect.TypeOf((*MockRepository)(nil).AddUserToUpvoteForDeck), arg0, arg1, arg2)
+}
+
+// CreateSessionForUserDeck mocks base method.
+func (m *MockRepository) CreateSessionForUserDeck(arg0 context.Context, arg1 models.DeckSession) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSessionForUserDeck", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSessionForUserDeck indicates an expected call of CreateSessionForUserDeck.
+func (mr *MockRepositoryMockRecorder) CreateSessionForUserDeck(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSessionForUserDeck", reflect.TypeOf((*MockRepository)(nil).CreateSessionForUserDeck), arg0, arg1)
 }
 
 // DeleteGroup mocks base method.
@@ -112,18 +154,18 @@ func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
 }
 
 // GetBackOfCardByID mocks base method.
-func (m *MockRepository) GetBackOfCardByID(arg0 context.Context, arg1, arg2 string) (models.BackOfCard, error) {
+func (m *MockRepository) GetBackOfCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.BackOfCard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBackOfCardByID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetBackOfCardByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(models.BackOfCard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBackOfCardByID indicates an expected call of GetBackOfCardByID.
-func (mr *MockRepositoryMockRecorder) GetBackOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetBackOfCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetBackOfCardByID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetBackOfCardByID), arg0, arg1, arg2, arg3)
 }
 
 // GetDeckWithCardsByID mocks base method.
@@ -142,18 +184,18 @@ func (mr *MockRepositoryMockRecorder) GetDeckWithCardsByID(arg0, arg1 any) *gomo
 }
 
 // GetFrontOfCardByID mocks base method.
-func (m *MockRepository) GetFrontOfCardByID(arg0 context.Context, arg1, arg2 string) (models.FrontOfCard, error) {
+func (m *MockRepository) GetFrontOfCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.FrontOfCard, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFrontOfCardByID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetFrontOfCardByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(models.FrontOfCard)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFrontOfCardByID indicates an expected call of GetFrontOfCardByID.
-func (mr *MockRepositoryMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfCardByID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfCardByID), arg0, arg1, arg2, arg3)
 }
 
 // GetGroupByID mocks base method.
@@ -199,6 +241,21 @@ func (m *MockRepository) GetGroupsWithDecks(arg0 context.Context, arg1 time.Time
 func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
+}
+
+// GetSessionForUserDeck mocks base method.
+func (m *MockRepository) GetSessionForUserDeck(arg0 context.Context, arg1, arg2 string) (models.DeckSession, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSessionForUserDeck", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.DeckSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSessionForUserDeck indicates an expected call of GetSessionForUserDeck.
+func (mr *MockRepositoryMockRecorder) GetSessionForUserDeck(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionForUserDeck", reflect.TypeOf((*MockRepository)(nil).GetSessionForUserDeck), arg0, arg1, arg2)
 }
 
 // GetUserByUsername mocks base method.
@@ -319,32 +376,60 @@ func (mr *MockRepositoryMockRecorder) InsertUserSubjectPair(arg0, arg1, arg2 any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUserSubjectPair", reflect.TypeOf((*MockRepository)(nil).InsertUserSubjectPair), arg0, arg1, arg2)
 }
 
-// RemoveUserFromDownvote mocks base method.
-func (m *MockRepository) RemoveUserFromDownvote(arg0 context.Context, arg1, arg2 string) error {
+// RemoveUserFromDownvoteForCard mocks base method.
+func (m *MockRepository) RemoveUserFromDownvoteForCard(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveUserFromDownvote", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "RemoveUserFromDownvoteForCard", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RemoveUserFromDownvote indicates an expected call of RemoveUserFromDownvote.
-func (mr *MockRepositoryMockRecorder) RemoveUserFromDownvote(arg0, arg1, arg2 any) *gomock.Call {
+// RemoveUserFromDownvoteForCard indicates an expected call of RemoveUserFromDownvoteForCard.
+func (mr *MockRepositoryMockRecorder) RemoveUserFromDownvoteForCard(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromDownvote", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromDownvote), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromDownvoteForCard", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromDownvoteForCard), arg0, arg1, arg2)
 }
 
-// RemoveUserFromUpvote mocks base method.
-func (m *MockRepository) RemoveUserFromUpvote(arg0 context.Context, arg1, arg2 string) error {
+// RemoveUserFromDownvoteForDeck mocks base method.
+func (m *MockRepository) RemoveUserFromDownvoteForDeck(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveUserFromUpvote", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "RemoveUserFromDownvoteForDeck", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RemoveUserFromUpvote indicates an expected call of RemoveUserFromUpvote.
-func (mr *MockRepositoryMockRecorder) RemoveUserFromUpvote(arg0, arg1, arg2 any) *gomock.Call {
+// RemoveUserFromDownvoteForDeck indicates an expected call of RemoveUserFromDownvoteForDeck.
+func (mr *MockRepositoryMockRecorder) RemoveUserFromDownvoteForDeck(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromUpvote", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromUpvote), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromDownvoteForDeck", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromDownvoteForDeck), arg0, arg1, arg2)
+}
+
+// RemoveUserFromUpvoteForCard mocks base method.
+func (m *MockRepository) RemoveUserFromUpvoteForCard(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUserFromUpvoteForCard", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveUserFromUpvoteForCard indicates an expected call of RemoveUserFromUpvoteForCard.
+func (mr *MockRepositoryMockRecorder) RemoveUserFromUpvoteForCard(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromUpvoteForCard", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromUpvoteForCard), arg0, arg1, arg2)
+}
+
+// RemoveUserFromUpvoteForDeck mocks base method.
+func (m *MockRepository) RemoveUserFromUpvoteForDeck(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUserFromUpvoteForDeck", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveUserFromUpvoteForDeck indicates an expected call of RemoveUserFromUpvoteForDeck.
+func (mr *MockRepositoryMockRecorder) RemoveUserFromUpvoteForDeck(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromUpvoteForDeck", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromUpvoteForDeck), arg0, arg1, arg2)
 }
 
 // UpdateCard mocks base method.
@@ -373,4 +458,18 @@ func (m *MockRepository) UpdateGroup(arg0 context.Context, arg1 models.Group) er
 func (mr *MockRepositoryMockRecorder) UpdateGroup(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockRepository)(nil).UpdateGroup), arg0, arg1)
+}
+
+// UpdateSession mocks base method.
+func (m *MockRepository) UpdateSession(arg0 context.Context, arg1, arg2, arg3 string, arg4 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSession", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSession indicates an expected call of UpdateSession.
+func (mr *MockRepositoryMockRecorder) UpdateSession(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSession", reflect.TypeOf((*MockRepository)(nil).UpdateSession), arg0, arg1, arg2, arg3, arg4)
 }
