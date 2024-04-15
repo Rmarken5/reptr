@@ -19,9 +19,16 @@ import (
 	"time"
 )
 
-const hxTriggerHeaderKey = "HX-Trigger"
+const (
+	hxTriggerHeaderKey = "HX-Trigger"
 
-var tailwindArr = []string{"/styles/pages/tailwind-output.css"}
+	stylesDir = "/styles/pages/"
+
+	//styles
+	groupStyle = "group.css"
+)
+
+var tailwindArr = []string{stylesDir + "/base.css"}
 
 func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string) {
 	log := rc.logger.With().Str("method", "ServeStyles").Logger()
@@ -165,7 +172,11 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "unable to verify token", http.StatusInternalServerError)
 			return
 		}
-		session, _ := rc.store.Get(r, CookieSessionID)
+		session, err := rc.store.Get(r, CookieSessionID)
+		if err != nil {
+			http.Error(w, "unable to get session", http.StatusInternalServerError)
+			return
+		}
 		session.Values[SessionTokenKey] = "Bearer " + tokenString
 		session.Options.Secure = true
 		err = session.Save(r, w)

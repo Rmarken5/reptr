@@ -3,6 +3,10 @@ package pages
 templ Page(content templ.Component, styles []string) {
     <html>
        <head>
+       <link
+         rel="stylesheet"
+         href="https://unpkg.com/@tailwindcss/typography@0.4.x/dist/typography.min.css"
+       />
             <script src="https://unpkg.com/htmx.org@1.9.10"></script>
             for _, style := range styles {
                 <link rel="stylesheet" href={style}/>
