@@ -1,8 +1,10 @@
 package dumb
 
-templ VoteSection(data VoteSectionData) {
-    <section id="vote-section" class="inline" >
-        <button hx-post="" class={data.UpvoteClass()}>Upvote</button>
-        <button hx-post="" class={data.DownvoteClass()}>Downvote</button>
+import "path"
+
+templ VoteButtons(data VoteButtonsData) {
+    <section id="vote-section" class="inline" hx-swap="outerHTML" >
+        <button hx-post={string(templ.SafeURL(path.Join("/page/upvote-card/", data.CardID, data.UpvoteDirection)))} class={data.UpvoteClass} hx-target="#vote-section">Upvote</button>
+        <button hx-post={string(templ.SafeURL(path.Join("/page/upvote-card/", data.CardID, data.DownvoteDirection)))} class={data.DownvoteClass} hx-target="#vote-section">Downvote</button>
     </section>
 }

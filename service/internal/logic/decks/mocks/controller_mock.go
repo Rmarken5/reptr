@@ -273,3 +273,17 @@ func (mr *MockControllerMockRecorder) UpvoteDeck(arg0, arg1, arg2 any) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpvoteDeck", reflect.TypeOf((*MockController)(nil).UpvoteDeck), arg0, arg1, arg2)
 }
+
+// VoteCard mocks base method.
+func (m *MockController) VoteCard(arg0 context.Context, arg1 models.Vote, arg2, arg3 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VoteCard", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// VoteCard indicates an expected call of VoteCard.
+func (mr *MockControllerMockRecorder) VoteCard(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VoteCard", reflect.TypeOf((*MockController)(nil).VoteCard), arg0, arg1, arg2, arg3)
+}

@@ -830,6 +830,14 @@ select {
   padding: 1rem;
 }
 
+.downvoted {
+  color: midnightblue;
+}
+
+.upvoted {
+  color: darkred;
+}
+
 @media (min-width: 640px) {
   .sm\:w-2\/3 {
     width: 66.666667%;

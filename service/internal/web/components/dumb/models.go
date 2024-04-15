@@ -13,18 +13,22 @@ type (
 	}
 
 	CardBack struct {
-		DeckID      string
-		CardID      string
-		BackContent string
-		NextCardID  string
-		IsUpvoted   bool
-		IsDownvoted bool
+		DeckID         string
+		CardID         string
+		BackContent    string
+		NextCardID     string
+		IsUpvoted      bool
+		IsDownvoted    bool
+		VoteButtonData VoteButtonsData
 	}
 
-	VoteSectionData struct {
-		CardID        string
-		UpvoteClass   string
-		DownvoteClass string
+	// VoteButtonsData is data for the VoteButtons component
+	VoteButtonsData struct {
+		CardID            string
+		UpvoteClass       string
+		DownvoteClass     string
+		UpvoteDirection   string
+		DownvoteDirection string
 	}
 )
 

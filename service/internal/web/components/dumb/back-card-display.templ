@@ -10,10 +10,7 @@ templ BackOfCardDisplay(data CardBack) {
              if data.NextCardID != "" {
                 <button hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID)))}  hx-target="#card-content">Next</button>
              }
-            <section id="vote-section" class="inline">
-                <button hx-post="" class={data.UpvoteClass()}>Upvote</button>
-                <button hx-post="" class={data.DownvoteClass()}>Downvote</button>
-            </section>
+            @VoteButtons(data.VoteButtonData)
         </section>
     </section>
 }

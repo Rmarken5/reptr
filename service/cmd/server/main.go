@@ -77,7 +77,7 @@ func main() {
 	pageRoute.HandleFunc("/front-of-card/{deck_id}/{card_id}", wrapper.FrontOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/view-deck/{deck_id}", wrapper.ViewDeck).Methods(http.MethodGet)
-	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodPost)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

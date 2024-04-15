@@ -27,6 +27,34 @@ func (v Vote) String() string {
 	}
 }
 
+func (v Vote) NextUpvote() Vote {
+	if v == Upvote {
+		return RemoveUpvote
+	}
+	return Upvote
+}
+
+func (v Vote) NextDownvote() Vote {
+	if v == Downvote {
+		return RemoveDownvote
+	}
+	return Downvote
+}
+
+func (v Vote) DownvoteClass() string {
+	if v == Downvote {
+		return "downvoted"
+	}
+	return ""
+}
+
+func (v Vote) UpvoteClass() string {
+	if v == Upvote {
+		return "upvoted"
+	}
+	return ""
+}
+
 func VoteFromString(direction string) Vote {
 	direction = strings.ToLower(direction)
 	switch direction {

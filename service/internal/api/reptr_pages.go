@@ -170,6 +170,7 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 		session.Options.Secure = true
 		err = session.Save(r, w)
 		if err != nil {
+			logger.Error().Err(err).Msgf("unable to save session")
 			http.Error(w, "unable to save session", http.StatusInternalServerError)
 			return
 		}
@@ -469,8 +470,8 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 			CardID:      s.CurrentCardID,
 			BackContent: b.Answer,
 			NextCardID:  b.NextCard,
-			IsUpvoted:   b.IsUpvotedByUser,
-			IsDownvoted: b.IsDownvotedByUser,
+			IsUpvoted:   bool(b.IsUpvotedByUser),
+			IsDownvoted: bool(b.IsDownvotedByUser),
 		}),
 	}, err
 
@@ -561,8 +562,14 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 		CardID:      backOfCard.CardID,
 		BackContent: backOfCard.Answer,
 		NextCardID:  backOfCard.NextCard,
-		IsUpvoted:   backOfCard.IsUpvotedByUser,
-		IsDownvoted: backOfCard.IsDownvotedByUser,
+		IsUpvoted:   bool(backOfCard.IsUpvotedByUser),
+		IsDownvoted: bool(backOfCard.IsDownvotedByUser),
+		VoteButtonData: dumb.VoteButtonsData{
+			CardID:            backOfCard.CardID,
+			UpvoteClass:       backOfCard.IsUpvotedByUser.UpvotedClass(),
+			DownvoteClass:     backOfCard.IsDownvotedByUser.DownvotedClass(),
+			UpvoteDirection:   backOfCard.IsUpvotedByUser.NextUpvoteDirection(),
+			DownvoteDirection: backOfCard.IsDownvotedByUser.DownvotedClass()},
 	}).Render(r.Context(), w)
 }
 
@@ -608,8 +615,8 @@ func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID
 }
 
 func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID string, direction string) {
-	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
-	logger.Info().Msg("creating card")
+	logger := rc.logger.With().Str("method", "VoteCard").Logger()
+	logger.Info().Msg("voting card")
 
 	if cardID == "" {
 		logger.Info().Msgf("card vote without cardID")
@@ -644,10 +651,12 @@ func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID st
 		http.Error(w, "voting for card", toStatus(err))
 	}
 
-	dumb.VoteSection(dumb.VoteSectionData{
-		CardID:        "",
-		UpvoteClass:   "",
-		DownvoteClass: "",
+	dumb.VoteButtons(dumb.VoteButtonsData{
+		CardID:            cardID,
+		UpvoteClass:       vote.UpvoteClass(),
+		DownvoteClass:     vote.DownvoteClass(),
+		UpvoteDirection:   vote.NextUpvote().String(),
+		DownvoteDirection: vote.NextDownvote().String(),
 	}).Render(r.Context(), w)
 }
 
