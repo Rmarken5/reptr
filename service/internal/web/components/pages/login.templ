@@ -1,18 +1,28 @@
 package pages
 
 templ Login() {
-
-    <section class="container mx-auto">
-        <form action="/login" method="POST" >
-            <section class="flex flex-col justify-center content-center">
-                <section class="mb-4 min-w-94">
-                    <input class="block p-4 w-full border border-gray-300 rounded-lg" type="text" id="email" name="email" placeholder="Email"/><br/>
+<section class="login-section">
+    <section class="reptr-heading">
+        <span>Reptr</span>
+    </section>
+    <section class="login-form">
+        <form action="/login" method="POST">
+            <section class="login-input-fields">
+                <section class="email-container">
+                    <input type="text" id="email"
+                           name="email" placeholder="Email"/><br/>
                 </section>
-                 <section class="mb-4 min-w-94">
-                    <input class="block p-4 w-full border border-gray-300 rounded-lg" type="password" id="password" name="password" placeholder="Password"/><br/>
+                <section class="password-container">
+                    <input type="password" id="password"
+                           name="password" placeholder="Password"/><br/>
                 </section>
                 <input type="submit" value="Login"/>
+                <section class="or">
+                    <span>Or</span>
+                </section>
+                <a href="/register">Register</a>
             </section>
         </form>
     </section>
+</section>
 }

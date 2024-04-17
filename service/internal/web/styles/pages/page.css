@@ -1,0 +1,5 @@
+.container{
+    padding: 3rem;
+    height: calc(100vh - 6rem);
+    width: calc(100vw - 6rem);
+}
