@@ -45,12 +45,12 @@ func Login() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var4 := `Create an account to start building your study decks or login to continue learing.`
+		templ_7745c5c3_Var4 := `Create an account to start building your study decks or login to continue learning.`
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></section><section class=\"login-form\"><form action=\"/login\" method=\"POST\"><section class=\"login-input-fields\"><section class=\"email-container\"><input type=\"text\" id=\"email\" name=\"email\" placeholder=\"Email\"><br></section><section class=\"password-container\"><input type=\"password\" id=\"password\" name=\"password\" placeholder=\"Password\"><br></section><input type=\"submit\" value=\"Login\"><section class=\"or\"><span>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></section><section class=\"login-form form-container\"><form action=\"/login\" method=\"POST\"><section class=\"login-input-fields\"><section class=\"input-container\"><input type=\"text\" id=\"email\" name=\"email\" placeholder=\"Email\"><br></section><section class=\"input-container-last\"><input type=\"password\" id=\"password\" name=\"password\" placeholder=\"Password\"><br></section><input type=\"submit\" value=\"Login\"><section class=\"or\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,4 +1,4 @@
-.login-section {
+.registration-section {
     display: flex;
     flex-direction: column;
 }
@@ -7,6 +7,11 @@
     margin-bottom: 5rem;
     min-width: 30rem;
     padding: 3rem;
+}
+
+
+.login-link {
+    display: block;
 }
 
 .or {
@@ -18,7 +23,6 @@
     display: table;
     margin: 0 auto;
 }
-
 
 @media (min-width: 768px) {
     .reptr-description {

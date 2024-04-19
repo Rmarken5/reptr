@@ -22,21 +22,26 @@ import (
 const (
 	hxTriggerHeaderKey = "HX-Trigger"
 
-	stylesDir    = "/styles/pages/"
-	componentDir = stylesDir + "component/"
+	stylesDir = "/styles/pages/"
 
 	//styles
-	baseStyle  = stylesDir + "base.css"
-	loginStyle = stylesDir + "login.css"
-	pageStyle  = stylesDir + "page.css"
+	//base
+	baseStyle = stylesDir + "base.css"
+	pageStyle = stylesDir + "page.css"
+	// component
 	groupStyle = stylesDir + "group.css"
+	formStyle  = stylesDir + "form.css"
+
+	//page level
+	loginStyle        = stylesDir + "login.css"
+	registrationStyle = stylesDir + "registration.css"
 )
 
 var cssFileArr = []string{baseStyle, pageStyle}
 
 func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string) {
 	log := rc.logger.With().Str("method", "ServeStyles").Logger()
-	log.Info().Msgf("serving  %s %s", path, styleName)
+	log.Info().Msgf("serving %s %s", path, styleName)
 
 	absolutePath, err := filepath.Abs(fmt.Sprintf("./service/internal/web/styles/%s/%s", path, styleName))
 	file, err := os.ReadFile(absolutePath)
@@ -53,7 +58,7 @@ func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path s
 func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
 	log.Info().Msgf("serving registration page")
-	err := pages.Page(pages.Register(nil), cssFileArr).Render(r.Context(), w)
+	err := pages.Page(pages.Register(nil), append(cssFileArr, formStyle, registrationStyle)).Render(r.Context(), w)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -132,7 +137,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "LoginPage").Logger()
 	log.Info().Msgf("serving login page")
-	err := pages.Page(pages.Form(nil, pages.Login()), append(cssFileArr, loginStyle)).Render(r.Context(), w)
+	err := pages.Page(pages.Form(nil, pages.Login()), append(cssFileArr, loginStyle, formStyle)).Render(r.Context(), w)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

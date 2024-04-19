@@ -1,5 +1,32 @@
-.container{
+.container {
     padding: 3rem;
     height: calc(100vh - 6rem);
     width: calc(100vw - 6rem);
+}
+
+.reptr-heading {
+    display: block;
+    min-width: 30rem;
+    margin: 10rem auto 5rem auto;
+}
+
+
+.reptr-heading span {
+    display: table;
+    margin: 0 auto;
+    font-size: 15rem;
+}
+
+@media (min-width: 768px) {
+    .reptr-heading {
+        display: block;
+        min-width: 30rem;
+        margin: 5rem auto 3rem auto;
+    }
+
+    .reptr-heading span {
+        display: table;
+        margin: 0 auto;
+        font-size: 5rem;
+    }
 }
