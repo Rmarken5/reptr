@@ -29,12 +29,14 @@ const (
 	baseStyle = stylesDir + "base.css"
 	pageStyle = stylesDir + "page.css"
 	// component
-	groupStyle = stylesDir + "group.css"
 	formStyle  = stylesDir + "form.css"
+	tableStyle = stylesDir + "table.css"
 
 	//page level
 	loginStyle        = stylesDir + "login.css"
 	registrationStyle = stylesDir + "registration.css"
+	homeStyle         = stylesDir + "home.css"
+	groupStyle        = stylesDir + "group.css"
 )
 
 var cssFileArr = []string{baseStyle, pageStyle}
@@ -232,7 +234,7 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		homeGroups[i] = homeGroupFromModel(group)
 	}
 
-	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups}), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +280,7 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 		http.Error(w, "while getting groups for user", toStatus(err))
 		return
 	}
-	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
 }
 
 func homeGroupFromModel(group models.Group) pages.Group {

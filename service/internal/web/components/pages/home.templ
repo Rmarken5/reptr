@@ -22,19 +22,23 @@ type (
 templ Home(homeData HomeData){
     <body>
         <h1>Hello {homeData.Username}</h1>
-        <a href="/page/create-group">Create Group</a>
         <section id="user-groups">
-            <h2>Your Groups</h2>
-            <table id="group-table">
-                <tr>
-                    <th>Group Name</th><th>Number of Decks</th><th>Users in Group</th>
-                </tr>
+            <h2>Groups you belong to</h2>
+            <table class=" top-margin-table" id="group-table">
+                <thead>
+                    <tr>
+                        <th>Group Name</th><th>Number of Decks</th><th>Users in Group</th>
+                    </tr>
+                </thead>
                 for _, group := range homeData.Groups {
                     <tr>
                         <td><a href={templ.SafeURL(path.Join("/page/group", group.ID))}>{group.GroupName}</a></td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
                     </tr>
                 }
             </table>
+            <section class="create-button ">
+                <a class="button button-color" href="/page/create-group">Create Group</a>
+            </section>
         </section>
     </body>
 }
