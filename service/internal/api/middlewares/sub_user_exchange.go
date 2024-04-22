@@ -31,7 +31,6 @@ func ExchangeSubjectForUser(logger zerolog.Logger, logic provider.Controller) fu
 				// TODO: Not found handler
 				return
 			}
-			logger.Debug().Msgf("username from repo: %s", userName)
 			r = r.WithContext(rptrCtx.AddUsername(r.Context(), userName))
 			next.ServeHTTP(w, r)
 		})

@@ -55,7 +55,7 @@ func GroupPage(groupData GroupData) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(groupData.GroupName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 31, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 30, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -145,7 +145,7 @@ func GroupPage(groupData GroupData) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(deck.DeckName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 48, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 47, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -158,7 +158,7 @@ func GroupPage(groupData GroupData) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(deck.NumCards))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 49, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 48, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -171,7 +171,7 @@ func GroupPage(groupData GroupData) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(deck.NumUpvotes))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 50, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 49, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func GroupPage(groupData GroupData) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(deck.NumDownvotes))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 51, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/group.templ`, Line: 50, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -194,7 +194,8 @@ func GroupPage(groupData GroupData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var15 templ.SafeURL = templ.SafeURL(path.Join("/page/create-cards/", deck.ID))
+			var templ_7745c5c3_Var15 templ.SafeURL = templ.SafeURL(path.Join("/page/create-cards/",
+				deck.ID))
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var15)))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -226,8 +227,17 @@ func GroupPage(groupData GroupData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var18 := `Create Deck`
+		templ_7745c5c3_Var18 := `Create`
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var19 := `Deck`
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

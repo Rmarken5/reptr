@@ -735,7 +735,7 @@ func TestLogic_GetGroupsForUser(t *testing.T) {
 
 			logic := Logic{repo: mockDB, logger: zerolog.Nop()}
 
-			gotGroups, err := logic.GetGroupsForUser(context.Background(), tc.haveUser, tc.haveFrom, tc.haveTo, 0, 0)
+			gotGroups, err := logic.GetHomepageData(context.Background(), tc.haveUser, tc.haveFrom, tc.haveTo, 0, 0)
 
 			assert.ErrorIs(t, err, tc.wantErr)
 			assert.Equal(t, tc.wantGroups, gotGroups)

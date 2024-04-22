@@ -12,6 +12,7 @@ type (
 		DeckID    string    `bson:"deck_id,omitempty"`
 		CreatedAt time.Time `bson:"created_at,omitempty"`
 		UpdatedAt time.Time `bson:"update_at,omitempty"`
+		CreatedBy string    `bson:"created_by,omitempty"`
 	}
 
 	FrontOfCard struct {

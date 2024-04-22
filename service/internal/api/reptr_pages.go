@@ -148,7 +148,6 @@ func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
 
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "Login").Logger()
-	logger.Debug().Msg("login called")
 
 	err := r.ParseForm()
 	if err != nil {
@@ -212,8 +211,7 @@ func (rc ReprtClient) GetDecksForUser(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
-	logger := rc.logger.With().Str("method", "HomePage").Logger()
-	logger.Debug().Msgf("HomePage called.")
+	_ = rc.logger.With().Str("method", "HomePage").Logger()
 
 	var userName string
 	var ok bool
@@ -223,23 +221,26 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	groups, err := rc.deckController.GetGroupsForUser(r.Context(), userName, time.Time{}, nil, 10, 0)
+	homepageData, err := rc.deckController.GetHomepageData(r.Context(), userName, time.Time{}, nil, 10, 0)
 	if err != nil {
-		http.Error(w, "while getting groups for user", toStatus(err))
+		http.Error(w, "while getting homepageData for user", toStatus(err))
 		return
 	}
 
-	homeGroups := make([]pages.Group, len(groups))
-	for i, group := range groups {
+	homeGroups := make([]pages.HomeGroupData, len(homepageData.Groups))
+	for i, group := range homepageData.Groups {
 		homeGroups[i] = homeGroupFromModel(group)
 	}
 
-	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
+	homeDecks := make([]pages.HomeDeckData, len(homepageData.Decks))
+	for i, deck := range homepageData.Decks {
+		homeDecks[i] = homeDeckFromModel(deck)
+	}
+	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups, Decks: homeDecks}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateGroup").Logger()
-	logger.Debug().Msg("create group called")
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
@@ -283,12 +284,22 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
 }
 
-func homeGroupFromModel(group models.Group) pages.Group {
-	return pages.Group{
+func homeGroupFromModel(group models.Group) pages.HomeGroupData {
+	return pages.HomeGroupData{
 		ID:        group.ID,
 		GroupName: group.Name,
 		NumDecks:  len(group.DeckIDs),
 		NumUsers:  0,
+	}
+}
+
+func homeDeckFromModel(deck models.GetDeckResults) pages.HomeDeckData {
+	return pages.HomeDeckData{
+		ID:        deck.ID,
+		DeckName:  deck.Name,
+		NumCards:  strconv.Itoa(deck.NumCards),
+		Upvotes:   strconv.Itoa(deck.Upvotes),
+		Downvotes: strconv.Itoa(deck.Downvotes),
 	}
 }
 
@@ -529,6 +540,13 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Info().Msgf("username not on context")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	timeNow := time.Now().UTC()
 	err = rc.deckController.AddCardToDeck(r.Context(), deckID, models.Card{
 		ID:        uuid.NewString(),
@@ -538,6 +556,7 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 		DeckID:    deckID,
 		CreatedAt: timeNow,
 		UpdatedAt: timeNow,
+		CreatedBy: username,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msgf("while creating a card for deck %s", deckID)

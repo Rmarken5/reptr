@@ -23,6 +23,7 @@ type (
 		RemoveUserFromUpvoteForDeck(ctx context.Context, primaryKey, userID string) error
 		AddUserToDownvoteForDeck(ctx context.Context, primaryKey, userID string) error
 		RemoveUserFromDownvoteForDeck(ctx context.Context, primaryKey, userID string) error
+		GetDecksForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.GetDeckResults, error)
 	}
 
 	DeckDAO struct {
@@ -50,15 +51,12 @@ func (d *DeckDAO) InsertDeck(ctx context.Context, deck models.Deck) (string, err
 		return "", errors.Join(err, ErrInsert)
 	}
 
-	logger.Debug().Msgf("response: %+v", res.InsertedID)
-
 	prim, ok := res.InsertedID.(string)
 	if !ok {
 		logger.Error().Msgf("cannot return object id from inserted deck")
 		return "", errors.Join(fmt.Errorf("error inserting deck: %w", err), ErrInsert)
 	}
 
-	logger.Debug().Msgf("%s", prim)
 	return prim, nil
 }
 
@@ -100,8 +98,6 @@ func (d *DeckDAO) GetWithCards(ctx context.Context, from time.Time, to *time.Tim
 		removeUserVotes,
 		lookupCards,
 	)
-	logger.Debug().Msgf("%+v", filter)
-
 	cur, err := d.collection.Aggregate(ctx, filter)
 	if err != nil {
 		return nil, errors.Join(err, ErrAggregate)
@@ -151,8 +147,6 @@ func (d *DeckDAO) RemoveUserFromUpvoteForDeck(ctx context.Context, deckID, userI
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error removing user from upvote: %w", err), ErrUpdate)
@@ -175,8 +169,6 @@ func (d *DeckDAO) AddUserToDownvoteForDeck(ctx context.Context, deckID, userID s
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error adding user to downvote: %w", err), ErrUpdate)
@@ -195,8 +187,6 @@ func (d *DeckDAO) RemoveUserFromDownvoteForDeck(ctx context.Context, deckID, use
 			{"user_upvotes", userID},
 		}},
 	}
-
-	logger.Debug().Msgf("%+v", filter)
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -247,4 +237,93 @@ func (d *DeckDAO) GetDeckWithCardsByID(ctx context.Context, deckID string) (mode
 	}
 
 	return decks[0], nil
+}
+
+func (d *DeckDAO) GetDecksForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.GetDeckResults, error) {
+	logger := d.log.With().Str("method", "GetDecksForUser").Logger()
+	logger.Info().Msgf("getting decks for user: %s", username)
+
+	filter := []bson.D{
+		bson.D{{"$match", bson.D{{"created_by", username}}}},
+		bson.D{
+			{"$addFields",
+				bson.D{
+					{"user_upvotes",
+						bson.D{
+							{"$ifNull",
+								bson.A{
+									"$user_upvotes",
+									bson.A{},
+								},
+							},
+						},
+					},
+					{"user_downvotes",
+						bson.D{
+							{"$ifNull",
+								bson.A{
+									"$user_downvotes",
+									bson.A{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		bson.D{
+			{"$addFields",
+				bson.D{
+					{"upvotes", bson.D{{"$size", "$user_upvotes"}}},
+					{"downvotes", bson.D{{"$size", "$user_downvotes"}}},
+				},
+			},
+		},
+		bson.D{
+			{"$lookup",
+				bson.D{
+					{"from", "cards"},
+					{"localField", "_id"},
+					{"foreignField", "deck_id"},
+					{"as", "cards"},
+				},
+			},
+		},
+		bson.D{
+			{"$project",
+				bson.D{
+					{"name", "$name"},
+					{"upvotes", "$upvotes"},
+					{"downvotes", "$downvotes"},
+					{"created_at", "$created_at"},
+					{"created_updated", "$updated_at"},
+					{"created_by", "$created_by"},
+					{"num_cards", bson.D{{"$size", "$cards"}}},
+				},
+			},
+		},
+	}
+
+	filter = append(filter,
+		pipeline.SortBy(pipeline.Asc))
+
+	cur, err := d.collection.Aggregate(ctx, filter)
+	if err != nil {
+		logger.Error().Err(err).Msg("error in calling aggregation")
+		return nil, errors.Join(err, ErrAggregate)
+	}
+
+	var deckResults []models.GetDeckResults
+	err = cur.All(ctx, &deckResults)
+	if err != nil {
+		logger.Error().Err(err).Msg("while unmarshalling into slice")
+		return nil, errors.Join(err, ErrAggregate)
+	}
+
+	if len(deckResults) == 0 {
+		logger.Info().Msgf("No decks belonging to %s", username)
+		return nil, ErrNoResults
+	}
+
+	return deckResults, nil
 }

@@ -439,8 +439,6 @@ func (d *CardDAO) RemoveUserFromUpvoteForCard(ctx context.Context, cardID, userI
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error removing user from upvote: %w", err), ErrUpdate)
@@ -463,8 +461,6 @@ func (d *CardDAO) AddUserToDownvoteForCard(ctx context.Context, cardID, userID s
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error adding user to downvote: %w", err), ErrUpdate)
@@ -483,8 +479,6 @@ func (d *CardDAO) RemoveUserFromDownvoteForCard(ctx context.Context, cardID, use
 			{"user_upvotes", userID},
 		}},
 	}
-
-	logger.Debug().Msgf("%+v", filter)
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {

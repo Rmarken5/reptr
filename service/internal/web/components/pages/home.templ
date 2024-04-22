@@ -8,37 +8,67 @@ import "path"
 type (
     HomeData struct {
         Username string
-        Groups []Group
+        Groups []HomeGroupData
+        Decks []HomeDeckData
     }
 
-    Group struct {
+    HomeGroupData struct {
         ID string
         GroupName string
         NumDecks int
         NumUsers int
     }
+    HomeDeckData struct {
+       ID, DeckName, NumCards, Upvotes, Downvotes string
+    }
 )
 
 templ Home(homeData HomeData){
-    <body>
-        <h1>Hello {homeData.Username}</h1>
-        <section id="user-groups">
-            <h2>Groups you belong to</h2>
-            <table class=" top-margin-table" id="group-table">
-                <thead>
-                    <tr>
-                        <th>Group Name</th><th>Number of Decks</th><th>Users in Group</th>
-                    </tr>
-                </thead>
-                for _, group := range homeData.Groups {
-                    <tr>
-                        <td><a href={templ.SafeURL(path.Join("/page/group", group.ID))}>{group.GroupName}</a></td><td>{strconv.Itoa(group.NumDecks)}</td><td>{strconv.Itoa(group.NumUsers)}</td>
-                    </tr>
-                }
-            </table>
-            <section class="create-button">
-                <a class="button button-color" href="/page/create-group">Create Group</a>
-            </section>
-        </section>
-    </body>
+       <h1>Hello {homeData.Username}</h1>
+       <section id="user-groups">
+           <h2>Groups you belong to</h2>
+           <table class=" top-margin-table" id="group-table">
+               <thead>
+               <tr>
+                   <th>Group Name</th>
+                   <th>Number of Decks</th>
+                   <th>Users in Group</th>
+               </tr>
+               </thead>
+               for _, group := range homeData.Groups {
+               <tr>
+                   <td><a href={templ.SafeURL(path.Join("/page/group", group.ID))}>{group.GroupName}</a></td>
+                   <td>{strconv.Itoa(group.NumDecks)}</td>
+                   <td>{strconv.Itoa(group.NumUsers)}</td>
+               </tr>
+               }
+           </table>
+           <section class="create-button">
+               <a class="button button-color" href="/page/create-group">Create Group</a>
+           </section>
+       </section>
+       <section id="user-decks">
+           <h2>Decks you've built</h2>
+           <table class="top-margin-table" id="deck-table">
+               <thead>
+               <tr>
+                   <th>Deck Name</th>
+                   <th>Number of Cards</th>
+                   <th>Upvotes</th>
+                   <th>Downvotes</th>
+               </tr>
+               </thead>
+               for _, deck := range homeData.Decks {
+               <tr>
+                   <td><a href={templ.SafeURL(path.Join("/page/view-deck", deck.ID))}>{deck.DeckName}</a></td>
+                   <td>{deck.NumCards}</td>
+                   <td>{deck.Upvotes}</td>
+                   <td>{deck.Downvotes}</td>
+               </tr>
+               }
+           </table>
+           <section class="create-button">
+               <a class="button button-color" href="">Create Deck</a>
+           </section>
+       </section>
 }

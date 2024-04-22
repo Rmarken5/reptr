@@ -7,6 +7,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
+	"sync"
 	"time"
 )
 
@@ -20,7 +21,8 @@ type (
 		GetGroups(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.GroupWithDecks, error)
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error)
-		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
+		GetHomepageData(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) (models.HomePageData, error)
+
 		CreateDeck(ctx context.Context, deckName, username string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
@@ -261,26 +263,55 @@ func (l *Logic) GetGroups(ctx context.Context, from time.Time, to *time.Time, li
 	return groupsWithDecks, nil
 }
 
-func (l *Logic) GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error) {
-	logger := l.logger.With().Str("method", "GetGroupsForUser").Logger()
-	logger.Info().Msgf("GetGroupsForUser called")
+func (l *Logic) GetHomepageData(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) (models.HomePageData, error) {
+	logger := l.logger.With().Str("method", "GetHomepageData").Logger()
+	logger.Info().Msgf("GetHomepageData called")
 
 	if username == "" {
 		logger.Error().Err(ErrEmptyUsername)
-		return []models.Group(nil), ErrEmptyUsername
+		return models.HomePageData{}, ErrEmptyUsername
 	}
 
 	if to != nil && to.Before(from) {
-		return []models.Group(nil), ErrInvalidToBeforeFrom
+		return models.HomePageData{}, ErrInvalidToBeforeFrom
 	}
 
-	groups, err := l.repo.GetGroupsForUser(ctx, username, from, to, limit, offset)
-	if err != nil && !errors.Is(err, database.ErrNoResults) {
-		logger.Error().Err(err).Msgf("while getting groups for user: %s", username)
-		return []models.Group(nil), err
+	var (
+		groups            []models.Group
+		decks             []models.GetDeckResults
+		groupErr, deckErr error
+		wg                = sync.WaitGroup{}
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		groups, groupErr = l.repo.GetGroupsForUser(ctx, username, from, to, limit, offset)
+	}()
+
+	go func() {
+		defer wg.Done()
+		decks, deckErr = l.repo.GetDecksForUser(ctx, username, from, to, limit, offset)
+	}()
+
+	wg.Wait()
+
+	if groupErr != nil && !errors.Is(groupErr, database.ErrNoResults) {
+		logger.Error().Err(groupErr).Msgf("while getting groups for user: %s", username)
+		return models.HomePageData{}, groupErr
 	}
 
-	return groups, nil
+	if deckErr != nil && !errors.Is(deckErr, database.ErrNoResults) {
+		logger.Error().Err(deckErr).Msgf("while getting decks for user: %s", username)
+		return models.HomePageData{}, deckErr
+	}
+
+	wg.Wait()
+
+	return models.HomePageData{
+		Groups: groups,
+		Decks:  decks,
+	}, nil
 }
 
 func (l *Logic) GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error) {
