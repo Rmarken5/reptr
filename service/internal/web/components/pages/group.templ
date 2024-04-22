@@ -30,7 +30,8 @@ type (
 templ GroupPage(groupData GroupData){
 
         <h1>{groupData.GroupName}</h1>
-        <a href={templ.SafeURL(path.Join("/page/create-deck/", groupData.ID))}>Create Deck</a>
+
+        <a href="/page/home">Back to Home</a>
         <section id="group-decks">
             <h2>Decks</h2>
             <table id="deck-table">
@@ -49,10 +50,13 @@ templ GroupPage(groupData GroupData){
                     <td>{strconv.Itoa(deck.NumCards)}</td>
                     <td>{strconv.Itoa(deck.NumUpvotes)}</td>
                     <td>{strconv.Itoa(deck.NumDownvotes)}</td>
-                    <td><a class="button" href={templ.SafeURL(path.Join("/page/create-cards/", deck.ID))}>Create Cards</a></td>
+                    <td><a class="button table-button-color" href={templ.SafeURL(path.Join("/page/create-cards/", deck.ID))}>+</a></td>
                 </tr>
                 }
             </table>
+                        <section class="create-button ">
+                            <a class="button button-color" href={templ.SafeURL(path.Join("/page/create-deck/", groupData.ID))}>Create Deck</a>
+                        </section>
         </section>
-        <a href="/page/home">Back to Home</a>
+
 }
