@@ -5,7 +5,6 @@
 //
 //	mockgen -destination ./mocks/controller_mock.go -package logic . Controller
 //
-
 // Package logic is a generated GoMock package.
 package logic
 

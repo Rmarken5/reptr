@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 var (
@@ -23,17 +22,19 @@ var (
 func init() {
 	log = zerolog.New(os.Stdout).With().Str("program", "reptr server").Logger()
 	env := os.Getenv("ENV")
-	if env == "local" {
-		log.Info().Msg("loading from config")
-		path, err := filepath.Abs("./config.yaml")
-		if err != nil {
-			log.Panic().Err(err).Msg("while getting abs path")
-		}
-		config = cmd.LoadConfigFromFile(log, path)
+	var path string
+	switch env {
+	case "local":
+		path = "./config/local.yaml"
+	case "dev":
+		path = "./config/dev.yaml"
+	default:
+		log.Info().Msg("loading from env")
+		config = cmd.LoadConfFromEnv(log)
 		return
 	}
-	log.Info().Msg("loading from env")
-	config = cmd.LoadConfFromEnv(log)
+	log.Info().Msgf("loading from file: %s", path)
+	config = cmd.LoadConfigFromFile(log, path)
 }
 
 func main() {

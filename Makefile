@@ -40,3 +40,7 @@ gen:
 .PHONY: local
 local: gen
 	ENV="local" go run ./service/cmd/server
+
+.PHONY: local
+dev: gen
+	ENV="dev" go run ./service/cmd/server
