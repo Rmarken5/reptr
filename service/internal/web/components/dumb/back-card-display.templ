@@ -4,9 +4,13 @@ import "path"
 
 templ BackOfCardDisplay(data CardBack) {
     <section id="card-content" class="flex flex-col justify-content align-center">
-        <textarea id="card-back" rows="4" class="" disabled placeholder={data.BackContent}></textarea>
-        <section class="flex justify-around">
-            <button hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID)))} hx-target="#card-content">Front</button>
+        <section id="card-back" class="card">
+            <p>
+                {data.BackContent}
+            </p>
+        </section>
+        <section class="card-footer">
+            <button class="button" hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID)))} hx-target="#card-content">Front</button>
              if data.NextCardID != "" {
                 <button hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID)))}  hx-target="#card-content">Next</button>
              }

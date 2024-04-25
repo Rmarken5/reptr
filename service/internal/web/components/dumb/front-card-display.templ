@@ -4,12 +4,16 @@ package dumb
 import "fmt"
 
 templ FrontCardDisplay(data CardFront) {
-    <section id="card-content" class="flex flex-col justify-content align-center" hx-swap="outerHTML">
-        <textarea id="card-front" rows="4" class="" disabled placeholder={data.Front}></textarea>
-        <section class="flex justify-around">
+    <section id="card-content" class="" hx-swap="outerHTML">
+        <section id="card-front" class="card" >
+            <p>
+            {data.Front}
+            </p>
+        </section>
+        <section class="card-footer">
             <!-- Make a component out of this section and for the back of the card and have them swap each other out -->
-            <button hx-get={fmt.Sprintf("%s/%s/%s", "/page/back-of-card", data.DeckID, data.CardID)} hx-target="#card-content">Answer</button>
-            <section class="inline">
+            <button class="button" hx-get={fmt.Sprintf("%s/%s/%s", "/page/back-of-card", data.DeckID, data.CardID)} hx-target="#card-content">Answer</button>
+            <section class="">
                 <span>{"Upvotes: " + data.Upvotes}</span>
                 <span>{"Downvotes: " + data.Downvotes}</span>
             </section>

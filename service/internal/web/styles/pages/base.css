@@ -113,3 +113,13 @@ input[type="submit"]:hover {
     background-color: #D5D5D5;
     color: unset;
 }
+
+.upvoted {
+    background-color: green;
+    color: white;
+}
+
+.downvoted {
+    background-color: mediumpurple;
+    color: white;
+}

@@ -25,27 +25,27 @@ func BackOfCardDisplay(data CardBack) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section id=\"card-content\" class=\"flex flex-col justify-content align-center\"><textarea id=\"card-back\" rows=\"4\" class=\"\" disabled placeholder=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section id=\"card-content\" class=\"flex flex-col justify-content align-center\"><section id=\"card-back\" class=\"card\"><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(data.BackContent)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 7, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 9, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></textarea><section class=\"flex justify-around\"><button hx-get=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></section><section class=\"card-footer\"><button class=\"button\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID))))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 9, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 13, Col: 125}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -63,7 +63,7 @@ func BackOfCardDisplay(data CardBack) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID))))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 11, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/dumb/back-card-display.templ`, Line: 15, Col: 118}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

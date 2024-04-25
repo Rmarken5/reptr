@@ -37,6 +37,7 @@ const (
 	registrationStyle = stylesDir + "registration.css"
 	homeStyle         = stylesDir + "home.css"
 	groupStyle        = stylesDir + "group.css"
+	deckViewStyle     = stylesDir + "deck-viewer.css"
 )
 
 var cssFileArr = []string{baseStyle, pageStyle}
@@ -462,7 +463,7 @@ func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID st
 		return
 	}
 
-	pages.Page(pages.DeckViewerPage(content), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.DeckViewerPage(content), append(cssFileArr, deckViewStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID string) (pages.DeckViewPageData, error) {
