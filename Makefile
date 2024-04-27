@@ -43,4 +43,4 @@ local: gen
 
 .PHONY: local
 dev: gen
-	ENV="dev" go run ./service/cmd/server
+	air

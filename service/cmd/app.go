@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/yaml.v2"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -113,7 +114,8 @@ func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DataAcces
 }
 func MustConnectMongo(ctx context.Context, logger zerolog.Logger, config Config) *mongo.Database {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(config.MongoUri).SetServerAPIOptions(serverAPI)
+
+	opts := options.Client().ApplyURI(config.MongoUri).SetServerAPIOptions(serverAPI).SetServerSelectionTimeout(3 * time.Second)
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {

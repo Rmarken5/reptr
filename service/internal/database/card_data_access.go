@@ -235,7 +235,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, userna
 	if len(res) == 0 {
 		return models.FrontOfCard{}, ErrNoResults
 	}
-
+	logger.Debug().Msgf("front of card: %+v", res[0])
 	return res[0], nil
 
 }
@@ -378,6 +378,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, usernam
 					{"answer", "$back"},
 					{"deck_id", "$deck_id"},
 					{"next_card", bson.D{{"$first", "$nextCard._id"}}},
+					{"previous_card", bson.D{{"$first", "$previousCard._id"}}},
 					{"is_upvoted_by_user", "$is_upvoted_by_user"},
 					{"is_downvoted_by_user", "$is_downvoted_by_user"},
 					{"created_at", "$created_at"},

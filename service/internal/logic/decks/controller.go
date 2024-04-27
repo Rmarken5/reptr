@@ -56,7 +56,6 @@ func (l *Logic) GetBackOfCardByID(ctx context.Context, deckID, cardID, username 
 	logger.Info().Msgf("get back of card for cardID: %s", cardID)
 
 	return l.repo.GetBackOfCardByID(ctx, deckID, cardID, username)
-
 }
 
 func New(logger zerolog.Logger, repo database.Repository) *Logic {

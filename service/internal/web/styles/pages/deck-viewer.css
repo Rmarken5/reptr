@@ -3,6 +3,7 @@ h2 {
 }
 
 .card {
+    min-height: 15rem;
     margin: 3rem;
     padding: 1rem;
     background-color: #848484;
@@ -20,5 +21,23 @@ h2 {
 .vote-section {
     display: flex;
     justify-content: space-between;
-    width: 12rem;
+    width: 15rem;
+}
+
+.left-side-footer-front {
+    width: 25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.left-side-footer-back {
+    width: 15rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.previous-card {
+    min-height: 3rem;
+    padding: 0 3rem;
 }

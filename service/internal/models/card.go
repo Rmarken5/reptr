@@ -33,6 +33,7 @@ type (
 		CardID            string            `bson:"card_id"`
 		Answer            string            `bson:"answer"`
 		NextCard          string            `bson:"next_card"`
+		PreviousCard      string            `bson:"previous_card"`
 		IsUpvotedByUser   IsUpvotedByUser   `bson:"is_upvoted_by_user"`
 		IsDownvotedByUser isDownvotedByUser `bson:"is_downvoted_by_user"`
 	}

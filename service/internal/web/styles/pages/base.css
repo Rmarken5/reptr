@@ -98,6 +98,7 @@ input[type="submit"]:hover {
 
 .button {
     display: block;
+    min-width: 6rem;
     text-align: center;
     font-size: 1rem;
     line-height: normal;

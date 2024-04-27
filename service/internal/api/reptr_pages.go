@@ -442,10 +442,10 @@ func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, de
 }
 func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
-	logger.Info().Msg("creating card")
+	logger.Info().Msg("view deck")
 
 	if deckID == "" {
-		logger.Info().Msgf("create deck attempt without deckID")
+		logger.Info().Msgf("view deck attempt without deckID")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -500,12 +500,13 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 		DeckName: s.DeckName,
 		DeckID:   deckID,
 		Content: dumb.BackOfCardDisplay(dumb.CardBack{
-			DeckID:      deckID,
-			CardID:      s.CurrentCardID,
-			BackContent: b.Answer,
-			NextCardID:  b.NextCard,
-			IsUpvoted:   bool(b.IsUpvotedByUser),
-			IsDownvoted: bool(b.IsDownvotedByUser),
+			DeckID:         deckID,
+			CardID:         s.CurrentCardID,
+			BackContent:    b.Answer,
+			NextCardID:     b.NextCard,
+			PreviousCardID: b.PreviousCard,
+			IsUpvoted:      bool(b.IsUpvotedByUser),
+			IsDownvoted:    bool(b.IsDownvotedByUser),
 		}),
 	}, err
 
@@ -600,12 +601,13 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 	}
 
 	dumb.BackOfCardDisplay(dumb.CardBack{
-		DeckID:      deckID,
-		CardID:      backOfCard.CardID,
-		BackContent: backOfCard.Answer,
-		NextCardID:  backOfCard.NextCard,
-		IsUpvoted:   bool(backOfCard.IsUpvotedByUser),
-		IsDownvoted: bool(backOfCard.IsDownvotedByUser),
+		DeckID:         deckID,
+		CardID:         backOfCard.CardID,
+		BackContent:    backOfCard.Answer,
+		NextCardID:     backOfCard.NextCard,
+		PreviousCardID: backOfCard.PreviousCard,
+		IsUpvoted:      bool(backOfCard.IsUpvotedByUser),
+		IsDownvoted:    bool(backOfCard.IsDownvotedByUser),
 		VoteButtonData: dumb.VoteButtonsData{
 			CardID:            backOfCard.CardID,
 			UpvoteClass:       backOfCard.IsUpvotedByUser.UpvotedClass(),
@@ -646,13 +648,14 @@ func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID
 	}
 
 	dumb.FrontCardDisplay(dumb.CardFront{
-		DeckID:     deckID,
-		CardID:     frontOfCard.CardID,
-		Front:      frontOfCard.Content,
-		NextCardID: frontOfCard.NextCard,
-		Downvotes:  strconv.Itoa(frontOfCard.Downvotes),
-		Upvotes:    strconv.Itoa(frontOfCard.Upvotes),
-		CardType:   "",
+		DeckID:         deckID,
+		CardID:         frontOfCard.CardID,
+		Front:          frontOfCard.Content,
+		NextCardID:     frontOfCard.NextCard,
+		PreviousCardID: frontOfCard.PreviousCard,
+		Downvotes:      strconv.Itoa(frontOfCard.Downvotes),
+		Upvotes:        strconv.Itoa(frontOfCard.Upvotes),
+		CardType:       "",
 	}).Render(r.Context(), w)
 }
 

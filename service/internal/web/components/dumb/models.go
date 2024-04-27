@@ -16,6 +16,7 @@ type (
 		DeckID         string
 		CardID         string
 		BackContent    string
+		PreviousCardID string
 		NextCardID     string
 		IsUpvoted      bool
 		IsDownvoted    bool
