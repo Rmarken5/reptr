@@ -2,6 +2,11 @@ h2 {
     text-align: center;
 }
 
+.home-link {
+    display:block;
+    margin: 0 0 3rem 3rem;
+}
+
 .card {
     min-height: 15rem;
     margin: 3rem;
@@ -25,8 +30,8 @@ h2 {
 }
 
 .left-side-footer-front {
-    width: 25rem;
     display: flex;
+    width: 100%;
     justify-content: space-between;
     align-items: baseline;
 }

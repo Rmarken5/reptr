@@ -7,14 +7,6 @@ table tr > td:last-child {
     margin: 3rem 0 0 auto;
 }
 
-.button-color {
-    background-color: #D5D5D5;
-}
-
-.button-color:hover {
-    background-color: #848484;
-    color: white;
-}
 
 .table-button-color {
     background-color: #D5D5D5;

@@ -115,12 +115,31 @@ input[type="submit"]:hover {
     color: unset;
 }
 
+.button-color {
+    background-color: #D5D5D5;
+}
+
+.button-color:hover {
+    background-color: #848484;
+    color: white;
+}
+
 .upvoted {
     background-color: green;
     color: white;
 }
 
+.upvoted:hover {
+    background-color:  mediumspringgreen;
+    color: white;
+}
+
 .downvoted {
+    background-color: purple;
+    color: white;
+}
+
+.downvoted:hover {
     background-color: mediumpurple;
     color: white;
 }

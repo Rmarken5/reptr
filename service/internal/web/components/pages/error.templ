@@ -1,0 +1,8 @@
+package pages
+
+import "fmt"
+
+templ Error(pageData ErrorPageData) {
+    <h1 class="error">{fmt.Sprintf("%s - %s", pageData.StatusCode, pageData.Status)}</h1>
+    <p class="error">{pageData.Msg}</p>
+}

@@ -48,3 +48,17 @@ table tr > th:last-child {
 td > .button {
     margin-bottom: 0;
 }
+
+td > a {
+    color: #0056b3;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+td > a:hover {
+    color: #004187;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+ /*color: #0056b3;*/

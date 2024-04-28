@@ -186,7 +186,7 @@ func Home(homeData HomeData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</table><section class=\"create-button\"><a class=\"button button-color\" href=\"\">Create Deck</a></section></section>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</table><section class=\"create-button\"><a class=\"button button-color\" href=\"/page/create-deck\">Create Deck</a></section></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -225,6 +225,8 @@ func (d *DeckDAO) GetDeckWithCardsByID(ctx context.Context, deckID string) (mode
 		}
 		return models.DeckWithCards{}, errors.Join(err, ErrAggregate)
 	}
+	defer c.Close(ctx)
+
 	var decks []models.DeckWithCards
 	err = c.All(ctx, &decks)
 	if err != nil {
@@ -312,6 +314,7 @@ func (d *DeckDAO) GetDecksForUser(ctx context.Context, username string, from tim
 		logger.Error().Err(err).Msg("error in calling aggregation")
 		return nil, errors.Join(err, ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	var deckResults []models.GetDeckResults
 	err = cur.All(ctx, &deckResults)

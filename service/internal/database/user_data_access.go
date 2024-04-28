@@ -150,6 +150,7 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 		logger.Error().Err(err).Msg("error in calling aggregation")
 		return nil, errors.Join(err, ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	var groups []models.Group
 	err = cur.All(ctx, &groups)

@@ -3,15 +3,6 @@
     margin: 3rem 0 0 auto;
 }
 
-.button-color {
-    background-color:  #D5D5D5;
-}
-
-.button-color:hover {
-    background-color: #848484;
-    color: white;
-}
-
 .top-margin-table {
     margin-top: 3rem;
 }

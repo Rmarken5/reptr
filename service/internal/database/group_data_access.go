@@ -102,6 +102,7 @@ func (g *GroupDAO) GetGroupsWithDecks(ctx context.Context, from time.Time, to *t
 	if err != nil {
 		return nil, errors.Join(err, ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	withDecks := make([]models.GroupWithDecks, 0)
 	err = cur.All(ctx, &withDecks)
@@ -246,6 +247,7 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 		logger.Error().Err(err).Msgf("getting group by id %s", groupID)
 		return models.GroupWithDecks{}, errors.Join(fmt.Errorf("error deleting group: %w", err), ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	withDecks := make([]models.GroupWithDecks, 0)
 	err = cur.All(ctx, &withDecks)

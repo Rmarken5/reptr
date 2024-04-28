@@ -58,7 +58,7 @@ func (i IsUpvotedByUser) UpvotedClass() string {
 	if i {
 		return "upvoted"
 	}
-	return ""
+	return "button-color"
 }
 func (i IsUpvotedByUser) NextUpvoteDirection() string {
 	if i {
@@ -71,11 +71,11 @@ func (i isDownvotedByUser) DownvotedClass() string {
 	if i {
 		return "downvoted"
 	}
-	return ""
+	return "button-color"
 }
 func (i IsUpvotedByUser) NextVoteDirection() string {
 	if i {
-		return "remove_Downvote"
+		return "remove_downvote"
 	}
 	return "downvote"
 }

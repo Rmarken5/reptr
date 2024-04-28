@@ -8,4 +8,10 @@ type (
 		DeckID   string
 		Content  templ.Component
 	}
+	ErrorPageData struct {
+		StatusCode string
+		Status     string
+		Error      string
+		Msg        string
+	}
 )

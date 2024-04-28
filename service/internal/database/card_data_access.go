@@ -225,6 +225,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, userna
 		logger.Error().Err(err).Msgf("while getting cursor")
 		return models.FrontOfCard{}, errors.Join(err, ErrAggregate)
 	}
+	defer cursor.Close(ctx)
 
 	var res []models.FrontOfCard
 	err = cursor.All(ctx, &res)
@@ -393,6 +394,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, usernam
 		logger.Error().Err(err).Msgf("while getting cursor")
 		return models.BackOfCard{}, errors.Join(err, ErrAggregate)
 	}
+	defer cursor.Close(ctx)
 
 	var res []models.BackOfCard
 	err = cursor.All(ctx, &res)

@@ -9,7 +9,7 @@ templ BackOfCardDisplay(data CardBack) {
     <section id="card-content" class="flex flex-col justify-content align-center">
        <section class="previous-card">
            if data.PreviousCardID != "" {
-               <button class="button" hx-get={fmt.Sprintf("%s/%s/%s","/page/front-of-card",  data.DeckID, data.PreviousCardID)}  hx-target="#card-content">Previous Card</button>
+               <button class="button button-color" hx-get={fmt.Sprintf("%s/%s/%s","/page/front-of-card",  data.DeckID, data.PreviousCardID)}  hx-target="#card-content">Previous Card</button>
            }
         </section>
         <section id="card-back" class="card">
@@ -19,9 +19,9 @@ templ BackOfCardDisplay(data CardBack) {
         </section>
         <section class="card-footer">
             <section class="left-side-footer-back">
-                <button class="button" hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID)))} hx-target="#card-content">Front</button>
+                <button class="button button-color" hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID)))} hx-target="#card-content">Front</button>
                  if data.NextCardID != "" {
-                    <button class="button" hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID)))}  hx-target="#card-content">Next</button>
+                    <button class="button button-color" hx-get={string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.NextCardID)))}  hx-target="#card-content">Next</button>
                  }
              </section>
             @VoteButtons(data.VoteButtonData)
