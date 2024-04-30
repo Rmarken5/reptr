@@ -114,7 +114,7 @@ func (m *menu) createDeck() {
 	}
 	deckName = strings.Trim(deckName, "\n")
 
-	id, err := m.logic.CreateDeck(context.TODO(), uuid.NewString())
+	id, err := m.logic.CreateDeck(context.TODO(), uuid.NewString(), "test.test@test.com")
 	if err != nil {
 		os.Stdout.WriteString(err.Error())
 	}

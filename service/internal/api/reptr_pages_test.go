@@ -363,8 +363,8 @@ func TestReprtClient_GroupPage(t *testing.T) {
 
 func TestReprtClient_HomePage(t *testing.T) {
 	var (
-		timeNow   = time.Date(2024, 1, 17, 0, 0, 0, 0, time.UTC)
-		haveGroup = []models.Group{
+		timeNow          = time.Date(2024, 1, 17, 0, 0, 0, 0, time.UTC)
+		haveHomePageData = models.HomePageData{Groups: []models.Group{
 			{
 				ID:        "1234",
 				Name:      "name",
@@ -394,33 +394,46 @@ func TestReprtClient_HomePage(t *testing.T) {
 				UpdatedAt: timeNow,
 				DeletedAt: nil,
 			},
+		},
+			Decks: []models.GetDeckResults{
+				{
+					ID:        uuid.NewString(),
+					Name:      uuid.NewString(),
+					Upvotes:   0,
+					Downvotes: 0,
+					CreatedAt: timeNow,
+					UpdatedAt: timeNow,
+					CreatedBy: "someone@somewhere.com",
+					NumCards:  0,
+				},
+			},
 		}
 	)
 	testCases := map[string]struct {
-		mockController func(mock *mockLogic.MockController)
-		wantGroups     models.Group
-		wantStatus     int
-		wantUserName   string
+		mockController   func(mock *mockLogic.MockController)
+		haveHomePageData models.HomePageData
+		wantStatus       int
+		wantUserName     string
 	}{
 		"should load group page with group data": {
 			mockController: func(mock *mockLogic.MockController) {
-				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(haveGroup, nil)
+				mock.EXPECT().GetHomepageData(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(haveHomePageData, nil)
 			},
 			wantUserName: "hello",
 			wantStatus:   http.StatusOK,
 		},
 		"should return 404 when error from database returns not found": {
 			mockController: func(mock *mockLogic.MockController) {
-				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, database.ErrNoResults)
+				mock.EXPECT().GetHomepageData(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, database.ErrNoResults)
 			},
-			wantUserName: "hello",
-			wantGroups:   models.Group{},
-			wantStatus:   http.StatusNotFound,
+			wantUserName:     "hello",
+			haveHomePageData: models.HomePageData{},
+			wantStatus:       http.StatusNotFound,
 		},
 		"should return internal error when username is not on context": {
-			wantUserName: "",
-			wantGroups:   models.Group{},
-			wantStatus:   http.StatusInternalServerError,
+			wantUserName:     "",
+			haveHomePageData: models.HomePageData{},
+			wantStatus:       http.StatusInternalServerError,
 		},
 	}
 

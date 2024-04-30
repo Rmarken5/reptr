@@ -64,7 +64,13 @@ func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
 	log.Info().Msgf("serving registration page")
 	err := pages.Page(pages.Register(nil), append(cssFileArr, formStyle, registrationStyle)).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("while trying to serve registration page")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve registration page",
+			Msg:        "Something went wrong while serving registration page",
+		})
 		return
 	}
 }
@@ -116,7 +122,12 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 	user, registrationError, err := rc.authenticator.RegisterUser(r.Context(), email, password)
 	if err != nil {
 		log.Error().Err(err).Msg("while registering")
-		http.Error(w, "while registering", http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to registering user",
+			Msg:        "Something went wrong while registering user",
+		})
 		return
 	}
 
@@ -124,7 +135,12 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(registrationError.StatusCode)
 		err := pages.Page(pages.Register(pages.Banner(registrationError.Description)), cssFileArr).Render(r.Context(), w)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to registering user",
+				Msg:        "Something went wrong while registering user",
+			})
 		}
 		return
 	}
@@ -133,7 +149,12 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	err = pages.Page(pages.Form(pages.Banner("Registration Successful"), pages.Login()), cssFileArr).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve registration page",
+			Msg:        "Something went wrong while serving registration page",
+		})
 		return
 	}
 }
@@ -143,7 +164,12 @@ func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
 	log.Info().Msgf("serving login page")
 	err := pages.Page(pages.Form(nil, pages.Login()), append(cssFileArr, loginStyle, formStyle)).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve login page",
+			Msg:        "Something went wrong while serving to login page",
+		})
 		return
 	}
 }
@@ -155,6 +181,13 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
 		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "Something went wrong while attempting to login",
+		})
+
 		return
 	}
 
@@ -162,31 +195,58 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	if email == "" {
 		logger.Info().Msgf("login attempt without email")
 		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "login attempt without email",
+			Msg:        "login attempt without email",
+		})
+
 		return
 	}
 	password := r.PostForm.Get("password")
 	if password == "" {
 		logger.Info().Msgf("login attempt without password - email: %s", email)
-		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "login attempt without password - email",
+			Msg:        "login attempt without password - emaild",
+		})
 		return
 	}
 
 	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), email, password)
 	if err != nil {
 		logger.Error().Err(err).Msgf("error authenticating %s: %v", email, err)
-		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusUnauthorized),
+			Status:     http.StatusText(http.StatusUnauthorized),
+			Error:      "Bad request - Invalid username or password",
+			Msg:        "Bad request - Invalid username or password",
+		})
 		return
 	}
 
 	if tokenString, ok := token.Extra(IDToken).(string); ok {
 		_, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
 		if err != nil {
-			http.Error(w, "unable to verify token", http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to verify token",
+				Msg:        "Something went wrong while logging in",
+			})
 			return
 		}
 		session, err := rc.store.Get(r, CookieSessionID)
 		if err != nil {
-			http.Error(w, "unable to get session", http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to get session",
+				Msg:        "Something went wrong while logging in",
+			})
 			return
 		}
 		session.Values[SessionTokenKey] = "Bearer " + tokenString
@@ -194,7 +254,12 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 		err = session.Save(r, w)
 		if err != nil {
 			logger.Error().Err(err).Msgf("unable to save session")
-			http.Error(w, "unable to save session", http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to save session",
+				Msg:        "Something went wrong while logging in",
+			})
 			return
 		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
@@ -203,7 +268,13 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Error().Msgf("Bad request - token doesn't contain %s", IDToken)
-	http.Error(w, fmt.Sprintf("Bad request - token doesn't contain %s", IDToken), http.StatusInternalServerError)
+	rc.serveError(w, r, pages.ErrorPageData{
+		StatusCode: strconv.Itoa(http.StatusInternalServerError),
+		Status:     http.StatusText(http.StatusInternalServerError),
+		Error:      fmt.Sprintf("Bad request - token doesn't contain %s", IDToken),
+		Msg:        "Something went wrong while logging in",
+	})
+
 	return
 }
 
@@ -264,21 +335,38 @@ func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "unable to create group",
+		})
 		return
 	}
 
 	groupName := r.PostForm.Get("group-name")
 	if groupName == "" {
-		logger.Info().Msgf("create group attempt without groupName")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("create group attempt without groupName")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create group attempt without groupName",
+			Msg:        "unable to create group",
+		})
 		return
 	}
 
 	_, err = rc.deckController.CreateGroup(r.Context(), username, groupName)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while calling CreateGroup")
-		w.WriteHeader(toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while calling CreateGroup",
+			Msg:        "unable to create group",
+		})
+		return
 	}
 
 	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), cssFileArr).Render(r.Context(), w)
@@ -290,7 +378,13 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 
 	group, err := rc.deckController.GetGroupByID(r.Context(), groupID)
 	if err != nil {
-		http.Error(w, "while getting groups for user", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "unable to parse form",
+			Msg:        "Problem with creating deck.",
+		})
 		return
 	}
 	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
@@ -365,6 +459,12 @@ func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
 		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "Problem with creating deck.",
+		})
 		return
 	}
 

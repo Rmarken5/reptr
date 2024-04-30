@@ -637,7 +637,7 @@ func TestLogic_GetGroups(t *testing.T) {
 	}
 }
 
-func TestLogic_GetGroupsForUser(t *testing.T) {
+func TestLogic_GetHomePageDataForUser(t *testing.T) {
 	var (
 		timeNow    = time.Now().UTC().Truncate(time.Millisecond)
 		invalidTo  = timeNow.Add(-1 * time.Second)
@@ -667,41 +667,54 @@ func TestLogic_GetGroupsForUser(t *testing.T) {
 				DeletedAt:  nil,
 			},
 		}
+		haveDecks = []models.GetDeckResults{
+			{
+				ID:        uuid.NewString(),
+				Name:      uuid.NewString(),
+				Upvotes:   0,
+				Downvotes: 0,
+				CreatedAt: timeNow,
+				UpdatedAt: timeNow,
+				CreatedBy: username,
+				NumCards:  0,
+			},
+		}
 	)
 
 	testCases := map[string]struct {
-		haveUser   string
-		haveFrom   time.Time
-		haveTo     *time.Time
-		mockRepo   func(mock *database.MockRepository)
-		wantGroups []models.Group
-		wantErr    error
+		haveUser         string
+		haveFrom         time.Time
+		haveTo           *time.Time
+		mockRepo         func(mock *database.MockRepository)
+		wantHomePageData models.HomePageData
+		wantErr          error
 	}{
 		"should return groups when database returns result": {
-			haveUser:   username,
-			haveFrom:   time.Time{},
-			haveTo:     &timeNow,
-			wantGroups: haveGroups,
+			haveUser:         username,
+			haveFrom:         time.Time{},
+			haveTo:           &timeNow,
+			wantHomePageData: models.HomePageData{Groups: haveGroups, Decks: haveDecks},
 			mockRepo: func(mock *database.MockRepository) {
 				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(haveGroups, nil)
+				mock.EXPECT().GetDecksForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(haveDecks, nil)
 			},
 		},
 		"should return error when database returns error": {
-			haveUser:   username,
-			haveFrom:   time.Time{},
-			haveTo:     nil,
-			wantGroups: []models.Group(nil),
+			haveUser:         username,
+			haveFrom:         time.Time{},
+			haveTo:           nil,
+			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
 			mockRepo: func(mock *database.MockRepository) {
 				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.Group(nil), haveErr)
 			},
 			wantErr: haveErr,
 		},
 		"should return ErrInvalidToBeforeFrom when to is before from": {
-			haveUser:   username,
-			haveFrom:   timeNow,
-			haveTo:     &invalidTo,
-			wantGroups: []models.Group(nil),
-			wantErr:    ErrInvalidToBeforeFrom,
+			haveUser:         username,
+			haveFrom:         timeNow,
+			haveTo:           &invalidTo,
+			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantErr:          ErrInvalidToBeforeFrom,
 		},
 		"should return empty slice no results come from database": {
 			haveUser: username,
@@ -709,16 +722,17 @@ func TestLogic_GetGroupsForUser(t *testing.T) {
 			haveTo:   nil,
 			mockRepo: func(mock *database.MockRepository) {
 				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.Group(nil), dbErrors.ErrNoResults)
+				mock.EXPECT().GetDecksForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.GetDeckResults(nil), nil)
 			},
-			wantGroups: []models.Group(nil),
-			wantErr:    nil,
+			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantErr:          nil,
 		},
 		"should return ErrEmptyUsername when username is empty": {
-			haveUser:   "",
-			haveFrom:   timeNow,
-			haveTo:     nil,
-			wantGroups: []models.Group(nil),
-			wantErr:    ErrEmptyUsername,
+			haveUser:         "",
+			haveFrom:         timeNow,
+			haveTo:           nil,
+			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantErr:          ErrEmptyUsername,
 		},
 	}
 
@@ -738,7 +752,7 @@ func TestLogic_GetGroupsForUser(t *testing.T) {
 			gotGroups, err := logic.GetHomepageData(context.Background(), tc.haveUser, tc.haveFrom, tc.haveTo, 0, 0)
 
 			assert.ErrorIs(t, err, tc.wantErr)
-			assert.Equal(t, tc.wantGroups, gotGroups)
+			assert.Equal(t, tc.wantHomePageData, gotGroups)
 
 		})
 	}

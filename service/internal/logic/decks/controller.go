@@ -280,18 +280,45 @@ func (l *Logic) GetHomepageData(ctx context.Context, username string, from time.
 		decks             []models.GetDeckResults
 		groupErr, deckErr error
 		wg                = sync.WaitGroup{}
+		cancelCxt, closer = context.WithCancel(ctx)
 	)
 
 	wg.Add(2)
-	go func() {
+	go func(ctx context.Context, closer context.CancelFunc, wg *sync.WaitGroup, logger zerolog.Logger) {
 		defer wg.Done()
-		groups, groupErr = l.repo.GetGroupsForUser(ctx, username, from, to, limit, offset)
-	}()
+		for {
+			select {
+			case <-cancelCxt.Done():
+				logger.Info().Msg("Context Canceled before getGroupsForUser finished")
+				return
+			default:
+				groups, groupErr = l.repo.GetGroupsForUser(ctx, username, from, to, limit, offset)
+				if groupErr != nil {
+					logger.Error().Err(groupErr).Msgf("while getting groups for user %s", username)
+					closer()
+				}
+				return
+			}
+		}
+	}(cancelCxt, closer, &wg, logger)
 
-	go func() {
+	go func(ctx context.Context, closer context.CancelFunc, wg *sync.WaitGroup, logger zerolog.Logger) {
 		defer wg.Done()
-		decks, deckErr = l.repo.GetDecksForUser(ctx, username, from, to, limit, offset)
-	}()
+		for {
+			select {
+			case <-cancelCxt.Done():
+				logger.Info().Msg("Context Canceled before GetDecksForUser finished")
+				return
+			default:
+				decks, deckErr = l.repo.GetDecksForUser(ctx, username, from, to, limit, offset)
+				if deckErr != nil {
+					logger.Error().Err(deckErr).Msgf("while getting decks for user %s", username)
+					closer()
+				}
+				return
+			}
+		}
+	}(cancelCxt, closer, &wg, logger)
 
 	wg.Wait()
 

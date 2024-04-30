@@ -233,7 +233,7 @@ func TestDAO_AddUserToUpvote(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotErr := dao.AddUserToUpvote(context.Background(), tc.deckID, tc.userID)
+			gotErr := dao.AddUserToUpvoteForDeck(context.Background(), tc.deckID, tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 		})
@@ -294,7 +294,7 @@ func TestDAO_RemoveUserFromUpvote(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotErr := dao.RemoveUserFromUpvote(context.Background(), tc.deckID, tc.userID)
+			gotErr := dao.RemoveUserFromUpvoteForDeck(context.Background(), tc.deckID, tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 		})
@@ -352,7 +352,7 @@ func TestDAO_AddUserToDownvote(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotErr := dao.AddUserToDownvote(context.Background(), tc.deckID, tc.userID)
+			gotErr := dao.AddUserToDownvoteForDeck(context.Background(), tc.deckID, tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 		})
@@ -409,7 +409,7 @@ func TestDAO_RemoveUserFromDownvote(t *testing.T) {
 				tc.mockDatabase(mt)
 			}
 
-			gotErr := dao.RemoveUserFromDownvote(context.Background(), tc.deckID, tc.userID)
+			gotErr := dao.RemoveUserFromDownvoteForDeck(context.Background(), tc.deckID, tc.userID)
 
 			assert.ErrorIs(t, gotErr, tc.wantErr)
 		})
