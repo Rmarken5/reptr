@@ -5,7 +5,6 @@
 //
 //	mockgen -destination ./mocks/repo_mock.go -package database . Repository
 //
-
 // Package database is a generated GoMock package.
 package database
 
@@ -181,6 +180,21 @@ func (m *MockRepository) GetDeckWithCardsByID(arg0 context.Context, arg1 string)
 func (mr *MockRepositoryMockRecorder) GetDeckWithCardsByID(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeckWithCardsByID", reflect.TypeOf((*MockRepository)(nil).GetDeckWithCardsByID), arg0, arg1)
+}
+
+// GetDecksForUser mocks base method.
+func (m *MockRepository) GetDecksForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.GetDeckResults, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDecksForUser", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].([]models.GetDeckResults)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDecksForUser indicates an expected call of GetDecksForUser.
+func (mr *MockRepositoryMockRecorder) GetDecksForUser(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDecksForUser", reflect.TypeOf((*MockRepository)(nil).GetDecksForUser), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // GetFrontOfCardByID mocks base method.

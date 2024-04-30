@@ -55,8 +55,6 @@ func (u *UserDAO) InsertUser(ctx context.Context, user models.User) (string, err
 		return "", errors.Join(fmt.Errorf("error inserting user: %w", err), ErrInsert)
 	}
 
-	logger.Debug().Msgf("%s", prim)
-
 	return prim, nil
 }
 
@@ -147,13 +145,12 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 	},
 		pipeline.Paginate(from, to, limit, offset)...)
 
-	logger.Debug().Msgf("%+v", filter)
-
 	cur, err := u.collection.Aggregate(ctx, filter)
 	if err != nil {
 		logger.Error().Err(err).Msg("error in calling aggregation")
 		return nil, errors.Join(err, ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	var groups []models.Group
 	err = cur.All(ctx, &groups)

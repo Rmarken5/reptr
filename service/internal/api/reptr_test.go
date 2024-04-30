@@ -9,6 +9,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/logic/auth"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	mockLogic "github.com/rmarken/reptr/service/internal/logic/decks/mocks"
+	"github.com/rmarken/reptr/service/internal/logic/decks/session"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
@@ -22,7 +23,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	r := New(zerolog.Nop(), &decks.Logic{}, &provider.Logic{}, &auth.Authenticator{}, &sessions.CookieStore{})
+	r := New(zerolog.Nop(), &decks.Logic{}, &provider.Logic{}, &auth.Authenticator{}, &session.Logic{}, &sessions.CookieStore{})
 	assert.NotNil(t, r)
 }
 func TestGetGroups(t *testing.T) {

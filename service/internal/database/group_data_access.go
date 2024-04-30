@@ -68,8 +68,6 @@ func (g *GroupDAO) InsertGroup(ctx context.Context, group models.Group) (string,
 		return "", errors.Join(fmt.Errorf("error inserting group: %w", err), ErrInsert)
 	}
 
-	logger.Debug().Msgf("%s", prim)
-
 	return prim, nil
 }
 
@@ -99,12 +97,12 @@ func (g *GroupDAO) GetGroupsWithDecks(ctx context.Context, from time.Time, to *t
 		pipeline.Paginate(from, to, limit, offset),
 		deckFromGroupsLookup,
 	)
-	logger.Debug().Msgf("%+v", filter)
 
 	cur, err := g.collection.Aggregate(ctx, filter)
 	if err != nil {
 		return nil, errors.Join(err, ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	withDecks := make([]models.GroupWithDecks, 0)
 	err = cur.All(ctx, &withDecks)
@@ -147,8 +145,6 @@ func (g *GroupDAO) AddDeckToGroup(ctx context.Context, groupID, deckID string) e
 			{"deck_ids", deckID},
 		}},
 	}
-
-	logger.Debug().Msgf("%+v", filter)
 
 	_, err := g.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -245,13 +241,13 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 		removeUserVotes,
 		regroupDecks,
 	}
-	logger.Debug().Msgf("%+v", filter)
 
 	cur, err := g.collection.Aggregate(ctx, filter)
 	if err != nil {
 		logger.Error().Err(err).Msgf("getting group by id %s", groupID)
 		return models.GroupWithDecks{}, errors.Join(fmt.Errorf("error deleting group: %w", err), ErrAggregate)
 	}
+	defer cur.Close(ctx)
 
 	withDecks := make([]models.GroupWithDecks, 0)
 	err = cur.All(ctx, &withDecks)

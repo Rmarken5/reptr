@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 var (
@@ -23,17 +22,19 @@ var (
 func init() {
 	log = zerolog.New(os.Stdout).With().Str("program", "reptr server").Logger()
 	env := os.Getenv("ENV")
-	if env == "local" {
-		log.Info().Msg("loading from config")
-		path, err := filepath.Abs("./config.yaml")
-		if err != nil {
-			log.Panic().Err(err).Msg("while getting abs path")
-		}
-		config = cmd.LoadConfigFromFile(log, path)
+	var path string
+	switch env {
+	case "local":
+		path = "./config/local.yaml"
+	case "dev":
+		path = "./config/dev.yaml"
+	default:
+		log.Info().Msg("loading from env")
+		config = cmd.LoadConfFromEnv(log)
 		return
 	}
-	log.Info().Msg("loading from env")
-	config = cmd.LoadConfFromEnv(log)
+	log.Info().Msgf("loading from file: %s", path)
+	config = cmd.LoadConfigFromFile(log, path)
 }
 
 func main() {
@@ -70,14 +71,16 @@ func main() {
 	pageRoute.HandleFunc("/create-group", wrapper.CreateGroup).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/group/{groupID}", wrapper.GroupPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-deck/{group_id}", wrapper.CreateDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeckPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/create-deck/{group_id}", wrapper.CreateDeck).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.GetCreateCardsForDeckPage).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/add-card/{deck_id}", wrapper.GetCardsForDeck).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/front-of-card/{deck_id}/{card_id}", wrapper.FrontOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/view-deck/{deck_id}", wrapper.ViewDeck).Methods(http.MethodGet)
-	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodPost)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

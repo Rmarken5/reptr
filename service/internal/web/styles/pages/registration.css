@@ -1,0 +1,33 @@
+.registration-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.reptr-description {
+    margin-bottom: 5rem;
+    min-width: 30rem;
+    padding: 3rem;
+}
+
+
+.login-link {
+    display: block;
+}
+
+.or {
+    width: 5rem;
+    margin: 0 auto 1rem auto;
+}
+
+.or span {
+    display: table;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .reptr-description {
+        margin-bottom: 5rem;
+        min-width: 30rem;
+        padding: 3rem;
+    }
+}

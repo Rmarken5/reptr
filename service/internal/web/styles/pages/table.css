@@ -1,0 +1,64 @@
+table {
+    width: 100%;
+    background-color: #848484;
+    border-radius: 5px;
+    color: white;
+    border-spacing: 0;
+}
+
+thead, tfoot {
+    background-color: #D5D5D5;
+    color: black;
+}
+
+thead {
+    border-radius: 5px 5px 0 0;
+}
+
+table tbody tr {
+    height: 3rem;
+}
+
+table > td {
+    padding: 0;
+}
+
+table tr > td:not(:first-child) {
+    text-align: right;
+}
+
+table tr > th:not(:first-child) {
+    text-align: right;
+    padding: 0 0 0 1.5rem;
+}
+
+table tr > td:first-child {
+    text-align: center;
+    padding: 0 0 0 1.5rem;
+}
+
+table tr > td:last-child {
+    padding: 0 1.5rem 0 0;
+}
+
+table tr > th:last-child {
+    padding: 0 1.5rem 0 0;
+}
+
+td > .button {
+    margin-bottom: 0;
+}
+
+td > a {
+    color: #0056b3;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+td > a:hover {
+    color: #004187;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+ /*color: #0056b3;*/

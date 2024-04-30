@@ -22,6 +22,8 @@ type (
 		Downvotes int       `bson:"downvotes"`
 		CreatedAt time.Time `bson:"created_at"`
 		UpdatedAt time.Time `bson:"updated_at"`
+		CreatedBy string    `bson:"created_by,omitempty"`
+		NumCards  int       `bson:"num_cards,omitempty"`
 	}
 	DeckWithCards struct {
 		GetDeckResults `bson:",inline"`

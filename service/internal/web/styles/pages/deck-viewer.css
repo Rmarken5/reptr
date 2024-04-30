@@ -1,0 +1,48 @@
+h2 {
+    text-align: center;
+}
+
+.home-link {
+    display:block;
+    margin: 0 0 3rem 3rem;
+}
+
+.card {
+    min-height: 15rem;
+    margin: 3rem;
+    padding: 1rem;
+    background-color: #848484;
+    border-radius: 5px;
+    color: white;
+}
+
+.card-footer {
+    display: flex;
+    margin: 0 3rem;
+    /* width: 100%; */
+    justify-content: space-between;
+}
+
+.vote-section {
+    display: flex;
+    justify-content: space-between;
+    width: 15rem;
+}
+
+.left-side-footer-front {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.left-side-footer-back {
+    width: 15rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.previous-card {
+    min-height: 3rem;
+    padding: 0 3rem;
+}

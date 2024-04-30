@@ -19,13 +19,33 @@ import (
 	"time"
 )
 
-const hxTriggerHeaderKey = "HX-Trigger"
+const (
+	hxTriggerHeaderKey = "HX-Trigger"
 
-var tailwindArr = []string{"/styles/pages/tailwind-output.css"}
+	stylesDir = "/styles/pages/"
+
+	//styles
+	//base
+	baseStyle = stylesDir + "base.css"
+	pageStyle = stylesDir + "page.css"
+	// component
+	formStyle  = stylesDir + "form.css"
+	tableStyle = stylesDir + "table.css"
+
+	//page level
+	loginStyle        = stylesDir + "login.css"
+	registrationStyle = stylesDir + "registration.css"
+	homeStyle         = stylesDir + "home.css"
+	groupStyle        = stylesDir + "group.css"
+	deckViewStyle     = stylesDir + "deck-viewer.css"
+	errorStyle        = stylesDir + "error.css"
+)
+
+var cssFileArr = []string{baseStyle, pageStyle}
 
 func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string) {
 	log := rc.logger.With().Str("method", "ServeStyles").Logger()
-	log.Info().Msgf("serving  %s %s", path, styleName)
+	log.Info().Msgf("serving %s %s", path, styleName)
 
 	absolutePath, err := filepath.Abs(fmt.Sprintf("./service/internal/web/styles/%s/%s", path, styleName))
 	file, err := os.ReadFile(absolutePath)
@@ -42,9 +62,15 @@ func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path s
 func (rc ReprtClient) RegistrationPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "RegistrationPage").Logger()
 	log.Info().Msgf("serving registration page")
-	err := pages.Page(pages.Register(nil), tailwindArr).Render(r.Context(), w)
+	err := pages.Page(pages.Register(nil), append(cssFileArr, formStyle, registrationStyle)).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("while trying to serve registration page")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve registration page",
+			Msg:        "Something went wrong while serving registration page",
+		})
 		return
 	}
 }
@@ -75,7 +101,7 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 
 	if password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		err := pages.Page(pages.Register(pages.Banner("Must provide password")), tailwindArr).Render(r.Context(), w)
+		err := pages.Page(pages.Register(pages.Banner("Must provide password")), cssFileArr).Render(r.Context(), w)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -96,24 +122,39 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 	user, registrationError, err := rc.authenticator.RegisterUser(r.Context(), email, password)
 	if err != nil {
 		log.Error().Err(err).Msg("while registering")
-		http.Error(w, "while registering", http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to registering user",
+			Msg:        "Something went wrong while registering user",
+		})
 		return
 	}
 
 	if !registrationError.IsZero() {
 		w.WriteHeader(registrationError.StatusCode)
-		err := pages.Page(pages.Register(pages.Banner(registrationError.Description)), tailwindArr).Render(r.Context(), w)
+		err := pages.Page(pages.Register(pages.Banner(registrationError.Description)), cssFileArr).Render(r.Context(), w)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to registering user",
+				Msg:        "Something went wrong while registering user",
+			})
 		}
 		return
 	}
 
 	log.Info().Msgf("user is registered: %+v", user)
 	w.WriteHeader(http.StatusCreated)
-	err = pages.Page(pages.Form(pages.Banner("Registration Successful"), pages.Login()), tailwindArr).Render(r.Context(), w)
+	err = pages.Page(pages.Form(pages.Banner("Registration Successful"), pages.Login()), cssFileArr).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve registration page",
+			Msg:        "Something went wrong while serving registration page",
+		})
 		return
 	}
 }
@@ -121,21 +162,32 @@ func (rc ReprtClient) Register(w http.ResponseWriter, r *http.Request) {
 func (rc ReprtClient) LoginPage(w http.ResponseWriter, r *http.Request) {
 	log := rc.logger.With().Str("method", "LoginPage").Logger()
 	log.Info().Msgf("serving login page")
-	err := pages.Page(pages.Form(nil, pages.Login()), tailwindArr).Render(r.Context(), w)
+	err := pages.Page(pages.Form(nil, pages.Login()), append(cssFileArr, loginStyle, formStyle)).Render(r.Context(), w)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to serve login page",
+			Msg:        "Something went wrong while serving to login page",
+		})
 		return
 	}
 }
 
 func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "Login").Logger()
-	logger.Debug().Msg("login called")
 
 	err := r.ParseForm()
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
 		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "Something went wrong while attempting to login",
+		})
+
 		return
 	}
 
@@ -143,34 +195,71 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	if email == "" {
 		logger.Info().Msgf("login attempt without email")
 		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "login attempt without email",
+			Msg:        "login attempt without email",
+		})
+
 		return
 	}
 	password := r.PostForm.Get("password")
 	if password == "" {
 		logger.Info().Msgf("login attempt without password - email: %s", email)
-		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "login attempt without password - email",
+			Msg:        "login attempt without password - emaild",
+		})
 		return
 	}
 
 	token, err := rc.authenticator.PasswordCredentialsToken(r.Context(), email, password)
 	if err != nil {
 		logger.Error().Err(err).Msgf("error authenticating %s: %v", email, err)
-		http.Error(w, "Bad request - Invalid username or password", http.StatusUnauthorized)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusUnauthorized),
+			Status:     http.StatusText(http.StatusUnauthorized),
+			Error:      "Bad request - Invalid username or password",
+			Msg:        "Bad request - Invalid username or password",
+		})
 		return
 	}
 
 	if tokenString, ok := token.Extra(IDToken).(string); ok {
 		_, err := rc.authenticator.VerifyIDToken(r.Context(), tokenString)
 		if err != nil {
-			http.Error(w, "unable to verify token", http.StatusInternalServerError)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to verify token",
+				Msg:        "Something went wrong while logging in",
+			})
 			return
 		}
-		session, _ := rc.store.Get(r, CookieSessionID)
+		session, err := rc.store.Get(r, CookieSessionID)
+		if err != nil {
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to get session",
+				Msg:        "Something went wrong while logging in",
+			})
+			return
+		}
 		session.Values[SessionTokenKey] = "Bearer " + tokenString
 		session.Options.Secure = true
 		err = session.Save(r, w)
 		if err != nil {
-			http.Error(w, "unable to save session", http.StatusInternalServerError)
+			logger.Error().Err(err).Msgf("unable to save session")
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(http.StatusInternalServerError),
+				Status:     http.StatusText(http.StatusInternalServerError),
+				Error:      "unable to save session",
+				Msg:        "Something went wrong while logging in",
+			})
 			return
 		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
@@ -179,7 +268,13 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Error().Msgf("Bad request - token doesn't contain %s", IDToken)
-	http.Error(w, fmt.Sprintf("Bad request - token doesn't contain %s", IDToken), http.StatusInternalServerError)
+	rc.serveError(w, r, pages.ErrorPageData{
+		StatusCode: strconv.Itoa(http.StatusInternalServerError),
+		Status:     http.StatusText(http.StatusInternalServerError),
+		Error:      fmt.Sprintf("Bad request - token doesn't contain %s", IDToken),
+		Msg:        "Something went wrong while logging in",
+	})
+
 	return
 }
 
@@ -190,62 +285,97 @@ func (rc ReprtClient) GetDecksForUser(w http.ResponseWriter, r *http.Request, pa
 
 func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "HomePage").Logger()
-	logger.Debug().Msgf("HomePage called.")
 
 	var userName string
 	var ok bool
 	if userName, ok = reptrCtx.Username(r.Context()); !ok {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Something went wrong with getting username"))
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
-	groups, err := rc.deckController.GetGroupsForUser(r.Context(), userName, time.Time{}, nil, 10, 0)
+	homepageData, err := rc.deckController.GetHomepageData(r.Context(), userName, time.Time{}, nil, 10, 0)
 	if err != nil {
-		http.Error(w, "while getting groups for user", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting homepageData for use",
+			Msg:        "Unable to load homepage.",
+		})
 		return
 	}
 
-	homeGroups := make([]pages.Group, len(groups))
-	for i, group := range groups {
+	homeGroups := make([]pages.HomeGroupData, len(homepageData.Groups))
+	for i, group := range homepageData.Groups {
 		homeGroups[i] = homeGroupFromModel(group)
 	}
 
-	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups}), tailwindArr).Render(r.Context(), w)
+	homeDecks := make([]pages.HomeDeckData, len(homepageData.Decks))
+	for i, deck := range homepageData.Decks {
+		homeDecks[i] = homeDeckFromModel(deck)
+	}
+	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups, Decks: homeDecks}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateGroup").Logger()
-	logger.Debug().Msg("create group called")
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
-		logger.Info().Msg("username is not on context")
-		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
 	err := r.ParseForm()
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "unable to create group",
+		})
 		return
 	}
 
 	groupName := r.PostForm.Get("group-name")
 	if groupName == "" {
-		logger.Info().Msgf("create group attempt without groupName")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("create group attempt without groupName")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create group attempt without groupName",
+			Msg:        "unable to create group",
+		})
 		return
 	}
 
 	_, err = rc.deckController.CreateGroup(r.Context(), username, groupName)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while calling CreateGroup")
-		w.WriteHeader(toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while calling CreateGroup",
+			Msg:        "unable to create group",
+		})
+		return
 	}
 
-	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), tailwindArr).Render(r.Context(), w)
+	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), cssFileArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -254,18 +384,34 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 
 	group, err := rc.deckController.GetGroupByID(r.Context(), groupID)
 	if err != nil {
-		http.Error(w, "while getting groups for user", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "unable to parse form",
+			Msg:        "Problem with creating deck.",
+		})
 		return
 	}
-	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), tailwindArr).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
 }
 
-func homeGroupFromModel(group models.Group) pages.Group {
-	return pages.Group{
+func homeGroupFromModel(group models.Group) pages.HomeGroupData {
+	return pages.HomeGroupData{
 		ID:        group.ID,
 		GroupName: group.Name,
 		NumDecks:  len(group.DeckIDs),
 		NumUsers:  0,
+	}
+}
+
+func homeDeckFromModel(deck models.GetDeckResults) pages.HomeDeckData {
+	return pages.HomeDeckData{
+		ID:        deck.ID,
+		DeckName:  deck.Name,
+		NumCards:  strconv.Itoa(deck.NumCards),
+		Upvotes:   strconv.Itoa(deck.Upvotes),
+		Downvotes: strconv.Itoa(deck.Downvotes),
 	}
 }
 
@@ -297,13 +443,18 @@ func groupDecksFromDecks(fromService []models.GetDeckResults) []pages.Deck {
 func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateGroupPage").Logger()
 	logger.Info().Msg("serving create group page")
-	pages.Page(pages.Form(nil, pages.CreateGroupForm()), tailwindArr).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.CreateGroupForm()), cssFileArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateDeckPage(w http.ResponseWriter, r *http.Request, groupID string) {
 	logger := rc.logger.With().Str("method", "CreateDeckPage").Logger()
 	logger.Info().Msg("serving create deck page")
-	pages.Page(pages.Form(nil, pages.CreateDeckPage(groupID)), tailwindArr).Render(r.Context(), w)
+	path := "/page/create-deck"
+	if groupID != "" {
+		path = path + "/" + groupID
+	}
+
+	pages.Page(pages.Form(nil, pages.CreateDeckPage(path)), cssFileArr).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -314,37 +465,63 @@ func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
 		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "Problem with creating deck.",
+		})
 		return
 	}
 
 	deckName := r.PostForm.Get("deck-name")
 	if deckName == "" {
-		logger.Info().Msgf("create deck attempt without deckName")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if groupID == "" {
-		logger.Info().Msgf("create deck attempt without groupID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("create deck attempt without deckName")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create deck attempt without deckName",
+			Msg:        "Problem with creating deck.",
+		})
 		return
 	}
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
-		logger.Info().Msgf("create deck attempt without username")
-		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
 	deckID, err := rc.deckController.CreateDeck(r.Context(), deckName, username)
 	if err != nil {
-		http.Error(w, "while creating deck", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      err.Error(),
+			Msg:        "Problem with creating deck.",
+		})
+		return
 	}
-	// TODO: bundle these in deck controller so that they can be done in a tx.
-	err = rc.deckController.AddDeckToGroup(r.Context(), groupID, deckID)
-	if err != nil {
-		http.Error(w, "while adding deck to group", toStatus(err))
+	if groupID != "" {
+		// TODO: bundle these in deck controller so that they can be done in a tx.
+		err = rc.deckController.AddDeckToGroup(r.Context(), groupID, deckID)
+		if err != nil {
+			status := toStatus(err)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(status),
+				Status:     http.StatusText(status),
+				Error:      err.Error(),
+				Msg:        "Problem with creating deck.",
+			})
+			return
+		}
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/page/create-cards/%s", deckID), http.StatusSeeOther)
@@ -355,15 +532,27 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 	logger.Info().Msg("serving creating deck")
 
 	if deckID == "" {
-		logger.Info().Msgf("get cards without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("get cards without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get cards without deckID",
+			Msg:        "Problem getting cards.",
+		})
 		return
 	}
 
 	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
 	if err != nil && !errors.Is(err, database.ErrNoResults) {
 		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
-		http.Error(w, "while cards for deck", toStatus(err))
+		http.Error(w, "while getting cards for deck", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting cards for deck",
+			Msg:        "Problem getting cards.",
+		})
 		return
 	}
 	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
@@ -377,23 +566,33 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 		DeckID:   deck.ID,
 		DeckName: deck.Name,
 		Cards:    viewCards,
-	})), tailwindArr).Render(r.Context(), w)
+	})), cssFileArr).Render(r.Context(), w)
 
 }
 func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "GetCardsForDeck").Logger()
-	logger.Info().Msgf("getting cards for deck: %s", deckID)
+	logger.Error().Msgf("getting cards for deck: %s", deckID)
 
 	if deckID == "" {
-		logger.Info().Msgf("get cards without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get cards without deckID",
+			Msg:        "Problem getting cards.",
+		})
 		return
 	}
 
 	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
-		http.Error(w, "while cards for deck", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while cards for deck",
+			Msg:        "Problem getting cards.",
+		})
 		return
 	}
 	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
@@ -407,28 +606,45 @@ func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, de
 }
 func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
-	logger.Info().Msg("creating card")
+	logger.Info().Msg("view deck")
 
 	if deckID == "" {
-		logger.Info().Msgf("create deck attempt without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Info().Msgf("view deck attempt without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "view deck attempt without deckID",
+			Msg:        "Problem getting deck content.",
+		})
 		return
 	}
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
 		logger.Error().Msgf("username is not on context")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	content, err := rc.getCardViewerContent(r.Context(), username, deckID)
-	if err != nil {
-		logger.Error().Err(err).Msgf("while getting card content %s", deckID)
-		http.Error(w, "while getting card content for deck", toStatus(err))
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
-	pages.Page(pages.DeckViewerPage(content), tailwindArr).Render(r.Context(), w)
+	content, err := rc.getCardViewerContent(r.Context(), username, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting card content %s", deckID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting card content",
+			Msg:        "Problem getting deck content.",
+		})
+		return
+	}
+
+	pages.Page(pages.DeckViewerPage(content), append(cssFileArr, deckViewStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID string) (pages.DeckViewPageData, error) {
@@ -465,12 +681,13 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 		DeckName: s.DeckName,
 		DeckID:   deckID,
 		Content: dumb.BackOfCardDisplay(dumb.CardBack{
-			DeckID:      deckID,
-			CardID:      s.CurrentCardID,
-			BackContent: b.Answer,
-			NextCardID:  b.NextCard,
-			IsUpvoted:   b.IsUpvotedByUser,
-			IsDownvoted: b.IsDownvotedByUser,
+			DeckID:         deckID,
+			CardID:         s.CurrentCardID,
+			BackContent:    b.Answer,
+			NextCardID:     b.NextCard,
+			PreviousCardID: b.PreviousCard,
+			IsUpvoted:      bool(b.IsUpvotedByUser),
+			IsDownvoted:    bool(b.IsDownvotedByUser),
 		}),
 	}, err
 
@@ -482,27 +699,59 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 	err := r.ParseForm()
 	if err != nil {
 		logger.Error().Err(err).Msg("unable to parse form")
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "unable to parse form",
+			Msg:        "Problem creating card",
+		})
 		return
 	}
 
 	if deckID == "" {
-		logger.Info().Msgf("create deck attempt without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("create deck attempt without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create deck attempt without deckID",
+			Msg:        "Problem creating card",
+		})
 		return
 	}
 
 	cardFront := r.PostForm.Get("card-front")
 	if cardFront == "" {
 		logger.Info().Msgf("create deck attempt without card front")
-		w.WriteHeader(http.StatusBadRequest)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create deck attempt without card front",
+			Msg:        "Problem creating card",
+		})
 		return
 	}
 
 	cardBack := r.PostForm.Get("card-back")
 	if cardBack == "" {
-		logger.Info().Msgf("create deck attempt without card back")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("create deck attempt without card back")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "create deck attempt without card back",
+			Msg:        "Problem creating card",
+		})
+		return
+	}
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
@@ -515,10 +764,17 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 		DeckID:    deckID,
 		CreatedAt: timeNow,
 		UpdatedAt: timeNow,
+		CreatedBy: username,
 	})
 	if err != nil {
 		logger.Error().Err(err).Msgf("while creating a card for deck %s", deckID)
-		http.Error(w, "while creating card", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while creating a card for deck",
+			Msg:        "Problem creating card",
+		})
 		return
 	}
 
@@ -531,38 +787,66 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 	logger.Info().Msgf("getting back of card with ID: %s", cardID)
 
 	if deckID == "" {
-		logger.Info().Msgf("get back of card without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("get back of card without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get back of card without deckID",
+			Msg:        "Problem processing getting back of card.",
+		})
 		return
 	}
 
 	if cardID == "" {
-		logger.Info().Msgf("get back of card without cardID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("get back of card without cardID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get back of card without cardID",
+			Msg:        "Problem processing getting back of card.",
+		})
 		return
 	}
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
-		logger.Info().Msgf("username not on context")
-		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
 	backOfCard, err := rc.deckController.GetBackOfCardByID(r.Context(), deckID, cardID, username)
 	if err != nil {
 		logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", cardID)
-		http.Error(w, "while getting back of card", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting back of card",
+			Msg:        "Problem processing getting back of card.",
+		})
 		return
 	}
 
 	dumb.BackOfCardDisplay(dumb.CardBack{
-		DeckID:      deckID,
-		CardID:      backOfCard.CardID,
-		BackContent: backOfCard.Answer,
-		NextCardID:  backOfCard.NextCard,
-		IsUpvoted:   backOfCard.IsUpvotedByUser,
-		IsDownvoted: backOfCard.IsDownvotedByUser,
+		DeckID:         deckID,
+		CardID:         backOfCard.CardID,
+		BackContent:    backOfCard.Answer,
+		NextCardID:     backOfCard.NextCard,
+		PreviousCardID: backOfCard.PreviousCard,
+		IsUpvoted:      bool(backOfCard.IsUpvotedByUser),
+		IsDownvoted:    bool(backOfCard.IsDownvotedByUser),
+		VoteButtonData: dumb.VoteButtonsData{
+			CardID:            backOfCard.CardID,
+			UpvoteClass:       backOfCard.IsUpvotedByUser.UpvotedClass(),
+			DownvoteClass:     backOfCard.IsDownvotedByUser.DownvotedClass(),
+			UpvoteDirection:   backOfCard.IsUpvotedByUser.NextUpvoteDirection(),
+			DownvoteDirection: backOfCard.IsDownvotedByUser.DownvotedClass()},
 	}).Render(r.Context(), w)
 }
 
@@ -571,70 +855,113 @@ func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID
 	logger.Info().Msgf("getting front of card with ID: %s", cardID)
 
 	if deckID == "" {
-		logger.Info().Msgf("get front of card without deckID")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("get front of card without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get front of card without deckID",
+			Msg:        "Problem processing getting front of card.",
+		})
 		return
 	}
 
 	if cardID == "" {
-		logger.Info().Msgf("get front of card without cardID")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	username, ok := reptrCtx.Username(r.Context())
-	if !ok {
-		logger.Info().Msgf("username not on context")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, cardID, username)
-	if err != nil {
-		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", cardID)
-		http.Error(w, "while getting front of card", toStatus(err))
-		return
-	}
-
-	dumb.FrontCardDisplay(dumb.CardFront{
-		DeckID:     deckID,
-		CardID:     frontOfCard.CardID,
-		Front:      frontOfCard.Content,
-		NextCardID: frontOfCard.NextCard,
-		Downvotes:  strconv.Itoa(frontOfCard.Downvotes),
-		Upvotes:    strconv.Itoa(frontOfCard.Upvotes),
-		CardType:   "",
-	}).Render(r.Context(), w)
-}
-
-func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID string, direction string) {
-	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
-	logger.Info().Msg("creating card")
-
-	if cardID == "" {
-		logger.Info().Msgf("card vote without cardID")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if direction == "" {
-		logger.Info().Msgf("card vote without direction")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	vote := models.VoteFromString(direction)
-
-	if vote == models.Unknown {
-		logger.Info().Msgf("direction should be upvote/downvote/remove_upvote/remove_downvote")
-		w.WriteHeader(http.StatusBadRequest)
+		logger.Error().Msgf("get front of card without cardID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "getting front of card without cardID",
+			Msg:        "Problem processing getting front of card.",
+		})
 		return
 	}
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
 		logger.Error().Msgf("username is not on context")
-		w.WriteHeader(http.StatusInternalServerError)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
+	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, cardID, username)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", cardID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting front of card",
+			Msg:        "Something went wrong while getting front of card.",
+		})
+		http.Error(w, "while getting front of card", toStatus(err))
+		return
+	}
+
+	dumb.FrontCardDisplay(dumb.CardFront{
+		DeckID:         deckID,
+		CardID:         frontOfCard.CardID,
+		Front:          frontOfCard.Content,
+		NextCardID:     frontOfCard.NextCard,
+		PreviousCardID: frontOfCard.PreviousCard,
+		Downvotes:      strconv.Itoa(frontOfCard.Downvotes),
+		Upvotes:        strconv.Itoa(frontOfCard.Upvotes),
+		CardType:       "",
+	}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID string, direction string) {
+	logger := rc.logger.With().Str("method", "VoteCard").Logger()
+	logger.Info().Msg("voting card")
+
+	if cardID == "" {
+		logger.Info().Msgf("card vote without cardID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     "Bad Request",
+			Error:      "card vote without cardIn",
+			Msg:        "Something went wrong while processing vote.",
+		})
+		return
+	}
+
+	if direction == "" {
+		logger.Error().Msgf("card vote without direction")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     "Bad Request",
+			Error:      "card vote without direction",
+			Msg:        "Something went wrong while processing vote.",
+		})
+		return
+	}
+
+	vote := models.VoteFromString(direction)
+
+	if vote == models.Unknown {
+		logger.Error().Msgf("unknown vote type")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     "Bad Request",
+			Error:      "unknown vote type",
+			Msg:        "Something went wrong while processing vote.",
+		})
+		return
+	}
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
 		return
 	}
 
@@ -644,10 +971,12 @@ func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID st
 		http.Error(w, "voting for card", toStatus(err))
 	}
 
-	dumb.VoteSection(dumb.VoteSectionData{
-		CardID:        "",
-		UpvoteClass:   "",
-		DownvoteClass: "",
+	dumb.VoteButtons(dumb.VoteButtonsData{
+		CardID:            cardID,
+		UpvoteClass:       vote.UpvoteClass(),
+		DownvoteClass:     vote.DownvoteClass(),
+		UpvoteDirection:   vote.NextUpvote().String(),
+		DownvoteDirection: vote.NextDownvote().String(),
 	}).Render(r.Context(), w)
 }
 
@@ -664,4 +993,13 @@ func toStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func (rc ReprtClient) serveError(w http.ResponseWriter, r *http.Request, data pages.ErrorPageData) {
+	code, err := strconv.Atoi(data.StatusCode)
+	if err != nil {
+		rc.logger.Error().Err(err).Msgf("not able to convert data.StatusCode to int: %s", data.StatusCode)
+	}
+	w.WriteHeader(code)
+	pages.Page(pages.Error(data), append(cssFileArr, errorStyle)).Render(r.Context(), w)
 }

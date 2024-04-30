@@ -14,10 +14,7 @@ func Session(logger zerolog.Logger, store sessions.Store) func(next http.Handler
 	logger = logger.With().Str("middleware", "Session").Logger()
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger.Debug().Msgf("session middleware invoked")
-
 			session, _ := store.Get(r, api.CookieSessionID)
-			logger.Debug().Msgf("Is session new? : %t", session.IsNew)
 			if !session.IsNew {
 				authToken, err := AuthFromSession(session.Values)
 				if err != nil {
@@ -25,9 +22,7 @@ func Session(logger zerolog.Logger, store sessions.Store) func(next http.Handler
 					http.Error(w, "while getting auth token from session", http.StatusBadRequest)
 					return
 				}
-				logger.Debug().Msgf("got auth token from session")
 				r.Header.Set("Authorization", authToken)
-				logger.Debug().Msgf("got auth token set to request header")
 			}
 			next.ServeHTTP(w, r)
 		})

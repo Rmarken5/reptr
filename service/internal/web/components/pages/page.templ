@@ -1,12 +1,13 @@
 package pages
 
 templ Page(content templ.Component, styles []string) {
-    <html>
+    <html lang="en">
        <head>
             <script src="https://unpkg.com/htmx.org@1.9.10"></script>
             for _, style := range styles {
                 <link rel="stylesheet" href={style}/>
             }
+            <title>Fix Page Title</title>
        </head>
        <body class="min-h-screen flex flex-col justify-center content-center">
            <section class="container">

@@ -16,7 +16,7 @@ const (
 func Paginate(from time.Time, to *time.Time, lim, os int) mongo.Pipeline {
 	pl := mongo.Pipeline{
 		matchBetweenTimes(from, to),
-		sortBy(Asc),
+		SortBy(Asc),
 	}
 	if lim > 0 {
 		pl = append(pl, limit(lim))
@@ -42,7 +42,7 @@ func matchBetweenTimes(from time.Time, to *time.Time) bson.D {
 	}
 }
 
-func sortBy(sortBy SortOrder) bson.D {
+func SortBy(sortBy SortOrder) bson.D {
 	return bson.D{{"$sort", bson.D{{"created_at", int(sortBy)}}}}
 }
 

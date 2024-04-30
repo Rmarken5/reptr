@@ -1,8 +1,8 @@
 package pages
 
-templ CreateDeckPage(groupID string) {
+templ CreateDeckPage(path string) {
     <body>
-        <form id="create-deck-form" hx-swap="outerhtml" hx-post={"/page/create-deck/"+groupID}>
+         <form id="create-deck-form" hx-swap="outerhtml" hx-post={path}>
             <section id="create-deck-section" >
                 <label for="deck-name" id="deck-name-label">Deck Name: </label>
                 <input id="deck-name" name="deck-name"/>

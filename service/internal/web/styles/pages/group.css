@@ -1,0 +1,19 @@
+table tr > td:last-child {
+    padding: 0 1.5rem 0 1.5rem;
+}
+
+.create-button {
+    width: 10rem;
+    margin: 3rem 0 0 auto;
+}
+
+
+.table-button-color {
+    background-color: #D5D5D5;
+    color: black;
+}
+
+.table-button-color:hover {
+    background-color: #848484;
+    color: white;
+}

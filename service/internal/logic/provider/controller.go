@@ -75,7 +75,6 @@ func (l *Logic) InsertPair(ctx context.Context, subject string) error {
 		return err
 	}
 	if userExists {
-		logger.Debug().Msgf("user %s already exists", subject)
 		return ErrUserExists
 	}
 

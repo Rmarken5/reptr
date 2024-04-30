@@ -3,7 +3,7 @@ module github.com/rmarken/reptr
 go 1.21.0
 
 require (
-	github.com/a-h/templ v0.2.513
+	github.com/a-h/templ v0.2.663
 	github.com/coreos/go-oidc/v3 v3.8.0
 	github.com/getkin/kin-openapi v0.118.0
 	github.com/gkampitakis/go-snaps v0.4.12

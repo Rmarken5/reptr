@@ -23,4 +23,6 @@ go.work
 
 ./coverage.out
 
-config.yaml
+config/local.yaml
+/config/
+/tmp

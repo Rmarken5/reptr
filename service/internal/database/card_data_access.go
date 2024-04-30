@@ -225,6 +225,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, userna
 		logger.Error().Err(err).Msgf("while getting cursor")
 		return models.FrontOfCard{}, errors.Join(err, ErrAggregate)
 	}
+	defer cursor.Close(ctx)
 
 	var res []models.FrontOfCard
 	err = cursor.All(ctx, &res)
@@ -235,7 +236,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, userna
 	if len(res) == 0 {
 		return models.FrontOfCard{}, ErrNoResults
 	}
-
+	logger.Debug().Msgf("front of card: %+v", res[0])
 	return res[0], nil
 
 }
@@ -378,6 +379,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, usernam
 					{"answer", "$back"},
 					{"deck_id", "$deck_id"},
 					{"next_card", bson.D{{"$first", "$nextCard._id"}}},
+					{"previous_card", bson.D{{"$first", "$previousCard._id"}}},
 					{"is_upvoted_by_user", "$is_upvoted_by_user"},
 					{"is_downvoted_by_user", "$is_downvoted_by_user"},
 					{"created_at", "$created_at"},
@@ -392,6 +394,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, usernam
 		logger.Error().Err(err).Msgf("while getting cursor")
 		return models.BackOfCard{}, errors.Join(err, ErrAggregate)
 	}
+	defer cursor.Close(ctx)
 
 	var res []models.BackOfCard
 	err = cursor.All(ctx, &res)
@@ -439,8 +442,6 @@ func (d *CardDAO) RemoveUserFromUpvoteForCard(ctx context.Context, cardID, userI
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error removing user from upvote: %w", err), ErrUpdate)
@@ -463,8 +464,6 @@ func (d *CardDAO) AddUserToDownvoteForCard(ctx context.Context, cardID, userID s
 		}},
 	}
 
-	logger.Debug().Msgf("%+v", filter)
-
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return errors.Join(fmt.Errorf("error adding user to downvote: %w", err), ErrUpdate)
@@ -483,8 +482,6 @@ func (d *CardDAO) RemoveUserFromDownvoteForCard(ctx context.Context, cardID, use
 			{"user_upvotes", userID},
 		}},
 	}
-
-	logger.Debug().Msgf("%+v", filter)
 
 	_, err := d.collection.UpdateOne(ctx, filter, update)
 	if err != nil {

@@ -2,10 +2,11 @@ package pages
 
 
 templ DeckViewerPage(data DeckViewPageData){
-    <section class="flex flex-col justify-content align-center w-3/4 h-26 sm:w-2/3">
+    <section class="reptr-heading">
         <h2>{data.DeckName}</h2>
-        <section id="placeholder">
-            @data.Content
-        </section>
+    </section>
+    <section id="placeholder">
+    <a class="home-link" href="/page/home">Back to Home</a>
+        @data.Content
     </section>
 }
