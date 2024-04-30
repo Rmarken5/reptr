@@ -301,7 +301,13 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 
 	homepageData, err := rc.deckController.GetHomepageData(r.Context(), userName, time.Time{}, nil, 10, 0)
 	if err != nil {
-		http.Error(w, "while getting homepageData for user", toStatus(err))
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting homepageData for use",
+			Msg:        "Unable to load homepage.",
+		})
 		return
 	}
 

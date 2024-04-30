@@ -397,8 +397,8 @@ func TestReprtClient_HomePage(t *testing.T) {
 		},
 			Decks: []models.GetDeckResults{
 				{
-					ID:        uuid.NewString(),
-					Name:      uuid.NewString(),
+					ID:        "123",
+					Name:      "abc",
 					Upvotes:   0,
 					Downvotes: 0,
 					CreatedAt: timeNow,
@@ -424,7 +424,7 @@ func TestReprtClient_HomePage(t *testing.T) {
 		},
 		"should return 404 when error from database returns not found": {
 			mockController: func(mock *mockLogic.MockController) {
-				mock.EXPECT().GetHomepageData(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, database.ErrNoResults)
+				mock.EXPECT().GetHomepageData(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(models.HomePageData{}, database.ErrNoResults)
 			},
 			wantUserName:     "hello",
 			haveHomePageData: models.HomePageData{},
