@@ -38,6 +38,7 @@ const (
 	homeStyle         = stylesDir + "home.css"
 	groupStyle        = stylesDir + "group.css"
 	deckViewStyle     = stylesDir + "deck-viewer.css"
+	createDeckStyle   = stylesDir + "create_deck.css"
 	errorStyle        = stylesDir + "error.css"
 )
 
@@ -316,9 +317,9 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 		homeGroups[i] = homeGroupFromModel(group)
 	}
 
-	homeDecks := make([]pages.HomeDeckData, len(homepageData.Decks))
+	homeDecks := make([]dumb.Deck, len(homepageData.Decks))
 	for i, deck := range homepageData.Decks {
-		homeDecks[i] = homeDeckFromModel(deck)
+		homeDecks[i] = webDeckFromModel(deck)
 	}
 	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups, Decks: homeDecks}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
 }
@@ -405,13 +406,15 @@ func homeGroupFromModel(group models.Group) pages.HomeGroupData {
 	}
 }
 
-func homeDeckFromModel(deck models.GetDeckResults) pages.HomeDeckData {
-	return pages.HomeDeckData{
-		ID:        deck.ID,
-		DeckName:  deck.Name,
-		NumCards:  strconv.Itoa(deck.NumCards),
-		Upvotes:   strconv.Itoa(deck.Upvotes),
-		Downvotes: strconv.Itoa(deck.Downvotes),
+func webDeckFromModel(deck models.GetDeckResults) dumb.Deck {
+	return dumb.Deck{
+		ID:           deck.ID,
+		DeckName:     deck.Name,
+		NumCards:     deck.NumCards,
+		NumUpvotes:   deck.Upvotes,
+		NumDownvotes: deck.Downvotes,
+		CreatedAt:    deck.CreatedAt,
+		UpdatedAt:    deck.UpdatedAt,
 	}
 }
 
@@ -424,10 +427,10 @@ func groupPageFromModel(group models.GroupWithDecks) pages.GroupData {
 	}
 }
 
-func groupDecksFromDecks(fromService []models.GetDeckResults) []pages.Deck {
-	apiDecks := make([]pages.Deck, len(fromService))
+func groupDecksFromDecks(fromService []models.GetDeckResults) []dumb.Deck {
+	apiDecks := make([]dumb.Deck, len(fromService))
 	for i, deck := range fromService {
-		apiDecks[i] = pages.Deck{
+		apiDecks[i] = dumb.Deck{
 			ID:           deck.ID,
 			DeckName:     deck.Name,
 			NumUpvotes:   deck.Upvotes,
@@ -454,7 +457,7 @@ func (rc ReprtClient) CreateDeckPage(w http.ResponseWriter, r *http.Request, gro
 		path = path + "/" + groupID
 	}
 
-	pages.Page(pages.Form(nil, pages.CreateDeckPage(path)), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.CreateDeckPage(path)), append(cssFileArr, formStyle, createDeckStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -529,7 +532,7 @@ func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID
 
 func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "GetCreateCardsForDeckPage").Logger()
-	logger.Info().Msg("serving creating deck")
+	logger.Info().Msg("serving create cards for deck")
 
 	if deckID == "" {
 		logger.Error().Msgf("get cards without deckID")
@@ -545,7 +548,6 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
 	if err != nil && !errors.Is(err, database.ErrNoResults) {
 		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
-		http.Error(w, "while getting cards for deck", toStatus(err))
 		status := toStatus(err)
 		rc.serveError(w, r, pages.ErrorPageData{
 			StatusCode: strconv.Itoa(status),
@@ -555,6 +557,7 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 		})
 		return
 	}
+
 	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
 	for i, card := range deck.Cards {
 		viewCards[i] = dumb.CardDisplay{
@@ -562,11 +565,12 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 			Back:  card.Back,
 		}
 	}
-	pages.Page(pages.Form(nil, pages.DeckCreateCardForm(pages.DeckCreateCardData{
+
+	pages.DeckCreateCardForm(pages.DeckCreateCardData{
 		DeckID:   deck.ID,
 		DeckName: deck.Name,
 		Cards:    viewCards,
-	})), cssFileArr).Render(r.Context(), w)
+	}).Render(r.Context(), w)
 
 }
 func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
@@ -602,7 +606,7 @@ func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, de
 			Back:  card.Back,
 		}
 	}
-	dumb.GroupCardDisplay(dumb.GroupCardDisplayPageData{Cards: viewCards}).Render(r.Context(), w)
+	dumb.GroupCardDisplay(viewCards).Render(r.Context(), w)
 }
 func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "ViewDeck").Logger()

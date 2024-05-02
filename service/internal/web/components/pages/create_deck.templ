@@ -1,14 +1,23 @@
 package pages
 
 templ CreateDeckPage(path string) {
-    <body>
-         <form id="create-deck-form" hx-swap="outerhtml" hx-post={path}>
-            <section id="create-deck-section" >
-                <label for="deck-name" id="deck-name-label">Deck Name: </label>
-                <input id="deck-name" name="deck-name"/>
-                <button type="submit">Create Deck</button>
-            </section>
-        </form>
-        <a href="/page/home">Back to Home</a>
-    </body>
+	<a href="/page/home">Back to Home</a>
+	<section class="reptr-heading">
+		<span>Create Deck</span>
+	</section>
+	<section class="reptr-description">
+		<p>
+			Use this page to create a deck.
+		</p>
+	</section>
+	<section class="form-container">
+		<form id="create-deck-form" hx-swap="outerHTML" hx-post={ path }>
+			<section id="create-deck-section">
+				<section class="input-container">
+					<input id="deck-name" name="deck-name" placeholder="Deck Name"/>
+				</section>
+				<button class="button" type="submit">Create Deck</button>
+			</section>
+		</form>
+	</section>
 }

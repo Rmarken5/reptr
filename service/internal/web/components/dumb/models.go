@@ -1,5 +1,7 @@
 package dumb
 
+import "time"
+
 type (
 	CardFront struct {
 		DeckID         string
@@ -30,6 +32,15 @@ type (
 		DownvoteClass     string
 		UpvoteDirection   string
 		DownvoteDirection string
+	}
+	Deck struct {
+		ID           string
+		DeckName     string
+		NumUpvotes   int
+		NumDownvotes int
+		NumCards     int
+		CreatedAt    time.Time
+		UpdatedAt    time.Time
 	}
 )
 

@@ -23,20 +23,20 @@ func CreateDeckPage(path string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><form id=\"create-deck-form\" hx-swap=\"outerhtml\" hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a href=\"/page/home\">Back to Home</a><section class=\"reptr-heading\"><span>Create Deck</span></section><section class=\"reptr-description\"><p>Use this page to create a deck.</p></section><section class=\"form-container\"><form id=\"create-deck-form\" hx-swap=\"outerHTML\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create_deck.templ`, Line: 5, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create_deck.templ`, Line: 14, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><section id=\"create-deck-section\"><label for=\"deck-name\" id=\"deck-name-label\">Deck Name: </label> <input id=\"deck-name\" name=\"deck-name\"> <button type=\"submit\">Create Deck</button></section></form><a href=\"/page/home\">Back to Home</a></body>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><section id=\"create-deck-section\"><section class=\"input-container\"><input id=\"deck-name\" name=\"deck-name\" placeholder=\"Deck Name\"></section><button class=\"button\" type=\"submit\">Create Deck</button></section></form></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

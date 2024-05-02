@@ -1,0 +1,31 @@
+package pages
+
+import (
+	"github.com/rmarken/reptr/service/internal/web/components/dumb"
+)
+
+type (
+	DeckCreateCardData struct {
+		DeckID   string
+		DeckName string
+		Cards    []dumb.CardDisplay
+	}
+)
+
+templ DeckCreateCardForm(createCardData DeckCreateCardData) {
+	<h2>Create Cards for { createCardData.DeckName }</h2>
+	<section id="card-section" class="card-section" hx-get={ "/page/add-card/" + createCardData.DeckID } hx-trigger="newCard from:body">
+		@dumb.GroupCardDisplay(createCardData.Cards)
+	</section>
+	<form id="create-card-form" hx-post={ "/page/create-cards/" + createCardData.DeckID } hx-target="#card-section">
+		<section id="create-card" class="create-card-section">
+			<section class="input-container">
+				<textarea id="card-front" name="card-front" rows="2" placeholder="Front of Card"></textarea>
+			</section>
+			<section class="input-container">
+				<textarea id="card-back" name="card-back" rows="2" placeholder="Back of Card"></textarea>
+			</section>
+			<button class="button" type="submit">Create Card</button>
+		</section>
+	</form>
+}

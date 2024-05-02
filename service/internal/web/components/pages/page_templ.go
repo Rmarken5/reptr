@@ -35,7 +35,7 @@ func Page(content templ.Component, styles []string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(style)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/page.templ`, Line: 8, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/page.templ`, Line: 8, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {

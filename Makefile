@@ -33,8 +33,9 @@ cover:
 
 .PHONY: gen
 gen:
-	find . -name "*_mock.go" -type f -delete
+	find . \( -name "*_mock.go" -o -name "*_templ.go" \) -type f -delete
 	go generate ./...
+	templ fmt ./service/internal/web/components
 	templ generate
 
 .PHONY: local

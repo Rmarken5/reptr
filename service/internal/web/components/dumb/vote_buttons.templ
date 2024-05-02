@@ -1,0 +1,11 @@
+package dumb
+
+import "path"
+import "fmt"
+
+templ VoteButtons(data VoteButtonsData) {
+	<section id="vote-section" class="vote-section" hx-swap="outerHTML">
+		<button class={ fmt.Sprintf("button %s", data.UpvoteClass) } hx-post={ string(templ.SafeURL(path.Join("/page/upvote-card/", data.CardID, data.UpvoteDirection))) } class={ data.UpvoteClass } hx-target="#vote-section">Upvote</button>
+		<button class={ fmt.Sprintf("button %s", data.DownvoteClass) } hx-post={ string(templ.SafeURL(path.Join("/page/upvote-card/", data.CardID, data.DownvoteDirection))) } class={ data.DownvoteClass } hx-target="#vote-section">Downvote</button>
+	</section>
+}
