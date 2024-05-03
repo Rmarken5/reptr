@@ -1,0 +1,20 @@
+.create-card-section {
+    min-height: 15rem;
+}
+
+.card-section {
+    min-height: 15rem;
+}
+
+.card {
+    display: block;
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    background-color: #ced4da;
+    min-height: 5rem;
+}
+.card-content{
+    display: block;
+    margin-bottom: 1rem;
+}
