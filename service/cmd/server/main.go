@@ -76,6 +76,7 @@ func main() {
 	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.GetCreateCardsForDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-cards-content/{deck_id}", wrapper.GetCreateCardsForDeckContent).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/add-card/{deck_id}", wrapper.GetCardsForDeck).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/front-of-card/{deck_id}/{card_id}", wrapper.FrontOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods(http.MethodGet)

@@ -2,6 +2,7 @@ package pages
 
 import (
 	"github.com/rmarken/reptr/service/internal/web/components/dumb"
+	"strconv"
 )
 
 type (
@@ -15,7 +16,12 @@ type (
 templ DeckCreateCardForm(createCardData DeckCreateCardData) {
 	<h2>Create Cards for { createCardData.DeckName }</h2>
 	<section id="card-section" class="card-section" hx-get={ "/page/add-card/" + createCardData.DeckID } hx-trigger="newCard from:body">
-		@dumb.GroupCardDisplay(createCardData.Cards)
+		for i, card := range createCardData.Cards {
+			<section class="card" id={ "card-" + strconv.Itoa(i) }>
+				<section class="card-content" id={ "front-" + strconv.Itoa(i) }><p>{ card.Front }</p></section>
+				<section class="card-content" id={ "back-" + strconv.Itoa(i) }><p>{ card.Back }</p></section>
+			</section>
+		}
 	</section>
 	<form id="create-card-form" hx-post={ "/page/create-cards/" + createCardData.DeckID } hx-target="#card-section">
 		<section id="create-card" class="create-card-section">

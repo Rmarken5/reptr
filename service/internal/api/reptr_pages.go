@@ -527,11 +527,55 @@ func (rc ReprtClient) CreateDeck(w http.ResponseWriter, r *http.Request, groupID
 		}
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/page/create-cards/%s", deckID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/page/create-cards-content/%s", deckID), http.StatusSeeOther)
 }
 
 func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "GetCreateCardsForDeckPage").Logger()
+	logger.Info().Msg("serving create cards for deck")
+
+	if deckID == "" {
+		logger.Error().Msgf("get cards without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get cards without deckID",
+			Msg:        "Problem getting cards.",
+		})
+		return
+	}
+
+	deck, err := rc.deckController.GetCardsByDeckID(r.Context(), deckID)
+	if err != nil && !errors.Is(err, database.ErrNoResults) {
+		logger.Error().Err(err).Msgf("while cards for deck %s", deckID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting cards for deck",
+			Msg:        "Problem getting cards.",
+		})
+		return
+	}
+
+	viewCards := make([]dumb.CardDisplay, len(deck.Cards))
+	for i, card := range deck.Cards {
+		viewCards[i] = dumb.CardDisplay{
+			Front: card.Front,
+			Back:  card.Back,
+		}
+	}
+
+	pages.Page(pages.Form(nil, pages.DeckCreateCardForm(pages.DeckCreateCardData{
+		DeckID:   deck.ID,
+		DeckName: deck.Name,
+		Cards:    viewCards,
+	})), append(cssFileArr, formStyle)).Render(r.Context(), w)
+
+}
+
+func (rc ReprtClient) GetCreateCardsForDeckContent(w http.ResponseWriter, r *http.Request, deckID string) {
+	logger := rc.logger.With().Str("method", "GetCreateCardsForDeckContent").Logger()
 	logger.Info().Msg("serving create cards for deck")
 
 	if deckID == "" {
@@ -573,6 +617,7 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 	}).Render(r.Context(), w)
 
 }
+
 func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "GetCardsForDeck").Logger()
 	logger.Error().Msgf("getting cards for deck: %s", deckID)

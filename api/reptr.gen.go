@@ -270,6 +270,9 @@ type ClientInterface interface {
 	// BackOfCard request
 	BackOfCard(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetCreateCardsForDeckContent request
+	GetCreateCardsForDeckContent(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetCreateCardsForDeckPage request
 	GetCreateCardsForDeckPage(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -393,6 +396,18 @@ func (c *Client) GetCardsForDeck(ctx context.Context, deckId string, reqEditors 
 
 func (c *Client) BackOfCard(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBackOfCardRequest(c.Server, deckId, cardId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetCreateCardsForDeckContent(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCreateCardsForDeckContentRequest(c.Server, deckId)
 	if err != nil {
 		return nil, err
 	}
@@ -840,6 +855,40 @@ func NewBackOfCardRequest(server string, deckId string, cardId string) (*http.Re
 	}
 
 	operationPath := fmt.Sprintf("/page/back-of-card/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetCreateCardsForDeckContentRequest generates requests for GetCreateCardsForDeckContent
+func NewGetCreateCardsForDeckContentRequest(server string, deckId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deck_id", runtime.ParamLocationPath, deckId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/create-cards-content/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1753,6 +1802,9 @@ type ClientWithResponsesInterface interface {
 	// BackOfCardWithResponse request
 	BackOfCardWithResponse(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*BackOfCardResponse, error)
 
+	// GetCreateCardsForDeckContentWithResponse request
+	GetCreateCardsForDeckContentWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCreateCardsForDeckContentResponse, error)
+
 	// GetCreateCardsForDeckPageWithResponse request
 	GetCreateCardsForDeckPageWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCreateCardsForDeckPageResponse, error)
 
@@ -1905,6 +1957,27 @@ func (r BackOfCardResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r BackOfCardResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetCreateCardsForDeckContentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCreateCardsForDeckContentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCreateCardsForDeckContentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2390,6 +2463,15 @@ func (c *ClientWithResponses) BackOfCardWithResponse(ctx context.Context, deckId
 	return ParseBackOfCardResponse(rsp)
 }
 
+// GetCreateCardsForDeckContentWithResponse request returning *GetCreateCardsForDeckContentResponse
+func (c *ClientWithResponses) GetCreateCardsForDeckContentWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCreateCardsForDeckContentResponse, error) {
+	rsp, err := c.GetCreateCardsForDeckContent(ctx, deckId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCreateCardsForDeckContentResponse(rsp)
+}
+
 // GetCreateCardsForDeckPageWithResponse request returning *GetCreateCardsForDeckPageResponse
 func (c *ClientWithResponses) GetCreateCardsForDeckPageWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCreateCardsForDeckPageResponse, error) {
 	rsp, err := c.GetCreateCardsForDeckPage(ctx, deckId, reqEditors...)
@@ -2685,6 +2767,22 @@ func ParseBackOfCardResponse(rsp *http.Response) (*BackOfCardResponse, error) {
 	}
 
 	response := &BackOfCardResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetCreateCardsForDeckContentResponse parses an HTTP response from a GetCreateCardsForDeckContentWithResponse call
+func ParseGetCreateCardsForDeckContentResponse(rsp *http.Response) (*GetCreateCardsForDeckContentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCreateCardsForDeckContentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -3147,6 +3245,9 @@ type ServerInterface interface {
 	// (GET /page/back-of-card/{deck_id}/{card_id})
 	BackOfCard(w http.ResponseWriter, r *http.Request, deckId string, cardId string)
 	// create cards for deck page
+	// (GET /page/create-cards-content/{deck_id})
+	GetCreateCardsForDeckContent(w http.ResponseWriter, r *http.Request, deckId string)
+	// create cards for deck page
 	// (GET /page/create-cards/{deck_id})
 	GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.Request, deckId string)
 	// handles form submit of create card on create deck page
@@ -3299,6 +3400,32 @@ func (siw *ServerInterfaceWrapper) BackOfCard(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BackOfCard(w, r, deckId, cardId)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetCreateCardsForDeckContent operation middleware
+func (siw *ServerInterfaceWrapper) GetCreateCardsForDeckContent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "deck_id" -------------
+	var deckId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deck_id", mux.Vars(r)["deck_id"], &deckId, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deck_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCreateCardsForDeckContent(w, r, deckId)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -4004,6 +4131,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/page/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods("GET")
 
+	r.HandleFunc(options.BaseURL+"/page/create-cards-content/{deck_id}", wrapper.GetCreateCardsForDeckContent).Methods("GET")
+
 	r.HandleFunc(options.BaseURL+"/page/create-cards/{deck_id}", wrapper.GetCreateCardsForDeckPage).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/page/create-cards/{deck_id}", wrapper.CreateCardForDeck).Methods("POST")
@@ -4050,48 +4179,48 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"Z2myudz8NwAA//+MTGHPeTkAAA==",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

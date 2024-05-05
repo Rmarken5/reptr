@@ -142,6 +142,22 @@ paths:
               schema:
                 type: string
           $ref: '#/components/responses/CreateCardResponseBody'
+  /page/create-cards-content/{deck_id}:
+    get:
+      operationId: getCreateCardsForDeckContent
+      summary: create cards for deck page
+      description: page with form for creating cards on deck
+      parameters:
+        - name: deck_id
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
   /page/add-card/{deck_id}:
     get:
       operationId: getCardsForDeck
