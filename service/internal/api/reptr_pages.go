@@ -37,7 +37,7 @@ const (
 	registrationStyle = stylesDir + "registration.css"
 	homeStyle         = stylesDir + "home.css"
 	groupStyle        = stylesDir + "group.css"
-	deckViewStyle     = stylesDir + "deck-viewer.css"
+	deckViewStyle     = stylesDir + "deck_viewer.css"
 	createDeckStyle   = stylesDir + "create_deck.css"
 	errorStyle        = stylesDir + "error.css"
 )
@@ -321,7 +321,7 @@ func (rc ReprtClient) HomePage(w http.ResponseWriter, r *http.Request) {
 	for i, deck := range homepageData.Decks {
 		homeDecks[i] = webDeckFromModel(deck)
 	}
-	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups, Decks: homeDecks}), append(cssFileArr, tableStyle, homeStyle)).Render(r.Context(), w)
+	pages.Page(pages.Home(pages.HomeData{Username: userName, Groups: homeGroups, Decks: homeDecks}), append(cssFileArr, tableStyle, homeStyle, groupStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
@@ -570,13 +570,13 @@ func (rc ReprtClient) GetCreateCardsForDeckPage(w http.ResponseWriter, r *http.R
 		DeckID:   deck.ID,
 		DeckName: deck.Name,
 		Cards:    viewCards,
-	})), append(cssFileArr, formStyle)).Render(r.Context(), w)
+	})), append(cssFileArr, formStyle, createDeckStyle)).Render(r.Context(), w)
 
 }
 
 func (rc ReprtClient) GetCreateCardsForDeckContent(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "GetCreateCardsForDeckContent").Logger()
-	logger.Info().Msg("serving create cards for deck")
+	logger.Info().Msg("serving create cards content for deck")
 
 	if deckID == "" {
 		logger.Error().Msgf("get cards without deckID")
@@ -610,7 +610,7 @@ func (rc ReprtClient) GetCreateCardsForDeckContent(w http.ResponseWriter, r *htt
 		}
 	}
 
-	pages.DeckCreateCardForm(pages.DeckCreateCardData{
+	pages.CreateDeckContent(pages.DeckCreateCardData{
 		DeckID:   deck.ID,
 		DeckName: deck.Name,
 		Cards:    viewCards,

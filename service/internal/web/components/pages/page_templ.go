@@ -46,7 +46,7 @@ func Page(content templ.Component, styles []string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>Fix Page Title</title></head><body class=\"min-h-screen flex flex-col justify-center content-center\"><section class=\"container\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<title>Fix Page Title</title></head><body class=\"\"><section class=\"container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,21 +1,10 @@
 package pages
 
 import (
-	"github.com/rmarken/reptr/service/internal/web/components/dumb"
 	"strconv"
 )
 
-type (
-	DeckCreateCardData struct {
-		DeckID   string
-		DeckName string
-		Cards    []dumb.CardDisplay
-	}
-)
-
-templ DeckCreateCardForm(createCardData DeckCreateCardData) {
-	<a class="home-link" href="/page/home">Back to Home</a>
-	<h2>Create Cards for { createCardData.DeckName }</h2>
+templ CreateDeckContent(createCardData DeckCreateCardData) {
 	<section class="form-container">
 		<section id="card-section" class="card-section" hx-get={ "/page/add-card/" + createCardData.DeckID } hx-trigger="newCard from:body">
 			for i, card := range createCardData.Cards {
