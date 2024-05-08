@@ -20,7 +20,7 @@ templ GroupPage(groupData GroupData) {
 	<section id="group-decks">
 		<h2>Decks</h2>
 		@dumb.DeckTable(groupData.Decks)
-		<section class="create-button ">
+		<section class="create-button">
 			<a class="button button-color" href={ templ.SafeURL(path.Join("/page/create-deck/", groupData.ID)) }>
 				Create
 				Deck

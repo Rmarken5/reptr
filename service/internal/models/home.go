@@ -2,7 +2,7 @@ package models
 
 type (
 	HomePageData struct {
-		Groups []Group
+		Groups []HomePageGroup
 		Decks  []GetDeckResults
 	}
 )

@@ -206,6 +206,7 @@ func (l *Logic) CreateGroup(ctx context.Context, username, groupName string) (st
 		CreatedBy:  username,
 		DeckIDs:    []string{},
 		Moderators: []string{username},
+		Members:    []string{username},
 		CreatedAt:  timeNow,
 		UpdatedAt:  timeNow,
 		DeletedAt:  nil,
@@ -276,7 +277,7 @@ func (l *Logic) GetHomepageData(ctx context.Context, username string, from time.
 	}
 
 	var (
-		groups            []models.Group
+		groups            []models.HomePageGroup
 		decks             []models.GetDeckResults
 		g, errCtx         = errgroup.WithContext(ctx)
 		groupErr, deckErr error

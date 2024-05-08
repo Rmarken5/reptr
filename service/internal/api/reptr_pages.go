@@ -397,12 +397,12 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
 }
 
-func homeGroupFromModel(group models.Group) pages.HomeGroupData {
+func homeGroupFromModel(group models.HomePageGroup) pages.HomeGroupData {
 	return pages.HomeGroupData{
 		ID:        group.ID,
 		GroupName: group.Name,
 		NumDecks:  len(group.DeckIDs),
-		NumUsers:  0,
+		NumUsers:  group.NumMembers,
 	}
 }
 
@@ -688,7 +688,7 @@ func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID st
 			StatusCode: strconv.Itoa(status),
 			Status:     http.StatusText(status),
 			Error:      "while getting card content",
-			Msg:        "Problem getting deck content.",
+			Msg:        "Looks like there are no cards for this deck. Use the deck builder to add cards to this deck.",
 		})
 		return
 	}

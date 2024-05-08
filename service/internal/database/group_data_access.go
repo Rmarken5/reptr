@@ -183,8 +183,34 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 											bson.A{
 												"$$deck",
 												bson.D{
-													{"upvotes", bson.D{{"$size", "$$deck.user_upvotes"}}},
-													{"downvotes", bson.D{{"$size", "$$deck.user_downvotes"}}},
+													{"upvotes",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$$deck.user_upvotes",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
+													{"downvotes",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$$deck.user_downvotes",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
 												},
 											},
 										},
@@ -194,6 +220,42 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 						},
 					},
 				},
+			},
+		},
+	}
+	unwind := bson.D{
+		{"$unwind",
+			bson.D{
+				{"path", "$decks"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		},
+	}
+	lookupCards := bson.D{
+		{"$lookup",
+			bson.D{
+				{"from", "cards"},
+				{"localField", "decks._id"},
+				{"foreignField", "deck_id"},
+				{"as", "cards"},
+			},
+		},
+	}
+
+	getSizeOfCards := bson.D{{"$addFields", bson.D{{"decks.num_cards", bson.D{{"$size", "$cards"}}}}}}
+
+	regroup := bson.D{
+		{"$group",
+			bson.D{
+				{"_id", "$_id"},
+				{"name", bson.D{{"$first", "$name"}}},
+				{"created_by", bson.D{{"$first", "$created_by"}}},
+				{"created_at", bson.D{{"$first", "$created_at"}}},
+				{"updated_at", bson.D{{"$first", "$updated_at"}}},
+				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
+				{"members", bson.D{{"$first", "$members"}}},
+				{"moderators", bson.D{{"$first", "$moderators"}}},
+				{"decks", bson.D{{"$push", "$decks"}}},
 			},
 		},
 	}
@@ -211,6 +273,10 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 		match,
 		lookupDecks,
 		getVotes,
+		unwind,
+		lookupCards,
+		getSizeOfCards,
+		regroup,
 		removeUserVotes,
 	}
 

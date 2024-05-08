@@ -229,10 +229,10 @@ func (mr *MockRepositoryMockRecorder) GetGroupByID(arg0, arg1 any) *gomock.Call 
 }
 
 // GetGroupsForUser mocks base method.
-func (m *MockRepository) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.Group, error) {
+func (m *MockRepository) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.HomePageGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGroupsForUser", arg0, arg1, arg2, arg3, arg4, arg5)
-	ret0, _ := ret[0].([]models.Group)
+	ret0, _ := ret[0].([]models.HomePageGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
