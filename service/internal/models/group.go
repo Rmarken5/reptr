@@ -16,6 +16,6 @@ type (
 
 	GroupWithDecks struct {
 		Group `bson:",inline"`
-		Decks []GetDeckResults
+		Decks []GetDeckResults `bson:"decks"`
 	}
 )

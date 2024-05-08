@@ -376,7 +376,7 @@ func (rc ReprtClient) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.Form(pages.Banner("Group Successfully Created"), pages.CreateGroupForm()), append(cssFileArr, formStyle, groupStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID string) {
@@ -435,7 +435,7 @@ func groupDecksFromDecks(fromService []models.GetDeckResults) []dumb.Deck {
 			DeckName:     deck.Name,
 			NumUpvotes:   deck.Upvotes,
 			NumDownvotes: deck.Downvotes,
-			NumCards:     0,
+			NumCards:     deck.NumCards,
 			CreatedAt:    deck.CreatedAt,
 			UpdatedAt:    deck.UpdatedAt,
 		}
@@ -446,7 +446,7 @@ func groupDecksFromDecks(fromService []models.GetDeckResults) []dumb.Deck {
 func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
 	logger := rc.logger.With().Str("method", "CreateGroupPage").Logger()
 	logger.Info().Msg("serving create group page")
-	pages.Page(pages.Form(nil, pages.CreateGroupForm()), cssFileArr).Render(r.Context(), w)
+	pages.Page(pages.Form(nil, pages.CreateGroupForm()), append(cssFileArr, formStyle)).Render(r.Context(), w)
 }
 
 func (rc ReprtClient) CreateDeckPage(w http.ResponseWriter, r *http.Request, groupID string) {

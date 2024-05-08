@@ -168,39 +168,26 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
-	unwind := bson.D{
-		{"$unwind",
-			bson.D{
-				{"path", "$decks"},
-				{"preserveNullAndEmptyArrays", true},
-			},
-		},
-	}
-	getVoteCounts := bson.D{
+	getVotes := bson.D{
 		{"$addFields",
 			bson.D{
-				{"decks.upvotes",
+				{"decks",
 					bson.D{
-						{"$size",
+						{"$map",
 							bson.D{
-								{"$ifNull",
-									bson.A{
-										"$decks.user_upvotes",
-										bson.A{},
-									},
-								},
-							},
-						},
-					},
-				},
-				{"decks.downvote",
-					bson.D{
-						{"$size",
-							bson.D{
-								{"$ifNull",
-									bson.A{
-										"$decks.user_downvotes",
-										bson.A{},
+								{"input", "$decks"},
+								{"as", "deck"},
+								{"in",
+									bson.D{
+										{"$mergeObjects",
+											bson.A{
+												"$$deck",
+												bson.D{
+													{"upvotes", bson.D{{"$size", "$$deck.user_upvotes"}}},
+													{"downvotes", bson.D{{"$size", "$$deck.user_downvotes"}}},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -210,6 +197,7 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
+
 	removeUserVotes := bson.D{
 		{"$project",
 			bson.D{
@@ -218,28 +206,12 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
-	regroupDecks := bson.D{
-		{"$group",
-			bson.D{
-				{"_id", "$_id"},
-				{"name", bson.D{{"$first", "$name"}}},
-				{"created_by", bson.D{{"$first", "$created_by"}}},
-				{"decks", bson.D{{"$push", "$decks"}}},
-				{"moderators", bson.D{{"$first", "$moderators"}}},
-				{"created_at", bson.D{{"$first", "$created_at"}}},
-				{"updated_at", bson.D{{"$first", "$updated_at"}}},
-				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
-			},
-		},
-	}
 
 	filter := bson.A{
 		match,
 		lookupDecks,
-		unwind,
-		getVoteCounts,
+		getVotes,
 		removeUserVotes,
-		regroupDecks,
 	}
 
 	cur, err := g.collection.Aggregate(ctx, filter)

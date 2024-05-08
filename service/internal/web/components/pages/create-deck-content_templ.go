@@ -27,14 +27,14 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section class=\"form-container\"><section id=\"card-section\" class=\"card-section\" hx-get=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section id=\"card-section\" class=\"card-section\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs("/page/add-card/" + createCardData.DeckID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 9, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 8, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -52,7 +52,7 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("card-" + strconv.Itoa(i))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 11, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 10, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -65,7 +65,7 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("front-" + strconv.Itoa(i))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 12, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 11, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -78,7 +78,7 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(card.Front)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 12, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 11, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -91,7 +91,7 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("back-" + strconv.Itoa(i))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 13, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 12, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -104,7 +104,7 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(card.Back)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 13, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 12, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -122,13 +122,13 @@ func CreateDeckContent(createCardData DeckCreateCardData) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("/page/create-cards/" + createCardData.DeckID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 17, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/create-deck-content.templ`, Line: 16, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#card-section\"><section id=\"create-card\" class=\"create-card-section\"><section class=\"input-container\"><textarea id=\"card-front\" name=\"card-front\" rows=\"2\" placeholder=\"Front of Card\"></textarea></section><section class=\"input-container\"><textarea id=\"card-back\" name=\"card-back\" rows=\"2\" placeholder=\"Back of Card\"></textarea></section><button class=\"button\" type=\"submit\">Create Card</button></section></form></section>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#card-section\"><section id=\"create-card\" class=\"create-card-section\"><section class=\"input-container\"><textarea id=\"card-front\" name=\"card-front\" rows=\"2\" placeholder=\"Front of Card\"></textarea></section><section class=\"input-container\"><textarea id=\"card-back\" name=\"card-back\" rows=\"2\" placeholder=\"Back of Card\"></textarea></section><button class=\"button\" type=\"submit\">Create Card</button></section></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

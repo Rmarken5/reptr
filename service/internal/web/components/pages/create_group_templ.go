@@ -23,7 +23,7 @@ func CreateGroupForm() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body><h1>Create Group</h1><section id=\"create-group-section\"><form id=\"create-group-form\" action=\"/page/create-group\" method=\"POST\"><label for=\"group-name\">Group Name: </label> <input type=\"text\" id=\"group-name-input\" name=\"group-name\"> <button type=\"submit\">Create Group</button></form></section><a href=\"/page/home\">Back to Home</a></body>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<h1>Create Group</h1><a href=\"/page/home\">Back to Home</a><section id=\"form-container\" class=\"form-container\"><form id=\"create-group-form\" action=\"/page/create-group\" method=\"POST\"><section class=\"input-container\"><input type=\"text\" id=\"group-name-input\" placeholder=\"Group Name\" name=\"group-name\"></section><button class=\"button\" type=\"submit\">Create Group</button></form></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
