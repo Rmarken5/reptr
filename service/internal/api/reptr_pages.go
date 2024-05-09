@@ -394,53 +394,9 @@ func (rc ReprtClient) GroupPage(w http.ResponseWriter, r *http.Request, groupID 
 		})
 		return
 	}
+
+	logger.Debug().Msgf("group from service: %+v", group)
 	pages.Page(pages.Form(nil, pages.GroupPage(groupPageFromModel(group))), append(cssFileArr, tableStyle, groupStyle)).Render(r.Context(), w)
-}
-
-func homeGroupFromModel(group models.HomePageGroup) pages.HomeGroupData {
-	return pages.HomeGroupData{
-		ID:        group.ID,
-		GroupName: group.Name,
-		NumDecks:  len(group.DeckIDs),
-		NumUsers:  group.NumMembers,
-	}
-}
-
-func webDeckFromModel(deck models.GetDeckResults) dumb.Deck {
-	return dumb.Deck{
-		ID:           deck.ID,
-		DeckName:     deck.Name,
-		NumCards:     deck.NumCards,
-		NumUpvotes:   deck.Upvotes,
-		NumDownvotes: deck.Downvotes,
-		CreatedAt:    deck.CreatedAt,
-		UpdatedAt:    deck.UpdatedAt,
-	}
-}
-
-func groupPageFromModel(group models.GroupWithDecks) pages.GroupData {
-	return pages.GroupData{
-		ID:        group.ID,
-		GroupName: group.Name,
-		Decks:     groupDecksFromDecks(group.Decks),
-		NumUsers:  "0",
-	}
-}
-
-func groupDecksFromDecks(fromService []models.GetDeckResults) []dumb.Deck {
-	apiDecks := make([]dumb.Deck, len(fromService))
-	for i, deck := range fromService {
-		apiDecks[i] = dumb.Deck{
-			ID:           deck.ID,
-			DeckName:     deck.Name,
-			NumUpvotes:   deck.Upvotes,
-			NumDownvotes: deck.Downvotes,
-			NumCards:     deck.NumCards,
-			CreatedAt:    deck.CreatedAt,
-			UpdatedAt:    deck.UpdatedAt,
-		}
-	}
-	return apiDecks
 }
 
 func (rc ReprtClient) CreateGroupPage(w http.ResponseWriter, r *http.Request) {
@@ -653,6 +609,7 @@ func (rc ReprtClient) GetCardsForDeck(w http.ResponseWriter, r *http.Request, de
 	}
 	dumb.GroupCardDisplay(viewCards).Render(r.Context(), w)
 }
+
 func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "ViewDeck").Logger()
 	logger.Info().Msg("view deck")
@@ -697,7 +654,7 @@ func (rc ReprtClient) ViewDeck(w http.ResponseWriter, r *http.Request, deckID st
 }
 
 func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID string) (pages.DeckViewPageData, error) {
-	s, err := rc.sessionController.GetSessionForUserAndDeckID(ctx, username, deckID)
+	s, err := rc.sessionController.GetActiveSessionForUserAndDeckID(ctx, username, deckID)
 	if err != nil {
 		return pages.DeckViewPageData{}, err
 	}
@@ -710,6 +667,7 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 			DeckName: s.DeckName,
 			DeckID:   deckID,
 			Content: dumb.FrontCardDisplay(dumb.CardFront{
+				SessionID:      s.ID,
 				DeckID:         deckID,
 				CardType:       "",
 				CardID:         s.CurrentCardID,
@@ -730,6 +688,7 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 		DeckName: s.DeckName,
 		DeckID:   deckID,
 		Content: dumb.BackOfCardDisplay(dumb.CardBack{
+			SessionID:      s.ID,
 			DeckID:         deckID,
 			CardID:         s.CurrentCardID,
 			BackContent:    b.Answer,
@@ -741,6 +700,7 @@ func (rc ReprtClient) getCardViewerContent(ctx context.Context, username, deckID
 	}, err
 
 }
+
 func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, deckID string) {
 	logger := rc.logger.With().Str("method", "CreateCardForDeck").Logger()
 	logger.Info().Msg("creating card")
@@ -833,29 +793,7 @@ func (rc ReprtClient) CreateCardForDeck(w http.ResponseWriter, r *http.Request, 
 
 func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID, cardID string) {
 	logger := rc.logger.With().Str("method", "BackOfCard").Logger()
-	logger.Info().Msgf("getting back of card with ID: %s", cardID)
-
-	if deckID == "" {
-		logger.Error().Msgf("get back of card without deckID")
-		rc.serveError(w, r, pages.ErrorPageData{
-			StatusCode: strconv.Itoa(http.StatusBadRequest),
-			Status:     http.StatusText(http.StatusBadRequest),
-			Error:      "get back of card without deckID",
-			Msg:        "Problem processing getting back of card.",
-		})
-		return
-	}
-
-	if cardID == "" {
-		logger.Error().Msgf("get back of card without cardID")
-		rc.serveError(w, r, pages.ErrorPageData{
-			StatusCode: strconv.Itoa(http.StatusBadRequest),
-			Status:     http.StatusText(http.StatusBadRequest),
-			Error:      "get back of card without cardID",
-			Msg:        "Problem processing getting back of card.",
-		})
-		return
-	}
+	logger.Info().Msgf("getting back of card for deckID and cardID: %s %s", deckID, cardID)
 
 	username, ok := reptrCtx.Username(r.Context())
 	if !ok {
@@ -869,9 +807,21 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 		return
 	}
 
+	s, err := rc.sessionController.GetActiveSessionForUserAndDeckID(r.Context(), username, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("failed to get session")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "not able to get session",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
 	backOfCard, err := rc.deckController.GetBackOfCardByID(r.Context(), deckID, cardID, username)
 	if err != nil {
-		logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", cardID)
+		logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", s.CurrentCardID)
 		status := toStatus(err)
 		rc.serveError(w, r, pages.ErrorPageData{
 			StatusCode: strconv.Itoa(status),
@@ -882,7 +832,20 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 		return
 	}
 
+	err = rc.sessionController.UpdateCardOrientation(r.Context(), s.ID, false)
+	if err != nil {
+		logger.Error().Err(err).Msgf("failed to update card orientation")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
 	dumb.BackOfCardDisplay(dumb.CardBack{
+		SessionID:      s.ID,
 		DeckID:         deckID,
 		CardID:         backOfCard.CardID,
 		BackContent:    backOfCard.Answer,
@@ -901,10 +864,77 @@ func (rc ReprtClient) BackOfCard(w http.ResponseWriter, r *http.Request, deckID,
 
 func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID, cardID string) {
 	logger := rc.logger.With().Str("method", "FrontOfCard").Logger()
-	logger.Info().Msgf("getting front of card with ID: %s", cardID)
+	logger.Info().Msgf("getting front of card with deckID and cardID: %s %s", deckID, cardID)
 
-	if deckID == "" {
-		logger.Error().Msgf("get front of card without deckID")
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
+	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, cardID, username)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", cardID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting front of card",
+			Msg:        "Something went wrong while getting front of card.",
+		})
+		http.Error(w, "while getting front of card", toStatus(err))
+		return
+	}
+
+	s, err := rc.sessionController.GetActiveSessionForUserAndDeckID(r.Context(), username, deckID)
+	if err != nil {
+		logger.Error().Err(err).Msgf("failed to get session")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "not able to get session",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
+	err = rc.sessionController.SetCurrentCard(r.Context(), s.ID, cardID, true)
+	if err != nil {
+		logger.Error().Err(err).Msgf("failed to update card orientation")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
+	dumb.FrontCardDisplay(dumb.CardFront{
+		SessionID:      s.ID,
+		DeckID:         deckID,
+		CardID:         frontOfCard.CardID,
+		Front:          frontOfCard.Content,
+		NextCardID:     frontOfCard.NextCard,
+		PreviousCardID: frontOfCard.PreviousCard,
+		Downvotes:      strconv.Itoa(frontOfCard.Downvotes),
+		Upvotes:        strconv.Itoa(frontOfCard.Upvotes),
+		CardType:       "",
+	}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) UpdateCardCorrect(w http.ResponseWriter, r *http.Request, sessionID string) {
+	logger := rc.logger.With().Str("method", "CardAnswerCorrect").Logger()
+	logger.Info().Msgf("getting front of card with ID: %s", sessionID)
+
+	if sessionID == "" {
+		logger.Error().Msgf("error updating card without sessionID")
 		rc.serveError(w, r, pages.ErrorPageData{
 			StatusCode: strconv.Itoa(http.StatusBadRequest),
 			Status:     http.StatusText(http.StatusBadRequest),
@@ -914,8 +944,30 @@ func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID
 		return
 	}
 
-	if cardID == "" {
-		logger.Error().Msgf("get front of card without cardID")
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	currentCardID := r.PostForm.Get("current-card-id")
+	nextCardID := r.PostForm.Get("next-card-id")
+	deckID := r.PostForm.Get("deck-id")
+
+	if currentCardID == "" {
+		logger.Error().Msgf("get front of card without currentCardID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "updating answer without cardID",
+			Msg:        "Problem recording answer.",
+		})
+		return
+	}
+
+	if deckID == "" {
+		logger.Error().Msgf("get front of card without deckID")
 		rc.serveError(w, r, pages.ErrorPageData{
 			StatusCode: strconv.Itoa(http.StatusBadRequest),
 			Status:     http.StatusText(http.StatusBadRequest),
@@ -936,10 +988,239 @@ func (rc ReprtClient) FrontOfCard(w http.ResponseWriter, r *http.Request, deckID
 		})
 		return
 	}
+	var isLastCard = false
+	if nextCardID == "" {
+		isLastCard = true
 
-	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, cardID, username)
+		err = rc.sessionController.UpdateSessionState(r.Context(), models.SessionUpdate{
+			ID:                sessionID,
+			CurrentCardID:     currentCardID,
+			NewCardID:         currentCardID,
+			IsFront:           false,
+			IsAnsweredCorrect: true,
+			IsLastCard:        isLastCard,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msgf("while updating session for cardID: %s", currentCardID)
+			status := toStatus(err)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(status),
+				Status:     http.StatusText(status),
+				Error:      "while getting front of card",
+				Msg:        "Something went wrong while getting front of card.",
+			})
+			http.Error(w, "while getting front of card", toStatus(err))
+			return
+		}
+
+		backOfCard, err := rc.deckController.GetBackOfCardByID(r.Context(), deckID, currentCardID, username)
+		if err != nil {
+			logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", currentCardID)
+			status := toStatus(err)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(status),
+				Status:     http.StatusText(status),
+				Error:      "while getting back of card",
+				Msg:        "Problem processing getting back of card.",
+			})
+			return
+		}
+
+		dumb.BackOfCardDisplay(dumb.CardBack{
+			SessionID:      sessionID,
+			DeckID:         deckID,
+			CardID:         backOfCard.CardID,
+			BackContent:    backOfCard.Answer,
+			NextCardID:     backOfCard.NextCard,
+			PreviousCardID: backOfCard.PreviousCard,
+			IsUpvoted:      bool(backOfCard.IsUpvotedByUser),
+			IsDownvoted:    bool(backOfCard.IsDownvotedByUser),
+			VoteButtonData: dumb.VoteButtonsData{
+				CardID:            backOfCard.CardID,
+				UpvoteClass:       backOfCard.IsUpvotedByUser.UpvotedClass(),
+				DownvoteClass:     backOfCard.IsDownvotedByUser.DownvotedClass(),
+				UpvoteDirection:   backOfCard.IsUpvotedByUser.NextUpvoteDirection(),
+				DownvoteDirection: backOfCard.IsDownvotedByUser.DownvotedClass()},
+		}).Render(r.Context(), w)
+		return
+	}
+
+	err = rc.sessionController.UpdateSessionState(r.Context(), models.SessionUpdate{
+		ID:                sessionID,
+		CurrentCardID:     currentCardID,
+		NewCardID:         nextCardID,
+		IsFront:           true,
+		IsAnsweredCorrect: true,
+		IsLastCard:        isLastCard,
+	})
 	if err != nil {
-		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", cardID)
+		logger.Error().Err(err).Msgf("while updating session for cardID: %s", currentCardID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting front of card",
+			Msg:        "Something went wrong while getting front of card.",
+		})
+		http.Error(w, "while getting front of card", toStatus(err))
+		return
+	}
+
+	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, nextCardID, username)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", currentCardID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting front of card",
+			Msg:        "Something went wrong while getting front of card.",
+		})
+		http.Error(w, "while getting front of card", toStatus(err))
+		return
+	}
+
+	dumb.FrontCardDisplay(dumb.CardFront{
+		SessionID:      sessionID,
+		DeckID:         deckID,
+		CardID:         frontOfCard.CardID,
+		Front:          frontOfCard.Content,
+		NextCardID:     frontOfCard.NextCard,
+		PreviousCardID: frontOfCard.PreviousCard,
+		Downvotes:      strconv.Itoa(frontOfCard.Downvotes),
+		Upvotes:        strconv.Itoa(frontOfCard.Upvotes),
+		CardType:       "",
+	}).Render(r.Context(), w)
+}
+
+func (rc ReprtClient) UpdateCardIncorrect(w http.ResponseWriter, r *http.Request, sessionID string) {
+	logger := rc.logger.With().Str("method", "UpdateCardIncorrect").Logger()
+	logger.Info().Msgf("getting front of card with ID: %s", sessionID)
+
+	username, ok := reptrCtx.Username(r.Context())
+	if !ok {
+		logger.Error().Msgf("username is not on context")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusInternalServerError),
+			Status:     "Internal Server Error",
+			Error:      "username not on context",
+			Msg:        "Try logging back in.",
+		})
+		return
+	}
+
+	if sessionID == "" {
+		logger.Error().Msgf("error updating card without sessionID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "get front of card without deckID",
+			Msg:        "Problem processing getting front of card.",
+		})
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		logger.Error().Err(err).Msg("unable to parse form")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	currentCardID := r.PostForm.Get("current-card-id")
+	nextCardID := r.PostForm.Get("next-card-id")
+	deckID := r.PostForm.Get("deck-id")
+	if deckID == "" {
+		logger.Error().Msgf("get front of card without deckID")
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(http.StatusBadRequest),
+			Status:     http.StatusText(http.StatusBadRequest),
+			Error:      "getting front of card without cardID",
+			Msg:        "Problem processing getting front of card.",
+		})
+		return
+	}
+
+	var isLastCard = false
+	if nextCardID == "" {
+		isLastCard = true
+		err = rc.sessionController.UpdateSessionState(r.Context(), models.SessionUpdate{
+			ID:                sessionID,
+			CurrentCardID:     currentCardID,
+			NewCardID:         currentCardID,
+			IsFront:           false,
+			IsAnsweredCorrect: false,
+			IsLastCard:        isLastCard,
+		})
+		if err != nil {
+			logger.Error().Err(err).Msgf("while updating session for cardID: %s", currentCardID)
+			status := toStatus(err)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(status),
+				Status:     http.StatusText(status),
+				Error:      "while getting front of card",
+				Msg:        "Something went wrong while getting front of card.",
+			})
+			http.Error(w, "while getting front of card", toStatus(err))
+			return
+		}
+
+		backOfCard, err := rc.deckController.GetBackOfCardByID(r.Context(), deckID, currentCardID, username)
+		if err != nil {
+			logger.Error().Err(err).Msgf("while getting back of card for cardID: %s", currentCardID)
+			status := toStatus(err)
+			rc.serveError(w, r, pages.ErrorPageData{
+				StatusCode: strconv.Itoa(status),
+				Status:     http.StatusText(status),
+				Error:      "while getting back of card",
+				Msg:        "Problem processing getting back of card.",
+			})
+			return
+		}
+
+		dumb.BackOfCardDisplay(dumb.CardBack{
+			SessionID:      sessionID,
+			DeckID:         deckID,
+			CardID:         backOfCard.CardID,
+			BackContent:    backOfCard.Answer,
+			NextCardID:     backOfCard.NextCard,
+			PreviousCardID: backOfCard.PreviousCard,
+			IsUpvoted:      bool(backOfCard.IsUpvotedByUser),
+			IsDownvoted:    bool(backOfCard.IsDownvotedByUser),
+			VoteButtonData: dumb.VoteButtonsData{
+				CardID:            backOfCard.CardID,
+				UpvoteClass:       backOfCard.IsUpvotedByUser.UpvotedClass(),
+				DownvoteClass:     backOfCard.IsDownvotedByUser.DownvotedClass(),
+				UpvoteDirection:   backOfCard.IsUpvotedByUser.NextUpvoteDirection(),
+				DownvoteDirection: backOfCard.IsDownvotedByUser.DownvotedClass()},
+		}).Render(r.Context(), w)
+		return
+	}
+
+	err = rc.sessionController.UpdateSessionState(r.Context(), models.SessionUpdate{
+		ID:                sessionID,
+		CurrentCardID:     currentCardID,
+		NewCardID:         nextCardID,
+		IsFront:           true,
+		IsAnsweredCorrect: false,
+		IsLastCard:        isLastCard,
+	})
+	if err != nil {
+		logger.Error().Err(err).Msgf("while updating session for cardID: %s", currentCardID)
+		status := toStatus(err)
+		rc.serveError(w, r, pages.ErrorPageData{
+			StatusCode: strconv.Itoa(status),
+			Status:     http.StatusText(status),
+			Error:      "while getting front of card",
+			Msg:        "Something went wrong while getting front of card.",
+		})
+		http.Error(w, "while getting front of card", toStatus(err))
+		return
+	}
+
+	frontOfCard, err := rc.deckController.GetFrontOfCardByID(r.Context(), deckID, nextCardID, username)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting front of card for cardID: %s", currentCardID)
 		status := toStatus(err)
 		rc.serveError(w, r, pages.ErrorPageData{
 			StatusCode: strconv.Itoa(status),
@@ -1029,6 +1310,15 @@ func (rc ReprtClient) VoteCard(w http.ResponseWriter, r *http.Request, cardID st
 	}).Render(r.Context(), w)
 }
 
+func (rc ReprtClient) serveError(w http.ResponseWriter, r *http.Request, data pages.ErrorPageData) {
+	code, err := strconv.Atoi(data.StatusCode)
+	if err != nil {
+		rc.logger.Error().Err(err).Msgf("not able to convert data.StatusCode to int: %s", data.StatusCode)
+	}
+	w.WriteHeader(code)
+	pages.Page(pages.Error(data), append(cssFileArr, errorStyle)).Render(r.Context(), w)
+}
+
 func toStatus(err error) int {
 	switch {
 	case errors.Is(err, decks.ErrInvalidToBeforeFrom),
@@ -1044,11 +1334,48 @@ func toStatus(err error) int {
 	}
 }
 
-func (rc ReprtClient) serveError(w http.ResponseWriter, r *http.Request, data pages.ErrorPageData) {
-	code, err := strconv.Atoi(data.StatusCode)
-	if err != nil {
-		rc.logger.Error().Err(err).Msgf("not able to convert data.StatusCode to int: %s", data.StatusCode)
+func homeGroupFromModel(group models.HomePageGroup) pages.HomeGroupData {
+	return pages.HomeGroupData{
+		ID:        group.ID,
+		GroupName: group.Name,
+		NumDecks:  len(group.DeckIDs),
+		NumUsers:  group.NumMembers,
 	}
-	w.WriteHeader(code)
-	pages.Page(pages.Error(data), append(cssFileArr, errorStyle)).Render(r.Context(), w)
+}
+
+func webDeckFromModel(deck models.GetDeckResults) dumb.Deck {
+	return dumb.Deck{
+		ID:           deck.ID,
+		DeckName:     deck.Name,
+		NumCards:     deck.NumCards,
+		NumUpvotes:   deck.Upvotes,
+		NumDownvotes: deck.Downvotes,
+		CreatedAt:    deck.CreatedAt,
+		UpdatedAt:    deck.UpdatedAt,
+	}
+}
+
+func groupPageFromModel(group models.GroupWithDecks) pages.GroupData {
+	return pages.GroupData{
+		ID:        group.ID,
+		GroupName: group.Name,
+		Decks:     groupDecksFromDecks(group.Decks),
+		NumUsers:  "0",
+	}
+}
+
+func groupDecksFromDecks(fromService []models.GetDeckResults) []dumb.Deck {
+	apiDecks := make([]dumb.Deck, len(fromService))
+	for i, deck := range fromService {
+		apiDecks[i] = dumb.Deck{
+			ID:           deck.ID,
+			DeckName:     deck.Name,
+			NumUpvotes:   deck.Upvotes,
+			NumDownvotes: deck.Downvotes,
+			NumCards:     deck.NumCards,
+			CreatedAt:    deck.CreatedAt,
+			UpdatedAt:    deck.UpdatedAt,
+		}
+	}
+	return apiDecks
 }

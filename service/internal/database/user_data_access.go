@@ -133,7 +133,18 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 				{"updated_at", "$groups.updated_at"},
 				{"deleted_at", "$groups.deleted_at"},
 				{"deck_ids", "$groups.deck_ids"},
-				{"numMembers", bson.D{{"$size", "$groups.members"}}},
+				{"numMembers", bson.D{
+					{"$size",
+						bson.D{
+							{"$ifNull",
+								bson.A{
+									"$groups.members",
+									bson.A{},
+								},
+							},
+						},
+					},
+				}},
 			},
 		},
 	}

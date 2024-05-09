@@ -77,6 +77,38 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/CreateGroupResponseBody'
+  /page/answered-correct/{session_id}:
+    post:
+      operationId: updateCardCorrect
+      summary: handles updating card in session and returns next card in deck
+      description: handles updating card in session and returns next card in deck
+      parameters:
+        - name: session_id
+          in: path
+          allowEmptyValue: false
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateGroupRequestBody"
+      responses:
+        201:
+          $ref: '#/components/responses/CreateGroupResponseBody'
+  /page/answered-incorrect/{session_id}:
+    post:
+      operationId: updateCardIncorrect
+      summary: handles updating card in session and returns next card in deck
+      description: handles updating card in session and returns next card in deck
+      parameters:
+        - name: session_id
+          in: path
+          allowEmptyValue: false
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateGroupRequestBody"
+      responses:
+        201:
+          $ref: '#/components/responses/CreateGroupResponseBody'
   /page/create-deck/{group_id}:
     get:
       operationId: createDeckPage
@@ -199,7 +231,7 @@ paths:
         - name: deck_id
           in: path
           schema:
-              type: string
+            type: string
         - name: card_id
           in: path
           schema:
@@ -553,6 +585,13 @@ components:
         application/x-www-form-urlencoded:
           schema:
             $ref: "#/components/schemas/Register"
+    AnsweredCorrectRequestBody:
+      description: request body for answered correct
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: "#/components/schemas/CreateGroup"
     CreateGroupRequestBody:
       description: request body for create group
       required: true
@@ -608,6 +647,16 @@ components:
         groupName:
           type: string
       required: [ groupName]
+    AnsweredCorrect:
+      type: object
+      properties:
+        currentCardID:
+          type: string
+        nextCardID:
+          type: string
+        deckID:
+          type: string
+      required: [ currentCardID ]
     CreateDeck:
       type: object
       properties:

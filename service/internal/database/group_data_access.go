@@ -8,6 +8,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
@@ -242,7 +243,56 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 		},
 	}
 
-	getSizeOfCards := bson.D{{"$addFields", bson.D{{"decks.num_cards", bson.D{{"$size", "$cards"}}}}}}
+	getSizeOfCards := bson.D{
+		{"$addFields",
+			bson.D{
+				{"decks",
+					bson.D{
+						{"$cond",
+							bson.D{
+								{"if",
+									bson.D{
+										{"$ne",
+											bson.A{
+												bson.D{{"$size", "$deck_ids"}},
+												0,
+											},
+										},
+									},
+								},
+								{"then",
+									bson.D{
+										{"$mergeObjects",
+											bson.A{
+												"$decks",
+												bson.D{
+													{"num_cards",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$cards",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{"else", primitive.Null{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	regroup := bson.D{
 		{"$group",
@@ -255,7 +305,30 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
 				{"members", bson.D{{"$first", "$members"}}},
 				{"moderators", bson.D{{"$first", "$moderators"}}},
-				{"decks", bson.D{{"$push", "$decks"}}},
+				{"decks",
+					bson.D{
+						{"$push",
+							bson.D{
+								{"$cond",
+									bson.D{
+										{"if",
+											bson.D{
+												{"$ne",
+													bson.A{
+														"$decks",
+														primitive.Null{},
+													},
+												},
+											},
+										},
+										{"then", "$decks"},
+										{"else", "$$REMOVE"},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

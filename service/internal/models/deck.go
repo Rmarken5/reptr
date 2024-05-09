@@ -31,9 +31,31 @@ type (
 	}
 
 	DeckSession struct {
-		ID            string `bson:"_id"`
-		DeckName      string `bson:"deck_name"`
-		CurrentCardID string `bson:"current_card_id"`
-		IsFront       bool   `bson:"is_front"`
+		ID            string       `bson:"_id"`
+		Username      string       `bson:"username"`
+		DeckID        string       `bson:"deck_id"`
+		DeckName      string       `bson:"deck_name"`
+		CurrentCardID string       `bson:"current_card_id"`
+		IsFront       bool         `bson:"is_front"`
+		FinishedAt    *time.Time   `bson:"finished_at"`
+		CardAnswers   []CardAnswer `bson:"card_answers"`
+		CreatedAt     time.Time    `bson:"created_at"`
+		UpdatedAt     time.Time    `bson:"updated_at"`
+	}
+
+	CardAnswer struct {
+		CardID    string    `bson:"card_id"`
+		IsCorrect bool      `bson:"is_correct"`
+		CreatedAt time.Time `bson:"created_at"`
+		UpdatedAt time.Time `bson:"updated_at"`
+	}
+
+	SessionUpdate struct {
+		ID                string
+		CurrentCardID     string
+		NewCardID         string
+		IsFront           bool
+		IsAnsweredCorrect bool
+		IsLastCard        bool
 	}
 )

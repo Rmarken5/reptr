@@ -22,7 +22,6 @@ type (
 		GetGroupByID(ctx context.Context, groupID string) (models.GroupWithDecks, error)
 		GetCardsByDeckID(ctx context.Context, deckID string) (models.DeckWithCards, error)
 		GetHomepageData(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) (models.HomePageData, error)
-
 		CreateDeck(ctx context.Context, deckName, username string) (string, error)
 		GetDecks(ctx context.Context, from time.Time, to *time.Time, limit, offset int) ([]models.DeckWithCards, error)
 		GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
@@ -33,7 +32,6 @@ type (
 		RemoveUpvoteDeck(ctx context.Context, deckID, userID string) error
 		DownvoteDeck(ctx context.Context, deckID, userID string) error
 		RemoveDownvoteDeck(ctx context.Context, deckID, userID string) error
-
 		VoteCard(ctx context.Context, vote models.Vote, cardID, userID string) error
 	}
 

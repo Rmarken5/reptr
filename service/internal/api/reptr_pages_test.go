@@ -364,7 +364,7 @@ func TestReprtClient_GroupPage(t *testing.T) {
 func TestReprtClient_HomePage(t *testing.T) {
 	var (
 		timeNow          = time.Date(2024, 1, 17, 0, 0, 0, 0, time.UTC)
-		haveHomePageData = models.HomePageData{Groups: []models.Group{
+		haveHomePageData = models.HomePageData{Groups: []models.HomePageGroup{
 			{
 				ID:        "1234",
 				Name:      "name",

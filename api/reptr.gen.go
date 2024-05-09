@@ -165,6 +165,12 @@ type GetGroupsParams struct {
 // LoginFormdataRequestBody defines body for Login for application/x-www-form-urlencoded ContentType.
 type LoginFormdataRequestBody = Login
 
+// UpdateCardCorrectFormdataRequestBody defines body for UpdateCardCorrect for application/x-www-form-urlencoded ContentType.
+type UpdateCardCorrectFormdataRequestBody = CreateGroup
+
+// UpdateCardIncorrectFormdataRequestBody defines body for UpdateCardIncorrect for application/x-www-form-urlencoded ContentType.
+type UpdateCardIncorrectFormdataRequestBody = CreateGroup
+
 // CreateCardForDeckFormdataRequestBody defines body for CreateCardForDeck for application/x-www-form-urlencoded ContentType.
 type CreateCardForDeckFormdataRequestBody = CardRequest
 
@@ -266,6 +272,16 @@ type ClientInterface interface {
 
 	// GetCardsForDeck request
 	GetCardsForDeck(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateCardCorrectWithBody request with any body
+	UpdateCardCorrectWithBody(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateCardCorrectWithFormdataBody(ctx context.Context, sessionId string, body UpdateCardCorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateCardIncorrectWithBody request with any body
+	UpdateCardIncorrectWithBody(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateCardIncorrectWithFormdataBody(ctx context.Context, sessionId string, body UpdateCardIncorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BackOfCard request
 	BackOfCard(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -384,6 +400,54 @@ func (c *Client) LoginWithFormdataBody(ctx context.Context, body LoginFormdataRe
 
 func (c *Client) GetCardsForDeck(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCardsForDeckRequest(c.Server, deckId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateCardCorrectWithBody(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardCorrectRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateCardCorrectWithFormdataBody(ctx context.Context, sessionId string, body UpdateCardCorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardCorrectRequestWithFormdataBody(c.Server, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateCardIncorrectWithBody(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardIncorrectRequestWithBody(c.Server, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateCardIncorrectWithFormdataBody(ctx context.Context, sessionId string, body UpdateCardIncorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardIncorrectRequestWithFormdataBody(c.Server, sessionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -827,6 +891,100 @@ func NewGetCardsForDeckRequest(server string, deckId string) (*http.Request, err
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateCardCorrectRequestWithFormdataBody calls the generic UpdateCardCorrect builder with application/x-www-form-urlencoded body
+func NewUpdateCardCorrectRequestWithFormdataBody(server string, sessionId string, body UpdateCardCorrectFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewUpdateCardCorrectRequestWithBody(server, sessionId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewUpdateCardCorrectRequestWithBody generates requests for UpdateCardCorrect with any type of body
+func NewUpdateCardCorrectRequestWithBody(server string, sessionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "session_id", runtime.ParamLocationPath, sessionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/answered-correct/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpdateCardIncorrectRequestWithFormdataBody calls the generic UpdateCardIncorrect builder with application/x-www-form-urlencoded body
+func NewUpdateCardIncorrectRequestWithFormdataBody(server string, sessionId string, body UpdateCardIncorrectFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewUpdateCardIncorrectRequestWithBody(server, sessionId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewUpdateCardIncorrectRequestWithBody generates requests for UpdateCardIncorrect with any type of body
+func NewUpdateCardIncorrectRequestWithBody(server string, sessionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "session_id", runtime.ParamLocationPath, sessionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/page/answered-incorrect/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1799,6 +1957,16 @@ type ClientWithResponsesInterface interface {
 	// GetCardsForDeckWithResponse request
 	GetCardsForDeckWithResponse(ctx context.Context, deckId string, reqEditors ...RequestEditorFn) (*GetCardsForDeckResponse, error)
 
+	// UpdateCardCorrectWithBodyWithResponse request with any body
+	UpdateCardCorrectWithBodyWithResponse(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardCorrectResponse, error)
+
+	UpdateCardCorrectWithFormdataBodyWithResponse(ctx context.Context, sessionId string, body UpdateCardCorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardCorrectResponse, error)
+
+	// UpdateCardIncorrectWithBodyWithResponse request with any body
+	UpdateCardIncorrectWithBodyWithResponse(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardIncorrectResponse, error)
+
+	UpdateCardIncorrectWithFormdataBodyWithResponse(ctx context.Context, sessionId string, body UpdateCardIncorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardIncorrectResponse, error)
+
 	// BackOfCardWithResponse request
 	BackOfCardWithResponse(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*BackOfCardResponse, error)
 
@@ -1936,6 +2104,48 @@ func (r GetCardsForDeckResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetCardsForDeckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateCardCorrectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateCardCorrectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateCardCorrectResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateCardIncorrectResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateCardIncorrectResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateCardIncorrectResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2454,6 +2664,40 @@ func (c *ClientWithResponses) GetCardsForDeckWithResponse(ctx context.Context, d
 	return ParseGetCardsForDeckResponse(rsp)
 }
 
+// UpdateCardCorrectWithBodyWithResponse request with arbitrary body returning *UpdateCardCorrectResponse
+func (c *ClientWithResponses) UpdateCardCorrectWithBodyWithResponse(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardCorrectResponse, error) {
+	rsp, err := c.UpdateCardCorrectWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCardCorrectResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateCardCorrectWithFormdataBodyWithResponse(ctx context.Context, sessionId string, body UpdateCardCorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardCorrectResponse, error) {
+	rsp, err := c.UpdateCardCorrectWithFormdataBody(ctx, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCardCorrectResponse(rsp)
+}
+
+// UpdateCardIncorrectWithBodyWithResponse request with arbitrary body returning *UpdateCardIncorrectResponse
+func (c *ClientWithResponses) UpdateCardIncorrectWithBodyWithResponse(ctx context.Context, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardIncorrectResponse, error) {
+	rsp, err := c.UpdateCardIncorrectWithBody(ctx, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCardIncorrectResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateCardIncorrectWithFormdataBodyWithResponse(ctx context.Context, sessionId string, body UpdateCardIncorrectFormdataRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardIncorrectResponse, error) {
+	rsp, err := c.UpdateCardIncorrectWithFormdataBody(ctx, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCardIncorrectResponse(rsp)
+}
+
 // BackOfCardWithResponse request returning *BackOfCardResponse
 func (c *ClientWithResponses) BackOfCardWithResponse(ctx context.Context, deckId string, cardId string, reqEditors ...RequestEditorFn) (*BackOfCardResponse, error) {
 	rsp, err := c.BackOfCard(ctx, deckId, cardId, reqEditors...)
@@ -2751,6 +2995,38 @@ func ParseGetCardsForDeckResponse(rsp *http.Response) (*GetCardsForDeckResponse,
 	}
 
 	response := &GetCardsForDeckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseUpdateCardCorrectResponse parses an HTTP response from a UpdateCardCorrectWithResponse call
+func ParseUpdateCardCorrectResponse(rsp *http.Response) (*UpdateCardCorrectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateCardCorrectResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseUpdateCardIncorrectResponse parses an HTTP response from a UpdateCardIncorrectWithResponse call
+func ParseUpdateCardIncorrectResponse(rsp *http.Response) (*UpdateCardIncorrectResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateCardIncorrectResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -3241,6 +3517,12 @@ type ServerInterface interface {
 	// card content for deck page
 	// (GET /page/add-card/{deck_id})
 	GetCardsForDeck(w http.ResponseWriter, r *http.Request, deckId string)
+	// handles updating card in session and returns next card in deck
+	// (POST /page/answered-correct/{session_id})
+	UpdateCardCorrect(w http.ResponseWriter, r *http.Request, sessionId string)
+	// handles updating card in session and returns next card in deck
+	// (POST /page/answered-incorrect/{session_id})
+	UpdateCardIncorrect(w http.ResponseWriter, r *http.Request, sessionId string)
 	// fetches back of card component
 	// (GET /page/back-of-card/{deck_id}/{card_id})
 	BackOfCard(w http.ResponseWriter, r *http.Request, deckId string, cardId string)
@@ -3365,6 +3647,58 @@ func (siw *ServerInterfaceWrapper) GetCardsForDeck(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCardsForDeck(w, r, deckId)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateCardCorrect operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCardCorrect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "session_id" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "session_id", mux.Vars(r)["session_id"], &sessionId, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "session_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCardCorrect(w, r, sessionId)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateCardIncorrect operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCardIncorrect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "session_id" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "session_id", mux.Vars(r)["session_id"], &sessionId, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "session_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCardIncorrect(w, r, sessionId)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -4129,6 +4463,10 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/page/add-card/{deck_id}", wrapper.GetCardsForDeck).Methods("GET")
 
+	r.HandleFunc(options.BaseURL+"/page/answered-correct/{session_id}", wrapper.UpdateCardCorrect).Methods("POST")
+
+	r.HandleFunc(options.BaseURL+"/page/answered-incorrect/{session_id}", wrapper.UpdateCardIncorrect).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/page/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/page/create-cards-content/{deck_id}", wrapper.GetCreateCardsForDeckContent).Methods("GET")
@@ -4179,48 +4517,50 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

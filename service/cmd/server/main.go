@@ -82,6 +82,8 @@ func main() {
 	pageRoute.HandleFunc("/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/view-deck/{deck_id}", wrapper.ViewDeck).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/answered-correct/{session_id}", wrapper.UpdateCardCorrect).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/answered-incorrect/{session_id}", wrapper.UpdateCardIncorrect).Methods(http.MethodPost)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

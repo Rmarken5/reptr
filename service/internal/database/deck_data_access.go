@@ -300,7 +300,18 @@ func (d *DeckDAO) GetDecksForUser(ctx context.Context, username string, from tim
 					{"created_at", "$created_at"},
 					{"created_updated", "$updated_at"},
 					{"created_by", "$created_by"},
-					{"num_cards", bson.D{{"$size", "$cards"}}},
+					{"num_cards", bson.D{
+						{"$size",
+							bson.D{
+								{"$ifNull",
+									bson.A{
+										"$cards",
+										bson.A{},
+									},
+								},
+							},
+						},
+					}},
 				},
 			},
 		},

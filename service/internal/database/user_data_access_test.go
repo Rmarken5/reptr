@@ -189,7 +189,7 @@ func TestUserDAO_GetGroupsForUser(t *testing.T) {
 		timeNow    = time.Now().UTC().Truncate(time.Millisecond)
 		db         = mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 		logger     = zerolog.Nop()
-		haveGroups = []models.Group{
+		haveGroups = []models.HomePageGroup{
 			{
 				ID:         uuid.NewString(),
 				Name:       "test-1",
@@ -235,7 +235,7 @@ func TestUserDAO_GetGroupsForUser(t *testing.T) {
 		mockDatabase func(mongo *mtest.T)
 
 		// Expected Results
-		wantGroups []models.Group
+		wantGroups []models.HomePageGroup
 		wantErr    error
 	}{
 		"should get groups successfully": {
@@ -288,7 +288,7 @@ func TestUserDAO_GetGroupsForUser(t *testing.T) {
 					mtest.FirstBatch,
 				))
 			},
-			wantGroups: []models.Group(nil),
+			wantGroups: []models.HomePageGroup(nil),
 			wantErr:    ErrNoResults,
 		},
 	}

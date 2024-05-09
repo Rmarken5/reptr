@@ -4,6 +4,7 @@ import "time"
 
 type (
 	CardFront struct {
+		SessionID      string
 		DeckID         string
 		CardType       string
 		CardID         string
@@ -15,6 +16,7 @@ type (
 	}
 
 	CardBack struct {
+		SessionID      string
 		DeckID         string
 		CardID         string
 		BackContent    string
