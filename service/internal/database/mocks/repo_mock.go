@@ -244,6 +244,21 @@ func (mr *MockRepositoryMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2, arg3 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfCardByID), arg0, arg1, arg2, arg3)
 }
 
+// GetFrontOfNextCardByID mocks base method.
+func (m *MockRepository) GetFrontOfNextCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.FrontOfCard, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFrontOfNextCardByID", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(models.FrontOfCard)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFrontOfNextCardByID indicates an expected call of GetFrontOfNextCardByID.
+func (mr *MockRepositoryMockRecorder) GetFrontOfNextCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfNextCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfNextCardByID), arg0, arg1, arg2, arg3)
+}
+
 // GetGroupByID mocks base method.
 func (m *MockRepository) GetGroupByID(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()
