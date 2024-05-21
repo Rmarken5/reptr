@@ -1,7 +1,7 @@
 [
   {
     "$match": {
-      "deck_id": "%%deckID%string%"
+      "deck_id": "%%deckID%string"
     }
   },
   {
@@ -24,23 +24,33 @@
   },
   {
     "$match": {
-      "_id": "%%cardID%string%"
+      "_id": "%%cardID%"
     }
   },
   {
     "$project": {
       "_id": 0,
       "nextCard": {
-        "$arrayElemAt": [
-          "$nextCard",
-          0
+        "$ifNull": [
+          {
+            "$arrayElemAt": [
+              "$nextCard",
+              0
+            ]
+          },
+          null
         ]
       }
     }
   },
   {
     "$replaceRoot": {
-      "newRoot": "$nextCard"
+      "newRoot": {
+        "$ifNull": [
+          "$nextCard",
+          {}
+        ]
+      }
     }
   },
   {
@@ -65,7 +75,7 @@
         "$cond": {
           "if": {
             "$in": [
-              "%%username%string%",
+              "%%userEmail%string",
               "$user_upvotes"
             ]
           },
@@ -77,7 +87,7 @@
         "$cond": {
           "if": {
             "$in": [
-              "%%username%string%",
+              "%%userEmail%string",
               "$user_downvotes"
             ]
           },

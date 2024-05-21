@@ -46,10 +46,12 @@ func main() {
 	l := cmd.MustLoadLogic(log, repo)
 
 	sessionController := cmd.MustLoadSessionLogic(log, l, repo)
+	deckViewer := cmd.MustLoadDeckViewerController(log, repo)
 	authenticator := cmd.MustLoadAuth(ctx, log, config, repo)
+
 	p := cmd.MustLoadProvider(log, repo)
 	store := sessions.NewCookieStore([]byte(config.SessionKey))
-	serverImpl := api.New(log, l, p, authenticator, sessionController, store)
+	serverImpl := api.New(log, l, p, authenticator, sessionController, store, deckViewer)
 
 	router := mux.NewRouter()
 

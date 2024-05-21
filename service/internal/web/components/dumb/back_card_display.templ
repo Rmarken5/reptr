@@ -18,17 +18,12 @@ templ BackOfCardDisplay(data CardBack) {
 			</p>
 		</section>
 		<section class="card-footer">
-			<form>
-				<section class="left-side-footer-back">
-					<button class="button button-color" hx-get={ string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID))) } hx-target="#card-content">Front</button>
-					<button class="button button-color" hx-post={ string(templ.SafeURL(path.Join("/page/answered-correct/", data.SessionID))) } hx-target="#card-content">Answered Correct</button>
-					<button class="button button-color" hx-post={ string(templ.SafeURL(path.Join("/page/answered-incorrect/", data.SessionID))) } hx-target="#card-content">Answered Incorrect</button>
-					@VoteButtons(data.VoteButtonData)
-					<input type="hidden" name="current-card-id" value={ data.CardID }/>
-					<input type="hidden" name="next-card-id" value={ data.NextCardID }/>
-					<input type="hidden" name="deck-id" value={ data.DeckID }/>
-				</section>
-			</form>
+			<section class="left-side-footer-back">
+				<button class="button button-color" hx-get={ string(templ.SafeURL(path.Join("/page/front-of-card/", data.DeckID, data.CardID))) } hx-target="#card-content">Front</button>
+				<button class="button button-color" hx-post={ string(templ.SafeURL(path.Join("/page/answered-correct/", data.SessionID))) } hx-target="#card-content">Answered Correct</button>
+				<button class="button button-color" hx-post={ string(templ.SafeURL(path.Join("/page/answered-incorrect/", data.SessionID))) } hx-target="#card-content">Answered Incorrect</button>
+				@VoteButtons(data.VoteButtonData)
+			</section>
 		</section>
 	</section>
 }

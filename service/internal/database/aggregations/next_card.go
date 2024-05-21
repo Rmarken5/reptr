@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetNext_card(deckID string, cardID string, username string) mongo.Pipeline {
+func GetNext_card(deckID string, cardID string, userEmail string) mongo.Pipeline {
 	return mongo.Pipeline{
 		bson.D{
 			{Key: "$match", Value: bson.D{
@@ -40,16 +40,26 @@ func GetNext_card(deckID string, cardID string, username string) mongo.Pipeline 
 			{Key: "$project", Value: bson.D{
 				{Key: "_id", Value: 0},
 				{Key: "nextCard", Value: bson.D{
-					{Key: "$arrayElemAt", Value: bson.A{
-						"$nextCard",
-						0,
+					{Key: "$ifNull", Value: bson.A{
+						bson.D{
+							{Key: "$arrayElemAt", Value: bson.A{
+								"$nextCard",
+								0,
+							}},
+						},
+						nil,
 					}},
 				}},
 			}},
 		},
 		bson.D{
 			{Key: "$replaceRoot", Value: bson.D{
-				{Key: "newRoot", Value: "$nextCard"},
+				{Key: "newRoot", Value: bson.D{
+					{Key: "$ifNull", Value: bson.A{
+						"$nextCard",
+						bson.D{},
+					}},
+				}},
 			}},
 		},
 		bson.D{
@@ -74,7 +84,7 @@ func GetNext_card(deckID string, cardID string, username string) mongo.Pipeline 
 					{Key: "$cond", Value: bson.D{
 						{Key: "if", Value: bson.D{
 							{Key: "$in", Value: bson.A{
-								username,
+								userEmail,
 								"$user_upvotes",
 							}},
 						}},
@@ -86,7 +96,7 @@ func GetNext_card(deckID string, cardID string, username string) mongo.Pipeline 
 					{Key: "$cond", Value: bson.D{
 						{Key: "if", Value: bson.D{
 							{Key: "$in", Value: bson.A{
-								username,
+								userEmail,
 								"$user_downvotes",
 							}},
 						}},

@@ -7,6 +7,7 @@ import (
 	"github.com/rmarken/reptr/api"
 	reptrCtx "github.com/rmarken/reptr/service/internal/context"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
+	deck_viewer "github.com/rmarken/reptr/service/internal/logic/deck-viewer"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/decks/session"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
@@ -28,23 +29,25 @@ const (
 )
 
 type ReprtClient struct {
-	logger             zerolog.Logger
-	deckController     decks.Controller
-	providerController provider.Controller
-	sessionController  session.Controller
-	authenticator      auth.Authentication
-	store              sessions.Store
+	logger               zerolog.Logger
+	deckController       decks.Controller
+	providerController   provider.Controller
+	sessionController    session.Controller
+	authenticator        auth.Authentication
+	deckViewerController deck_viewer.Controller
+	store                sessions.Store
 }
 
-func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication, sessionController session.Controller, store sessions.Store) *ReprtClient {
+func New(logger zerolog.Logger, deckController decks.Controller, providerController provider.Controller, authentication auth.Authentication, sessionController session.Controller, store sessions.Store, deckViewerController deck_viewer.Controller) *ReprtClient {
 	logger = logger.With().Str("module", "server").Logger()
 	return &ReprtClient{
-		logger:             logger,
-		deckController:     deckController,
-		providerController: providerController,
-		authenticator:      authentication,
-		sessionController:  sessionController,
-		store:              store,
+		logger:               logger,
+		deckController:       deckController,
+		providerController:   providerController,
+		authenticator:        authentication,
+		sessionController:    sessionController,
+		store:                store,
+		deckViewerController: deckViewerController,
 	}
 }
 

@@ -230,7 +230,10 @@ func (d *CardDAO) GetFrontOfNextCardByID(ctx context.Context, deckID, cardID, us
 		logger.Error().Err(err).Msgf("while unmarshalling to BackOfCard")
 		return models.FrontOfCard{}, errors.Join(err, ErrAggregate)
 	}
-	if len(res) == 0 {
+
+	// If pipeline is unable to find next card, it will return an empty card.
+	if len(res) == 0 || res[0].CardID == "" {
+
 		return models.FrontOfCard{}, ErrNoResults
 	}
 
