@@ -639,13 +639,12 @@ func TestLogic_GetGroups(t *testing.T) {
 
 func TestLogic_GetHomePageDataForUser(t *testing.T) {
 	var (
-		timeNow   = time.Now().UTC().Truncate(time.Millisecond)
-		invalidTo = timeNow.Add(-1 * time.Second)
-		username  = uuid.NewString()
-		deckOneID = uuid.NewString()
-		deckTwoID = uuid.NewString()
-		//haveErr    = errors.New("db error")
-		haveGroups = []models.Group{
+		timeNow    = time.Now().UTC().Truncate(time.Millisecond)
+		invalidTo  = timeNow.Add(-1 * time.Second)
+		username   = uuid.NewString()
+		deckOneID  = uuid.NewString()
+		deckTwoID  = uuid.NewString()
+		haveGroups = []models.HomePageGroup{
 			{
 				ID:         uuid.NewString(),
 				Name:       uuid.NewString(),
@@ -713,7 +712,7 @@ func TestLogic_GetHomePageDataForUser(t *testing.T) {
 			haveUser:         username,
 			haveFrom:         timeNow,
 			haveTo:           &invalidTo,
-			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantHomePageData: models.HomePageData{Groups: []models.HomePageGroup(nil), Decks: []models.GetDeckResults(nil)},
 			wantErr:          ErrInvalidToBeforeFrom,
 		},
 		"should return empty slice no results come from database": {
@@ -721,17 +720,17 @@ func TestLogic_GetHomePageDataForUser(t *testing.T) {
 			haveFrom: timeNow,
 			haveTo:   nil,
 			mockRepo: func(mock *database.MockRepository) {
-				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.Group(nil), dbErrors.ErrNoResults)
+				mock.EXPECT().GetGroupsForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.HomePageGroup(nil), dbErrors.ErrNoResults)
 				mock.EXPECT().GetDecksForUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]models.GetDeckResults(nil), nil)
 			},
-			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantHomePageData: models.HomePageData{Groups: []models.HomePageGroup(nil), Decks: []models.GetDeckResults(nil)},
 			wantErr:          nil,
 		},
 		"should return ErrEmptyUsername when username is empty": {
 			haveUser:         "",
 			haveFrom:         timeNow,
 			haveTo:           nil,
-			wantHomePageData: models.HomePageData{Groups: []models.Group(nil), Decks: []models.GetDeckResults(nil)},
+			wantHomePageData: models.HomePageData{Groups: []models.HomePageGroup(nil), Decks: []models.GetDeckResults(nil)},
 			wantErr:          ErrEmptyUsername,
 		},
 	}

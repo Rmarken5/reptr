@@ -1,0 +1,35 @@
+package dumb
+
+import (
+	"strconv"
+	"path"
+)
+
+templ DeckTable(decks []Deck) {
+	<table id="deck-table">
+		<thead>
+			<tr>
+				<th>Deck Name</th>
+				<th>Number of Cards</th>
+				<th>Upvotes</th>
+				<th>Downvotes</th>
+				<th>Create Cards</th>
+			</tr>
+		</thead>
+		for _, deck := range decks {
+			<tr>
+				<td><a href={ templ.SafeURL(path.Join("/page/view-deck/", deck.ID)) }>{ deck.DeckName }</a></td>
+				<td>{ strconv.Itoa(deck.NumCards) }</td>
+				<td>{ strconv.Itoa(deck.NumUpvotes) }</td>
+				<td>{ strconv.Itoa(deck.NumDownvotes) }</td>
+				<td>
+					<a
+						class="button table-button-color"
+						href={ templ.SafeURL(path.Join("/page/create-cards/",
+                       deck.ID)) }
+					>+</a>
+				</td>
+			</tr>
+		}
+	</table>
+}

@@ -1,0 +1,14 @@
+package dumb
+
+import "fmt"
+
+templ CardInput(cardNum string) {
+	<section id={ "card-section-" + cardNum }>
+		<section class="input-container">
+			<textarea id={ "front-" + cardNum } name={ "front-" + cardNum } placeholder={ fmt.Sprintf("Front of Card %s", cardNum) }></textarea>
+		</section>
+		<section class="input-container">
+			<textarea id={ "back-" + cardNum } name={ "back-" + cardNum } placeholder={ fmt.Sprintf("Back of Card %s", cardNum) }></textarea>
+		</section>
+	</section>
+}

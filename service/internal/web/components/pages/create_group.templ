@@ -1,15 +1,14 @@
 package pages
 
-templ CreateGroupForm(){
-    <body>
-        <h1>Create Group</h1>
-        <section id="create-group-section">
-            <form id="create-group-form" action="/page/create-group" method="POST">
-                <label for="group-name">Group Name: </label>
-                <input type="text" id="group-name-input" name="group-name"/>
-                <button type="submit">Create Group</button>
-            </form>
-        </section>
-        <a href="/page/home">Back to Home</a>
-    </body>
+templ CreateGroupForm() {
+	<h1>Create Group</h1>
+	<a href="/page/home">Back to Home</a>
+	<section id="form-container" class="form-container">
+		<form id="create-group-form" action="/page/create-group" method="POST">
+			<section class="input-container">
+				<input type="text" id="group-name-input" placeholder="Group Name" name="group-name"/>
+			</section>
+			<button class="button" type="submit">Create Group</button>
+		</form>
+	</section>
 }

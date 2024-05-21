@@ -1,3 +1,10 @@
+.PHONY: gen
+gen:
+	find . \( -name "*_mock.go" -o -name "*_templ.go" \) -type f -delete
+	go generate ./...
+	templ fmt ./service/internal/web/components
+	templ generate
+
 .Phony:
 docker-build-service: gen
 	docker build -f ./dockerfiles/service.dockerfile . -t gcr.io/small-biz-template/markenshop/reptr:latest
@@ -21,21 +28,17 @@ docker-build-mongo:
 docker-run-mongo:
 	docker run -d --rm -p 27017:27017 -v /home/ryan/data/db:/data/db -v /home/ryan/data/log/mongodb/mongo.log:/data/log/mongodb/mongo.log reprt-mongo:latest
 
-test:
+test:gen
 	export UPDATE_SNAPS=false && go test ./...
 
-test-update:
+test-update:gen
 	export UPDATE_SNAPS=true && go test ./...
 
-cover:
+cover:gen
 	export UPDATE_SNAPS=false && go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
 
 
-.PHONY: gen
-gen:
-	find . -name "*_mock.go" -type f -delete
-	go generate ./...
-	templ generate
+
 
 .PHONY: local
 local: gen

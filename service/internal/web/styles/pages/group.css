@@ -9,11 +9,13 @@ table tr > td:last-child {
 
 
 .table-button-color {
-    background-color: #D5D5D5;
+    background-color: #ececec;
     color: black;
+    width: 2rem;
+    float: right
+}
+.table-button-color:hover {
+    background-color: #D5D5D5;
+    color: unset;
 }
 
-.table-button-color:hover {
-    background-color: #848484;
-    color: white;
-}

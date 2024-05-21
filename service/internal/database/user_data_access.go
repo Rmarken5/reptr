@@ -20,7 +20,7 @@ type (
 	UserDataAccess interface {
 		InsertUser(ctx context.Context, user models.User) (string, error)
 		GetUserByUsername(ctx context.Context, username string) (models.User, error)
-		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error)
+		GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.HomePageGroup, error)
 		AddUserAsMemberOfGroup(ctx context.Context, username string, groupName string) error
 	}
 
@@ -93,7 +93,7 @@ func (u *UserDAO) AddUserAsMemberOfGroup(ctx context.Context, username string, g
 	return nil
 }
 
-func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.Group, error) {
+func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from time.Time, to *time.Time, limit, offset int) ([]models.HomePageGroup, error) {
 	logger := u.log.With().Str("method", "GetGroupsWithDecksByUser").Logger()
 	logger.Info().Msgf("getting groups for user: %s", username)
 
@@ -133,6 +133,18 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 				{"updated_at", "$groups.updated_at"},
 				{"deleted_at", "$groups.deleted_at"},
 				{"deck_ids", "$groups.deck_ids"},
+				{"numMembers", bson.D{
+					{"$size",
+						bson.D{
+							{"$ifNull",
+								bson.A{
+									"$groups.members",
+									bson.A{},
+								},
+							},
+						},
+					},
+				}},
 			},
 		},
 	}
@@ -152,7 +164,7 @@ func (u *UserDAO) GetGroupsForUser(ctx context.Context, username string, from ti
 	}
 	defer cur.Close(ctx)
 
-	var groups []models.Group
+	var groups []models.HomePageGroup
 	err = cur.All(ctx, &groups)
 	if err != nil {
 		logger.Error().Err(err).Msg("while unmarshalling into slice")

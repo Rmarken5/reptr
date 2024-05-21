@@ -1,0 +1,30 @@
+package dumb
+
+import "fmt"
+
+templ FrontCardDisplay(data CardFront) {
+	<section id="card-content" class="" hx-swap="outerHTML">
+		<section class="previous-card">
+			if data.PreviousCardID != "" {
+				<button class="button button-color" hx-get={ fmt.Sprintf("%s/%s/%s", "/page/front-of-card", data.DeckID, data.PreviousCardID) } hx-target="#card-content">Previous Card</button>
+			}
+		</section>
+		<section id="card-front" class="card">
+			<p>
+				{ data.Front }
+			</p>
+		</section>
+		<section class="card-footer">
+			<section class="left-side-footer-front">
+				<button class="button button-color" hx-get={ fmt.Sprintf("%s/%s/%s", "/page/back-of-card", data.DeckID, data.CardID) } hx-target="#card-content">Answer</button>
+				<section class="">
+					<span>{ "Upvotes: " + data.Upvotes }</span>
+					<span>{ "Downvotes: " + data.Downvotes }</span>
+				</section>
+				if data.NextCardID != "" {
+					<button class="button button-color" hx-get={ fmt.Sprintf("%s/%s/%s", "/page/front-of-card", data.DeckID, data.NextCardID) } hx-target="#card-content">Skip</button>
+				}
+			</section>
+		</section>
+	</section>
+}

@@ -14,6 +14,8 @@ import (
 	time "time"
 
 	models "github.com/rmarken/reptr/service/internal/models"
+	mongo "go.mongodb.org/mongo-driver/mongo"
+	options "go.mongodb.org/mongo-driver/mongo/options"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -152,6 +154,35 @@ func (mr *MockRepositoryMockRecorder) DeleteGroup(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockRepository)(nil).DeleteGroup), arg0, arg1)
 }
 
+// EndSession mocks base method.
+func (m *MockRepository) EndSession(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EndSession", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EndSession indicates an expected call of EndSession.
+func (mr *MockRepositoryMockRecorder) EndSession(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndSession", reflect.TypeOf((*MockRepository)(nil).EndSession), arg0, arg1)
+}
+
+// GetActiveSessionForUserDeck mocks base method.
+func (m *MockRepository) GetActiveSessionForUserDeck(arg0 context.Context, arg1, arg2 string) (models.DeckSession, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveSessionForUserDeck", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.DeckSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveSessionForUserDeck indicates an expected call of GetActiveSessionForUserDeck.
+func (mr *MockRepositoryMockRecorder) GetActiveSessionForUserDeck(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveSessionForUserDeck", reflect.TypeOf((*MockRepository)(nil).GetActiveSessionForUserDeck), arg0, arg1, arg2)
+}
+
 // GetBackOfCardByID mocks base method.
 func (m *MockRepository) GetBackOfCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.BackOfCard, error) {
 	m.ctrl.T.Helper()
@@ -212,6 +243,21 @@ func (mr *MockRepositoryMockRecorder) GetFrontOfCardByID(arg0, arg1, arg2, arg3 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfCardByID), arg0, arg1, arg2, arg3)
 }
 
+// GetFrontOfNextCardByID mocks base method.
+func (m *MockRepository) GetFrontOfNextCardByID(arg0 context.Context, arg1, arg2, arg3 string) (models.FrontOfCard, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFrontOfNextCardByID", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(models.FrontOfCard)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFrontOfNextCardByID indicates an expected call of GetFrontOfNextCardByID.
+func (mr *MockRepositoryMockRecorder) GetFrontOfNextCardByID(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFrontOfNextCardByID", reflect.TypeOf((*MockRepository)(nil).GetFrontOfNextCardByID), arg0, arg1, arg2, arg3)
+}
+
 // GetGroupByID mocks base method.
 func (m *MockRepository) GetGroupByID(arg0 context.Context, arg1 string) (models.GroupWithDecks, error) {
 	m.ctrl.T.Helper()
@@ -228,10 +274,10 @@ func (mr *MockRepositoryMockRecorder) GetGroupByID(arg0, arg1 any) *gomock.Call 
 }
 
 // GetGroupsForUser mocks base method.
-func (m *MockRepository) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.Group, error) {
+func (m *MockRepository) GetGroupsForUser(arg0 context.Context, arg1 string, arg2 time.Time, arg3 *time.Time, arg4, arg5 int) ([]models.HomePageGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGroupsForUser", arg0, arg1, arg2, arg3, arg4, arg5)
-	ret0, _ := ret[0].([]models.Group)
+	ret0, _ := ret[0].([]models.HomePageGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -257,19 +303,19 @@ func (mr *MockRepositoryMockRecorder) GetGroupsWithDecks(arg0, arg1, arg2, arg3,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsWithDecks", reflect.TypeOf((*MockRepository)(nil).GetGroupsWithDecks), arg0, arg1, arg2, arg3, arg4)
 }
 
-// GetSessionForUserDeck mocks base method.
-func (m *MockRepository) GetSessionForUserDeck(arg0 context.Context, arg1, arg2 string) (models.DeckSession, error) {
+// GetSessionByID mocks base method.
+func (m *MockRepository) GetSessionByID(arg0 context.Context, arg1 string) (models.DeckSession, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSessionForUserDeck", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetSessionByID", arg0, arg1)
 	ret0, _ := ret[0].(models.DeckSession)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSessionForUserDeck indicates an expected call of GetSessionForUserDeck.
-func (mr *MockRepositoryMockRecorder) GetSessionForUserDeck(arg0, arg1, arg2 any) *gomock.Call {
+// GetSessionByID indicates an expected call of GetSessionByID.
+func (mr *MockRepositoryMockRecorder) GetSessionByID(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionForUserDeck", reflect.TypeOf((*MockRepository)(nil).GetSessionForUserDeck), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionByID", reflect.TypeOf((*MockRepository)(nil).GetSessionByID), arg0, arg1)
 }
 
 // GetUserByUsername mocks base method.
@@ -446,6 +492,20 @@ func (mr *MockRepositoryMockRecorder) RemoveUserFromUpvoteForDeck(arg0, arg1, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromUpvoteForDeck", reflect.TypeOf((*MockRepository)(nil).RemoveUserFromUpvoteForDeck), arg0, arg1, arg2)
 }
 
+// SetAnswerForCard mocks base method.
+func (m *MockRepository) SetAnswerForCard(arg0 context.Context, arg1, arg2 string, arg3 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetAnswerForCard", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetAnswerForCard indicates an expected call of SetAnswerForCard.
+func (mr *MockRepositoryMockRecorder) SetAnswerForCard(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnswerForCard", reflect.TypeOf((*MockRepository)(nil).SetAnswerForCard), arg0, arg1, arg2, arg3)
+}
+
 // UpdateCard mocks base method.
 func (m *MockRepository) UpdateCard(arg0 context.Context, arg1 models.Card) error {
 	m.ctrl.T.Helper()
@@ -458,6 +518,34 @@ func (m *MockRepository) UpdateCard(arg0 context.Context, arg1 models.Card) erro
 func (mr *MockRepositoryMockRecorder) UpdateCard(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCard", reflect.TypeOf((*MockRepository)(nil).UpdateCard), arg0, arg1)
+}
+
+// UpdateCardOrientation mocks base method.
+func (m *MockRepository) UpdateCardOrientation(arg0 context.Context, arg1 string, arg2 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCardOrientation", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCardOrientation indicates an expected call of UpdateCardOrientation.
+func (mr *MockRepositoryMockRecorder) UpdateCardOrientation(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCardOrientation", reflect.TypeOf((*MockRepository)(nil).UpdateCardOrientation), arg0, arg1, arg2)
+}
+
+// UpdateCurrentCard mocks base method.
+func (m *MockRepository) UpdateCurrentCard(arg0 context.Context, arg1, arg2 string, arg3 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCurrentCard", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCurrentCard indicates an expected call of UpdateCurrentCard.
+func (mr *MockRepositoryMockRecorder) UpdateCurrentCard(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCurrentCard", reflect.TypeOf((*MockRepository)(nil).UpdateCurrentCard), arg0, arg1, arg2, arg3)
 }
 
 // UpdateGroup mocks base method.
@@ -474,16 +562,21 @@ func (mr *MockRepositoryMockRecorder) UpdateGroup(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockRepository)(nil).UpdateGroup), arg0, arg1)
 }
 
-// UpdateSession mocks base method.
-func (m *MockRepository) UpdateSession(arg0 context.Context, arg1, arg2, arg3 string, arg4 bool) error {
+// WithTransaction mocks base method.
+func (m *MockRepository) WithTransaction(arg0 context.Context, arg1 func(mongo.SessionContext) (any, error), arg2 ...*options.TransactionOptions) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSession", arg0, arg1, arg2, arg3, arg4)
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WithTransaction", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateSession indicates an expected call of UpdateSession.
-func (mr *MockRepositoryMockRecorder) UpdateSession(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+// WithTransaction indicates an expected call of WithTransaction.
+func (mr *MockRepositoryMockRecorder) WithTransaction(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSession", reflect.TypeOf((*MockRepository)(nil).UpdateSession), arg0, arg1, arg2, arg3, arg4)
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTransaction", reflect.TypeOf((*MockRepository)(nil).WithTransaction), varargs...)
 }

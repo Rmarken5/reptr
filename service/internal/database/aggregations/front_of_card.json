@@ -1,0 +1,111 @@
+[
+  {
+    "$match": {
+      "deck_id": "%%deckID%string%"
+    }
+  },
+  {
+    "$setWindowFields": {
+      "sortBy": {
+        "created_at": -1
+      },
+      "output": {
+        "previousCard": {
+          "$push": "$$ROOT",
+          "window": {
+            "documents": [
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "$setWindowFields": {
+      "sortBy": {
+        "created_at": 1
+      },
+      "output": {
+        "nextCard": {
+          "$push": "$$ROOT",
+          "window": {
+            "documents": [
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "$match": {
+      "_id": "%%cardID%string%"
+    }
+  },
+  {
+    "$set": {
+      "user_upvotes": {
+        "$ifNull": [
+          "$user_upvotes",
+          []
+        ]
+      },
+      "user_downvotes": {
+        "$ifNull": [
+          "$user_downvotes",
+          []
+        ]
+      }
+    }
+  },
+  {
+    "$addFields": {
+      "is_upvoted_by_user": {
+        "$cond": {
+          "if": {
+            "$in": [
+              "%%username%string%",
+              "$user_upvotes"
+            ]
+          },
+          "then": true,
+          "else": false
+        }
+      },
+      "is_downvoted_by_user": {
+        "$cond": {
+          "if": {
+            "$in": [
+              "%%username%string%",
+              "$user_downvotes"
+            ]
+          },
+          "then": true,
+          "else": false
+        }
+      }
+    }
+  },
+  {
+    "$project": {
+      "card_id": "$_id",
+      "content": "$front",
+      "deck_id": "$deck_id",
+      "previous_card": {
+        "$first": "$previousCard._id"
+      },
+      "next_card": {
+        "$first": "$nextCard._id"
+      },
+      "upvotes": {
+        "$size": "$user_upvotes"
+      },
+      "downvotes": {
+        "$size": "$user_downvotes"
+      }
+    }
+  }
+]

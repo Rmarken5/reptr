@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rmarken/reptr/service/internal/database/aggregations"
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,6 +18,7 @@ type (
 		InsertCards(ctx context.Context, card []models.Card) error
 		UpdateCard(ctx context.Context, card models.Card) error
 		GetFrontOfCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
+		GetFrontOfNextCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error)
 		GetBackOfCardByID(ctx context.Context, deckID, cardID, username string) (models.BackOfCard, error)
 		AddUserToUpvoteForCard(ctx context.Context, primaryKey, userID string) error
 		RemoveUserFromUpvoteForCard(ctx context.Context, primaryKey, userID string) error
@@ -78,147 +80,7 @@ func (d *CardDAO) GetFrontOfCardByID(ctx context.Context, deckID, cardID, userna
 	logger := d.log.With().Str("method", "GetFrontOfCardByID").Logger()
 	logger.Info().Msgf("getting front of card by id: %s", cardID)
 
-	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"deck_id", deckID}}}},
-		bson.D{
-			{"$setWindowFields",
-				bson.D{
-					{"sortBy", bson.D{{"created_at", -1}}},
-					{"output",
-						bson.D{
-							{"previousCard",
-								bson.D{
-									{"$push", "$$ROOT"},
-									{"window",
-										bson.D{
-											{"documents",
-												bson.A{
-													1,
-													1,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$setWindowFields",
-				bson.D{
-					{"sortBy", bson.D{{"created_at", 1}}},
-					{"output",
-						bson.D{
-							{"nextCard",
-								bson.D{
-									{"$push", "$$ROOT"},
-									{"window",
-										bson.D{
-											{"documents",
-												bson.A{
-													1,
-													1,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{{"$match", bson.D{{"_id", cardID}}}},
-		bson.D{
-			{"$set",
-				bson.D{
-					{"user_upvotes",
-						bson.D{
-							{"$ifNull",
-								bson.A{
-									"$user_upvotes",
-									bson.A{},
-								},
-							},
-						},
-					},
-					{"user_downvotes",
-						bson.D{
-							{"$ifNull",
-								bson.A{
-									"$user_downvotes",
-									bson.A{},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$addFields",
-				bson.D{
-					{"is_upvoted_by_user",
-						bson.D{
-							{"$cond",
-								bson.D{
-									{"if",
-										bson.D{
-											{"$in",
-												bson.A{
-													username,
-													"$user_upvotes",
-												},
-											},
-										},
-									},
-									{"then", true},
-									{"else", false},
-								},
-							},
-						},
-					},
-					{"is_downvoted_by_user",
-						bson.D{
-							{"$cond",
-								bson.D{
-									{"if",
-										bson.D{
-											{"$in",
-												bson.A{
-													username,
-													"$user_downvotes",
-												},
-											},
-										},
-									},
-									{"then", true},
-									{"else", false},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$project",
-				bson.D{
-					{"card_id", "$_id"},
-					{"content", "$front"},
-					{"deck_id", "$deck_id"},
-					{"previous_card", bson.D{{"$first", "$previousCard._id"}}},
-					{"next_card", bson.D{{"$first", "$nextCard._id"}}},
-					{"upvotes", bson.D{{"$size", "$user_upvotes"}}},
-					{"downvotes", bson.D{{"$size", "$user_downvotes"}}},
-				},
-			},
-		},
-	}
+	pipeline := aggregations.GetFront_of_card(deckID, cardID, username)
 
 	cursor, err := d.collection.Aggregate(ctx, pipeline)
 	if err != nil {
@@ -245,149 +107,7 @@ func (d *CardDAO) GetBackOfCardByID(ctx context.Context, deckID, cardID, usernam
 	logger := d.log.With().Str("method", "GetBackOfCardByID").Logger()
 	logger.Info().Msgf("getting back of card by id: %s", cardID)
 
-	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"deck_id", deckID}}}},
-		bson.D{
-			{"$setWindowFields",
-				bson.D{
-					{"sortBy", bson.D{{"created_at", -1}}},
-					{"output",
-						bson.D{
-							{"previousCard",
-								bson.D{
-									{"$push", "$$ROOT"},
-									{"window",
-										bson.D{
-											{"documents",
-												bson.A{
-													1,
-													1,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$setWindowFields",
-				bson.D{
-					{"sortBy", bson.D{{"created_at", 1}}},
-					{"output",
-						bson.D{
-							{"nextCard",
-								bson.D{
-									{"$push", "$$ROOT"},
-									{"window",
-										bson.D{
-											{"documents",
-												bson.A{
-													1,
-													1,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{{"$match", bson.D{{"_id", cardID}}}},
-		bson.D{
-			{"$set",
-				bson.D{
-					{"user_upvotes",
-						bson.D{
-							{"$ifNull",
-								bson.A{
-									"$user_upvotes",
-									bson.A{},
-								},
-							},
-						},
-					},
-					{"user_downvotes",
-						bson.D{
-							{"$ifNull",
-								bson.A{
-									"$user_downvotes",
-									bson.A{},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$addFields",
-				bson.D{
-					{"is_upvoted_by_user",
-						bson.D{
-							{"$cond",
-								bson.D{
-									{"if",
-										bson.D{
-											{"$in",
-												bson.A{
-													username,
-													"$user_upvotes",
-												},
-											},
-										},
-									},
-									{"then", true},
-									{"else", false},
-								},
-							},
-						},
-					},
-					{"is_downvoted_by_user",
-						bson.D{
-							{"$cond",
-								bson.D{
-									{"if",
-										bson.D{
-											{"$in",
-												bson.A{
-													username,
-													"$user_downvotes",
-												},
-											},
-										},
-									},
-									{"then", true},
-									{"else", false},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$project",
-				bson.D{
-					{"card_id", "$_id"},
-					{"answer", "$back"},
-					{"deck_id", "$deck_id"},
-					{"next_card", bson.D{{"$first", "$nextCard._id"}}},
-					{"previous_card", bson.D{{"$first", "$previousCard._id"}}},
-					{"is_upvoted_by_user", "$is_upvoted_by_user"},
-					{"is_downvoted_by_user", "$is_downvoted_by_user"},
-					{"created_at", "$created_at"},
-					{"update_at", "$update_at"},
-				},
-			},
-		},
-	}
+	pipeline := aggregations.GetBack_of_card(deckID, cardID, username)
 
 	cursor, err := d.collection.Aggregate(ctx, pipeline)
 	if err != nil {
@@ -489,4 +209,34 @@ func (d *CardDAO) RemoveUserFromDownvoteForCard(ctx context.Context, cardID, use
 	}
 
 	return nil
+}
+
+func (d *CardDAO) GetFrontOfNextCardByID(ctx context.Context, deckID, cardID, username string) (models.FrontOfCard, error) {
+	logger := d.log.With().Str("method", "GetFrontOfNextCardByID").Logger()
+	logger.Info().Msgf("getting front of next card by for deck - %s card - %s", deckID, cardID)
+
+	pipeline := aggregations.GetNext_card(deckID, cardID, username)
+
+	cursor, err := d.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while getting cursor")
+		return models.FrontOfCard{}, errors.Join(err, ErrAggregate)
+	}
+	defer cursor.Close(ctx)
+
+	var res []models.FrontOfCard
+	err = cursor.All(ctx, &res)
+	if err != nil {
+		logger.Error().Err(err).Msgf("while unmarshalling to BackOfCard")
+		return models.FrontOfCard{}, errors.Join(err, ErrAggregate)
+	}
+
+	// If pipeline is unable to find next card, it will return an empty card.
+	if len(res) == 0 || res[0].CardID == "" {
+
+		return models.FrontOfCard{}, ErrNoResults
+	}
+
+	return res[0], nil
+
 }

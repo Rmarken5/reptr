@@ -46,10 +46,12 @@ func main() {
 	l := cmd.MustLoadLogic(log, repo)
 
 	sessionController := cmd.MustLoadSessionLogic(log, l, repo)
+	deckViewer := cmd.MustLoadDeckViewerController(log, repo)
 	authenticator := cmd.MustLoadAuth(ctx, log, config, repo)
+
 	p := cmd.MustLoadProvider(log, repo)
 	store := sessions.NewCookieStore([]byte(config.SessionKey))
-	serverImpl := api.New(log, l, p, authenticator, sessionController, store)
+	serverImpl := api.New(log, l, p, authenticator, sessionController, store, deckViewer)
 
 	router := mux.NewRouter()
 
@@ -76,11 +78,14 @@ func main() {
 	pageRoute.HandleFunc("/create-deck", wrapper.CreateDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.CreateCardForDeck).Methods(http.MethodPost)
 	pageRoute.HandleFunc("/create-cards/{deck_id}", wrapper.GetCreateCardsForDeckPage).Methods(http.MethodGet)
+	pageRoute.HandleFunc("/create-cards-content/{deck_id}", wrapper.GetCreateCardsForDeckContent).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/add-card/{deck_id}", wrapper.GetCardsForDeck).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/front-of-card/{deck_id}/{card_id}", wrapper.FrontOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/back-of-card/{deck_id}/{card_id}", wrapper.BackOfCard).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/view-deck/{deck_id}", wrapper.ViewDeck).Methods(http.MethodGet)
 	pageRoute.HandleFunc("/upvote-card/{card_id}/{direction}", wrapper.VoteCard).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/answered-correct/{session_id}", wrapper.UpdateCardCorrect).Methods(http.MethodPost)
+	pageRoute.HandleFunc("/answered-incorrect/{session_id}", wrapper.UpdateCardIncorrect).Methods(http.MethodPost)
 
 	pageRoute.Use(
 		middlewares.Session(log, store),

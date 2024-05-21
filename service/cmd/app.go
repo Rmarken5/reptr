@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/rmarken/reptr/service/internal/database"
 	"github.com/rmarken/reptr/service/internal/logic/auth"
+	deck_viewer "github.com/rmarken/reptr/service/internal/logic/deck-viewer"
 	"github.com/rmarken/reptr/service/internal/logic/decks"
 	"github.com/rmarken/reptr/service/internal/logic/decks/session"
 	"github.com/rmarken/reptr/service/internal/logic/provider"
@@ -107,6 +108,10 @@ func MustLoadSessionLogic(logger zerolog.Logger, deckController decks.Controller
 
 func MustLoadProvider(logger zerolog.Logger, repo database.Repository) *provider.Logic {
 	return provider.New(logger, repo)
+}
+
+func MustLoadDeckViewerController(logger zerolog.Logger, repo database.Repository) *deck_viewer.Logic {
+	return deck_viewer.New(logger, repo)
 }
 
 func MustLoadRepo(logger zerolog.Logger, db *mongo.Database) *database.DataAccessObject {

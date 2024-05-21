@@ -32,7 +32,7 @@ func Error(pageData ErrorPageData) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s - %s", pageData.StatusCode, pageData.Status))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/error.templ`, Line: 6, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/error.templ`, Line: 6, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -45,7 +45,7 @@ func Error(pageData ErrorPageData) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(pageData.Msg)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/error.templ`, Line: 7, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `service/internal/web/components/pages/error.templ`, Line: 7, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {

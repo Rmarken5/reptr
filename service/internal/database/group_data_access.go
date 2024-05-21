@@ -8,6 +8,7 @@ import (
 	"github.com/rmarken/reptr/service/internal/models"
 	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
@@ -168,6 +169,61 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
+	getVotes := bson.D{
+		{"$addFields",
+			bson.D{
+				{"decks",
+					bson.D{
+						{"$map",
+							bson.D{
+								{"input", "$decks"},
+								{"as", "deck"},
+								{"in",
+									bson.D{
+										{"$mergeObjects",
+											bson.A{
+												"$$deck",
+												bson.D{
+													{"upvotes",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$$deck.user_upvotes",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
+													{"downvotes",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$$deck.user_downvotes",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 	unwind := bson.D{
 		{"$unwind",
 			bson.D{
@@ -176,31 +232,97 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
-	getVoteCounts := bson.D{
+	lookupCards := bson.D{
+		{"$lookup",
+			bson.D{
+				{"from", "cards"},
+				{"localField", "decks._id"},
+				{"foreignField", "deck_id"},
+				{"as", "cards"},
+			},
+		},
+	}
+
+	getSizeOfCards := bson.D{
 		{"$addFields",
 			bson.D{
-				{"decks.upvotes",
+				{"decks",
 					bson.D{
-						{"$size",
+						{"$cond",
 							bson.D{
-								{"$ifNull",
-									bson.A{
-										"$decks.user_upvotes",
-										bson.A{},
+								{"if",
+									bson.D{
+										{"$ne",
+											bson.A{
+												bson.D{{"$size", "$deck_ids"}},
+												0,
+											},
+										},
 									},
 								},
+								{"then",
+									bson.D{
+										{"$mergeObjects",
+											bson.A{
+												"$decks",
+												bson.D{
+													{"num_cards",
+														bson.D{
+															{"$size",
+																bson.D{
+																	{"$ifNull",
+																		bson.A{
+																			"$cards",
+																			bson.A{},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{"else", primitive.Null{}},
 							},
 						},
 					},
 				},
-				{"decks.downvote",
+			},
+		},
+	}
+
+	regroup := bson.D{
+		{"$group",
+			bson.D{
+				{"_id", "$_id"},
+				{"name", bson.D{{"$first", "$name"}}},
+				{"created_by", bson.D{{"$first", "$created_by"}}},
+				{"created_at", bson.D{{"$first", "$created_at"}}},
+				{"updated_at", bson.D{{"$first", "$updated_at"}}},
+				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
+				{"members", bson.D{{"$first", "$members"}}},
+				{"moderators", bson.D{{"$first", "$moderators"}}},
+				{"decks",
 					bson.D{
-						{"$size",
+						{"$push",
 							bson.D{
-								{"$ifNull",
-									bson.A{
-										"$decks.user_downvotes",
-										bson.A{},
+								{"$cond",
+									bson.D{
+										{"if",
+											bson.D{
+												{"$ne",
+													bson.A{
+														"$decks",
+														primitive.Null{},
+													},
+												},
+											},
+										},
+										{"then", "$decks"},
+										{"else", "$$REMOVE"},
 									},
 								},
 							},
@@ -210,6 +332,7 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
+
 	removeUserVotes := bson.D{
 		{"$project",
 			bson.D{
@@ -218,28 +341,16 @@ func (g *GroupDAO) GetGroupByID(ctx context.Context, groupID string) (models.Gro
 			},
 		},
 	}
-	regroupDecks := bson.D{
-		{"$group",
-			bson.D{
-				{"_id", "$_id"},
-				{"name", bson.D{{"$first", "$name"}}},
-				{"created_by", bson.D{{"$first", "$created_by"}}},
-				{"decks", bson.D{{"$push", "$decks"}}},
-				{"moderators", bson.D{{"$first", "$moderators"}}},
-				{"created_at", bson.D{{"$first", "$created_at"}}},
-				{"updated_at", bson.D{{"$first", "$updated_at"}}},
-				{"deleted_at", bson.D{{"$first", "$deleted_at"}}},
-			},
-		},
-	}
 
 	filter := bson.A{
 		match,
 		lookupDecks,
+		getVotes,
 		unwind,
-		getVoteCounts,
+		lookupCards,
+		getSizeOfCards,
+		regroup,
 		removeUserVotes,
-		regroupDecks,
 	}
 
 	cur, err := g.collection.Aggregate(ctx, filter)

@@ -1,0 +1,33 @@
+package dumb
+
+import (
+	"strconv"
+)
+
+type (
+	GroupCardDisplayPageData struct {
+		Cards []CardDisplay
+	}
+	CardDisplay struct {
+		Front string
+		Back  string
+	}
+)
+
+templ GroupCardDisplay(cards []CardDisplay) {
+	for i, card := range cards {
+		<section class="card" id={ "card-" + strconv.Itoa(i) }>
+			<section class="card-content" id={ "front-" + strconv.Itoa(i) }><p>{ card.Front }</p></section>
+			<section class="card-content" id={ "back-" + strconv.Itoa(i) }><p>{ card.Back }</p></section>
+		</section>
+	}
+	<section id="create-card" hx-swap-oob="#create-card" class="create-card-section">
+		<section class="input-container">
+			<textarea id="card-front" name="card-front" rows="2" placeholder="Front of Card"></textarea>
+		</section>
+		<section class="input-container">
+			<textarea id="card-back" name="card-back" rows="2" placeholder="Back of Card"></textarea>
+		</section>
+		<button class="button" type="submit">Create Card</button>
+	</section>
+}
