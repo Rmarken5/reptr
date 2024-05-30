@@ -37,13 +37,14 @@ test-update:gen
 cover:gen
 	export UPDATE_SNAPS=false && go test -coverprofile coverage.out ./... && go tool cover -html=coverage.out
 
-
-
-
 .PHONY: local
 local: gen
 	ENV="local" go run ./service/cmd/server
 
-.PHONY: local
+.PHONY: prod
+prod: gen
+	ENV="prod" go run ./service/cmd/server
+
+.PHONY: dev
 dev: gen
 	air

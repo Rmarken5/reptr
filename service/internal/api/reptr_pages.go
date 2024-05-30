@@ -212,7 +212,7 @@ func (rc ReprtClient) Login(w http.ResponseWriter, r *http.Request) {
 			StatusCode: strconv.Itoa(http.StatusBadRequest),
 			Status:     http.StatusText(http.StatusBadRequest),
 			Error:      "login attempt without password - email",
-			Msg:        "login attempt without password - emaild",
+			Msg:        "login attempt without password - email",
 		})
 		return
 	}

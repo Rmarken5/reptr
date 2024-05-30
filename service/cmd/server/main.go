@@ -28,6 +28,8 @@ func init() {
 		path = "./config/local.yaml"
 	case "dev":
 		path = "./config/dev.yaml"
+	case "prod":
+		path = "./config/prod.yaml"
 	default:
 		log.Info().Msg("loading from env")
 		config = cmd.LoadConfFromEnv(log)
@@ -58,11 +60,11 @@ func main() {
 	wrapper := exAPI.ServerInterfaceWrapper{
 		Handler: serverImpl,
 	}
-
-	router.HandleFunc("/login", wrapper.LoginPage).Methods(http.MethodGet)
+	router.Handle("/", middlewares.Session(log, store)(middlewares.HomeRedirect(log, authenticator)(http.HandlerFunc(wrapper.LoginPage)))).Methods(http.MethodGet)
+	router.Handle("/login", middlewares.Session(log, store)(middlewares.HomeRedirect(log, authenticator)(http.HandlerFunc(wrapper.LoginPage)))).Methods(http.MethodGet)
 	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
-	router.HandleFunc("/register", wrapper.RegistrationPage).Methods(http.MethodGet)
+	router.Handle("/register", middlewares.Session(log, store)(middlewares.HomeRedirect(log, authenticator)(http.HandlerFunc(wrapper.RegistrationPage)))).Methods(http.MethodGet)
 
 	styleRouter := router.PathPrefix("/styles").Subrouter()
 	styleRouter.HandleFunc("/{path}/{style_name}", wrapper.ServeStyles).Methods(http.MethodGet)
