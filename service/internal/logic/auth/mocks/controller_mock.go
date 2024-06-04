@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/controller_mock.go -package auth . Authentication
 //
+
 // Package auth is a generated GoMock package.
 package auth
 

@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/sessions_mock.go -package middlewares github.com/gorilla/sessions Store
 //
+
 // Package middlewares is a generated GoMock package.
 package middlewares
 
