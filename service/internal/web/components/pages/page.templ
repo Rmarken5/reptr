@@ -1,13 +1,13 @@
 package pages
 
-templ Page(content templ.Component, styles []string) {
+templ Page(pageData PageData, content templ.Component, styles []string) {
 	<html lang="en">
 		<head>
 			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 			for _, style := range styles {
 				<link rel="stylesheet" href={ style }/>
 			}
-			<title>Fix Page Title</title>
+			<title>{ pageData.Title }</title>
 		</head>
 		<body class="">
 			<section class="container">
