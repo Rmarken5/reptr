@@ -60,8 +60,9 @@ func main() {
 	wrapper := exAPI.ServerInterfaceWrapper{
 		Handler: serverImpl,
 	}
-	router.HandleFunc("/favicon", wrapper.GetFavicon).Methods(http.MethodGet)
+	router.HandleFunc("/favicon.ico", wrapper.GetFavicon).Methods(http.MethodGet)
 
+	router.Handle("/", middlewares.Session(log, store)(middlewares.HomeRedirect(log, authenticator)(http.HandlerFunc(wrapper.LoginPage)))).Methods(http.MethodGet)
 	router.Handle("/login", middlewares.Session(log, store)(middlewares.HomeRedirect(log, authenticator)(http.HandlerFunc(wrapper.LoginPage)))).Methods(http.MethodGet)
 	router.HandleFunc("/login", wrapper.Login).Methods(http.MethodPost)
 	router.HandleFunc("/register", wrapper.Register).Methods(http.MethodPost)
