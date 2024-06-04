@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/controller_mock.go -package provider . Controller
 //
+
 // Package provider is a generated GoMock package.
 package provider
 

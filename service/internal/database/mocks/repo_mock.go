@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/repo_mock.go -package database . Repository
 //
+
 // Package database is a generated GoMock package.
 package database
 

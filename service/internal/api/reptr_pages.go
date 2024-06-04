@@ -44,6 +44,21 @@ const (
 
 var cssFileArr = []string{baseStyle, pageStyle}
 
+func (rc ReprtClient) GetFavicon(w http.ResponseWriter, _ *http.Request) {
+	log := rc.logger.With().Str("method", "GetFavicon").Logger()
+
+	absolutePath, err := filepath.Abs("./service/internal/web/img/favicon.ico")
+	file, err := os.ReadFile(absolutePath)
+	if err != nil {
+		log.Error().Err(err).Msgf("while reading: %s", absolutePath)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/x-icon")
+	w.Write(file)
+}
+
 func (rc ReprtClient) ServeStyles(w http.ResponseWriter, r *http.Request, path string, styleName string) {
 	log := rc.logger.With().Str("method", "ServeStyles").Logger()
 	log.Info().Msgf("serving %s %s", path, styleName)

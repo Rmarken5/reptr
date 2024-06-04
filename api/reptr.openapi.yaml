@@ -6,6 +6,17 @@ info:
 servers:
   - url: http://localhost:8081/
 paths:
+  /favicon:
+    get:
+      operationId: getFavicon
+      summary: favicon image
+      description: gets favicon image
+      responses:
+        200:
+          content:
+            text/html:
+              schema:
+                type: string
   /login:
     get:
       operationId: loginPage

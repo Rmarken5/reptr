@@ -5,6 +5,7 @@
 //
 //	mockgen -destination ./mocks/sessions_mock.go -package api github.com/gorilla/sessions Store
 //
+
 // Package api is a generated GoMock package.
 package api
 
