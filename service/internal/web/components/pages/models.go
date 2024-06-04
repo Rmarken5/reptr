@@ -6,6 +6,9 @@ import (
 )
 
 type (
+	PageData struct {
+		Title string
+	}
 	HomeData struct {
 		Username string
 		Groups   []HomeGroupData
