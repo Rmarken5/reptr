@@ -6,7 +6,7 @@ info:
 servers:
   - url: http://localhost:8081/
 paths:
-  /favicon:
+  /favicon.ico:
     get:
       operationId: getFavicon
       summary: favicon image
